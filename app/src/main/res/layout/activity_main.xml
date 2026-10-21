@@ -147,27 +147,7 @@
                         android:orientation="vertical"
                         android:visibility="gone">
 
-<!-- ===== Remote command card ===== -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorSurfaceVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    style="@style/PL.CardTitle"
-                    android:text="@string/sec_remote" />
-
-                <TextView
+<TextView
                     android:id="@+id/tvSenderSeen"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -188,7 +168,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdLocation"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginEnd="4dp"
@@ -196,7 +176,7 @@
                                             android:text="@string/cmd_location" />
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdRing"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginStart="4dp"
@@ -211,7 +191,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdStopRing"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginStart="4dp"
@@ -219,7 +199,7 @@
                                             android:text="@string/cmd_stop_ring" />
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdFlashOn"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginEnd="4dp"
@@ -233,7 +213,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdFlashOff"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginStart="4dp"
@@ -241,7 +221,7 @@
                                             android:text="@string/cmd_flash_off" />
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdBattery"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginStart="4dp"
@@ -255,7 +235,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdPing"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginEnd="4dp"
@@ -263,7 +243,7 @@
                                             android:text="@string/cmd_ping" />
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdInfo"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginStart="4dp"
@@ -277,7 +257,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdSummary"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginStart="4dp"
@@ -285,7 +265,7 @@
                                             android:text="@string/cmd_summary" />
                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnCmdStatus"
-                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        style="@style/PL.BtnTonal"
                                         android:layout_width="0dp"
                                             android:layout_weight="1"
                                         android:layout_height="wrap_content"
@@ -305,7 +285,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdSnap"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginEnd="4dp"
@@ -313,7 +293,7 @@
                                             android:text="@string/cmd_snap" />
                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnScreenshot"
-                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        style="@style/PL.BtnTonal"
                                         android:layout_width="0dp"
                                             android:layout_weight="1"
                                         android:layout_height="wrap_content"
@@ -326,14 +306,14 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnScreenShare"
-                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        style="@style/PL.BtnTonal"
                                         android:layout_width="0dp"
                                             android:layout_weight="1"
                                         android:layout_height="wrap_content"
                                         android:text="@string/btn_screen_share" />
                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnCmdScreen"
-                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        style="@style/PL.BtnTonal"
                                         android:layout_width="0dp"
                                             android:layout_weight="1"
                                         android:layout_height="wrap_content"
@@ -353,7 +333,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdSpeak"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginEnd="4dp"
@@ -361,7 +341,7 @@
                                             android:text="@string/cmd_speak" />
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdAlarm"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginEnd="4dp"
@@ -408,7 +388,7 @@
                                 </LinearLayout>
                 <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnCmdRinger"
-                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        style="@style/PL.BtnTonal"
                                         android:layout_width="match_parent"
                                         android:layout_marginTop="8dp"
                                         android:layout_height="wrap_content"
@@ -428,7 +408,7 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                             android:id="@+id/btnCmdLock"
-                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            style="@style/PL.BtnTonal"
                                             android:layout_width="0dp"
                                             android:layout_height="wrap_content"
                                             android:layout_marginStart="4dp"
@@ -436,7 +416,7 @@
                                             android:text="@string/cmd_lock" />
                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnCmdRemote"
-                                        style="@style/Widget.Material3.Button.TonalButton"
+                                        style="@style/PL.BtnTonal"
                                         android:layout_width="0dp"
                                             android:layout_weight="1"
                                         android:layout_height="wrap_content"
@@ -449,45 +429,30 @@
                     android:orientation="horizontal">
                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnMode"
-                                        style="@style/Widget.Material3.Button.TonalButton"
+                                        style="@style/PL.BtnTonal"
                                         android:layout_width="0dp"
                                             android:layout_weight="1"
                                         android:layout_height="wrap_content"
                                         android:text="@string/btn_mode" />
                     <com.google.android.material.button.MaterialButton
                                         android:id="@+id/btnLostMode"
-                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        style="@style/PL.BtnFilled"
                                         android:layout_width="0dp"
                                             android:layout_weight="1"
                                         android:layout_height="wrap_content"
                                         android:text="@string/btn_lost_mode" />
                 </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-<!-- ===== Remote info card ===== -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorSurfaceVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    style="@style/PL.CardTitle"
-                    android:text="@string/sec_remote_info" />
+            <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/sec_remote_info"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCmdGallery"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
@@ -501,7 +466,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdRecentCalls"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -510,7 +475,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdRecentSms"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -520,14 +485,12 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCmdNote"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="@string/cmd_note" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-                    </LinearLayout>
 
                     <LinearLayout
                         android:id="@+id/groupQuick"
@@ -536,35 +499,14 @@
                         android:orientation="vertical"
                         android:visibility="gone">
 
-<!-- ===== Quick send card ===== -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorSurfaceVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    style="@style/PL.CardTitle"
-                    android:text="@string/sec_quick_send" />
-
-                <LinearLayout
+<LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSendClipboard"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -573,7 +515,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSendFile"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -583,7 +525,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnVoice"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -597,7 +539,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSiren"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -606,7 +548,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSchedule"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -622,7 +564,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnTemplates"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -631,7 +573,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnContactCard"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -641,7 +583,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnWallpaper"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
@@ -670,7 +612,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSaveStatus"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
@@ -688,13 +630,12 @@
             
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCheckin"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_checkin" />
-                </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                
                     </LinearLayout>
 
 <LinearLayout
@@ -731,7 +672,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnOpenPerms"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -984,7 +925,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveFilters"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -992,7 +933,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnTest"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
@@ -1031,7 +972,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnApps"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/btn_apps" />
@@ -1059,7 +1000,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnQuietTimes"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1085,7 +1026,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnDigest"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1126,7 +1067,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveSmart"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -1212,7 +1153,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRoutineTime"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1239,7 +1180,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSetGeo"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1252,7 +1193,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnUsageAccess"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
@@ -1334,7 +1275,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnChangePin"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
@@ -1369,7 +1310,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSetPin"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1382,7 +1323,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAdmin"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1400,7 +1341,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSecLog"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1408,7 +1349,7 @@
             
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnA11y"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -1496,7 +1437,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnTgTopics"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -1504,7 +1445,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveServer"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -1549,7 +1490,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnViewQueue"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -1558,7 +1499,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnFlushQueue"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -1568,7 +1509,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnClearQueue"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -1613,7 +1554,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnResetStats"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1632,7 +1573,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRetention"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1646,7 +1587,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnBackupInbox"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -1655,7 +1596,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnRestoreInbox"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -1670,7 +1611,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnDataLimit"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
@@ -1678,14 +1619,14 @@
             
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExportCsv"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_export_csv" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExportPdf"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -1722,42 +1663,42 @@
                     android:text="@string/group_note" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCommanders"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_commanders" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnPeerModes"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_peer_modes" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCharts"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_charts" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExportConfig"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_export_config" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnImportConfig"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_import_config" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnConfigCode"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -1812,14 +1753,14 @@
                 </com.google.android.material.textfield.TextInputLayout>
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveLostContact"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_save" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCheckinTime"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"

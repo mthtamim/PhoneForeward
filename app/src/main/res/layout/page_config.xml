@@ -76,7 +76,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnApplyCode"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -85,7 +85,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnNewCode"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -107,7 +107,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveName"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -121,7 +121,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnShowQr"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
@@ -130,7 +130,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnScanQr"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
@@ -140,7 +140,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnProfiles"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
@@ -208,7 +208,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnStopService"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"

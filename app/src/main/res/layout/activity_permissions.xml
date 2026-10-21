@@ -73,7 +73,7 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnNotifAccess"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            style="@style/PL.BtnTonal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/btn_open_settings" />
@@ -116,7 +116,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPermissions"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/PL.BtnTonal"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
@@ -166,7 +166,7 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnBatteryOpt"
-                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            style="@style/PL.BtnTonal"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/btn_open_settings" />

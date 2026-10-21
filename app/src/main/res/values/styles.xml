@@ -21,6 +21,8 @@
 
     <style name="PL.BtnTonal" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">14dp</item>
+        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="PL.BtnText" parent="Widget.Material3.Button.TextButton">

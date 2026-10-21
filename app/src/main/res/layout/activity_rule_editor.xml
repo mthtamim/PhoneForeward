@@ -91,7 +91,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddConstraint"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/PL.BtnTonal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/auto_add_constraint" />
@@ -111,7 +111,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddAction"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/PL.BtnTonal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/auto_add_action" />

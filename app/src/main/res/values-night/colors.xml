@@ -26,4 +26,5 @@
     <color name="status_bad">#F87171</color>
     <color name="pair_code">#FBBF24</color>
     <color name="divider">#22313A</color>
+    <color name="md_btnFill">#22313A</color>
 </resources>
