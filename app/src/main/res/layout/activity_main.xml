@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📲 PhoneLink"
+            android:textColor="#F8FAFC"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="এক ফোনের SMS, নোটিফিকেশন, কলসহ সবকিছু আরেক ফোনে রিয়েল-টাইমে"
+            android:textColor="#94A3B8"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="#1E293B"
+            android:padding="10dp"
+            android:text="স্ট্যাটাস লোড হচ্ছে…"
+            android:textColor="#7DD3FC"
+            android:textSize="13sp" />
+
+        <!-- Pairing -->
+        <TextView style="@style/SectionTitle" android:text="🔗 পেয়ারিং" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="দুটি ফোনেই একই পেয়ার কোড থাকতে হবে। কোডটা গোপন রাখো — যার কাছে কোড, সে-ই সব মেসেজ দেখতে পারবে।"
+            android:textColor="#CBD5E1"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/tvPairCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="—"
+            android:textColor="#FACC15"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/etPairCode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="আরেক ফোনের কোড এখানে লিখো"
+            android:textColor="#F8FAFC"
+            android:textColorHint="#64748B" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/btnApplyCode" style="@style/AppButton" android:text="কোড সেট করো" />
+            <Button android:id="@+id/btnNewCode" style="@style/AppButton" android:text="নতুন কোড" />
+        </LinearLayout>
+
+        <EditText
+            android:id="@+id/etDeviceName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="এই ফোনের নাম (যেমন: আমার ফোন)"
+            android:textColor="#F8FAFC"
+            android:textColorHint="#64748B" />
+
+        <Button android:id="@+id/btnSaveName" style="@style/AppButton" android:text="নাম সেভ করো" />
+
+        <!-- Modes -->
+        <TextView style="@style/SectionTitle" android:text="🎛️ এই ফোনের ভূমিকা" />
+        <Switch android:id="@+id/swSender" style="@style/AppSwitch" android:text="Sender — এই ফোন থেকে সবকিছু পাঠাও" />
+        <Switch android:id="@+id/swReceiver" style="@style/AppSwitch" android:text="Receiver — আরেক ফোনের মেসেজ এখানে নাও" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/btnStartService" style="@style/AppButton" android:text="▶ সার্ভিস চালু" />
+            <Button android:id="@+id/btnStopService" style="@style/AppButton" android:text="⏸ বন্ধ" />
+        </LinearLayout>
+
+        <!-- Permissions -->
+        <TextView style="@style/SectionTitle" android:text="🔐 Permission" />
+        <Button android:id="@+id/btnNotifAccess" style="@style/AppButtonWide" android:text="নোটিফিকেশন Access দাও (সব অ্যাপের নোটিফিকেশনের জন্য)" />
+        <Button android:id="@+id/btnPermissions" style="@style/AppButtonWide" android:text="SMS / কল / লোকেশন Permission দাও" />
+        <Button android:id="@+id/btnBatteryOpt" style="@style/AppButtonWide" android:text="Battery Optimization বন্ধ করো (না হলে অ্যাপ মরে যাবে)" />
+
+        <!-- Sender features -->
+        <TextView style="@style/SectionTitle" android:text="📤 Sender ফিচার" />
+        <Switch android:id="@+id/swSms" style="@style/AppSwitch" android:text="SMS ফরোয়ার্ড" />
+        <Switch android:id="@+id/swNotif" style="@style/AppSwitch" android:text="সব অ্যাপের নোটিফিকেশন ফরোয়ার্ড" />
+        <Switch android:id="@+id/swCalls" style="@style/AppSwitch" android:text="কল — ইনকামিং / মিসড / শেষ (সময়সহ)" />
+        <Switch android:id="@+id/swBattery" style="@style/AppSwitch" android:text="ব্যাটারি — কম / চার্জিং / ফুল" />
+        <Switch android:id="@+id/swApps" style="@style/AppSwitch" android:text="অ্যাপ ইনস্টল / আনইনস্টল" />
+        <Switch android:id="@+id/swSystem" style="@style/AppSwitch" android:text="ফোন চালু হওয়ার খবর" />
+        <Switch android:id="@+id/swLocCmd" style="@style/AppSwitch" android:text="রিমোট কমান্ডে লোকেশন পাঠাতে দাও" />
+        <Switch android:id="@+id/swRingCmd" style="@style/AppSwitch" android:text="রিমোট কমান্ডে রিং বাজাতে দাও" />
+
+        <TextView style="@style/SectionTitle" android:text="🚫 ফিল্টার" />
+        <EditText
+            android:id="@+id/etExcluded"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="যেসব অ্যাপ বাদ যাবে — প্যাকেজ নাম, কমা দিয়ে (যেমন com.facebook.katana)"
+            android:textColor="#F8FAFC"
+            android:textColorHint="#64748B"
+            android:textSize="12sp" />
+        <EditText
+            android:id="@+id/etBlocked"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="ব্লক করা শব্দ — এ শব্দ থাকলে ফরোয়ার্ড হবে না, কমা দিয়ে"
+            android:textColor="#F8FAFC"
+            android:textColorHint="#64748B"
+            android:textSize="12sp" />
+        <Button android:id="@+id/btnSaveFilters" style="@style/AppButtonWide" android:text="ফিল্টার সেভ করো" />
+        <Button android:id="@+id/btnTest" style="@style/AppButtonWide" android:text="🧪 টেস্ট মেসেজ পাঠাও" />
+        <TextView
+            android:id="@+id/tvQueue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#94A3B8"
+            android:textSize="12sp" />
+
+        <!-- Receiver -->
+        <TextView style="@style/SectionTitle" android:text="📥 Receiver — রিমোট কমান্ড" />
+        <TextView
+            android:id="@+id/tvSenderSeen"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sender ফোনের খবর এখনো পাওয়া যায়নি"
+            android:textColor="#CBD5E1"
+            android:textSize="13sp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/btnCmdPing" style="@style/AppButton" android:text="🏓 অনলাইন?" />
+            <Button android:id="@+id/btnCmdBattery" style="@style/AppButton" android:text="🔋 ব্যাটারি" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/btnCmdLocation" style="@style/AppButton" android:text="📍 লোকেশন" />
+            <Button android:id="@+id/btnCmdRing" style="@style/AppButton" android:text="🔔 রিং বাজাও" />
+            <Button android:id="@+id/btnCmdStopRing" style="@style/AppButton" android:text="🔕 রিং বন্ধ" />
+        </LinearLayout>
+
+        <TextView style="@style/SectionTitle" android:text="🗂️ ইনবক্স (ট্যাপ করলে কপি হবে)" />
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="ইনবক্সে খুঁজো…"
+            android:textColor="#F8FAFC"
+            android:textColorHint="#64748B" />
+        <ListView
+            android:id="@+id/lvInbox"
+            android:layout_width="match_parent"
+            android:layout_height="520dp"
+            android:divider="#334155"
+            android:dividerHeight="1dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button android:id="@+id/btnRefreshInbox" style="@style/AppButton" android:text="↻ রিফ্রেশ" />
+            <Button android:id="@+id/btnClearInbox" style="@style/AppButton" android:text="🗑️ ইনবক্স মুছো" />
+        </LinearLayout>
+
+        <!-- Server -->
+        <TextView style="@style/SectionTitle" android:text="⚙️ রিলে সার্ভার" />
+        <EditText
+            android:id="@+id/etServer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="https://ntfy.sh"
+            android:textColor="#F8FAFC"
+            android:textColorHint="#64748B" />
+        <Button android:id="@+id/btnSaveServer" style="@style/AppButtonWide" android:text="সার্ভার সেভ করো" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="24dp"
+            android:text="PhoneLink v1.0 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।"
+            android:textColor="#64748B"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+</ScrollView>

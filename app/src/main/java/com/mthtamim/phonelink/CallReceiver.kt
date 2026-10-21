@@ -1,0 +1,71 @@
+package com.mthtamim.phonelink
+
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.telephony.TelephonyManager
+
+/**
+ * Tracks call state transitions and forwards:
+ * incoming ringing, answered, missed, ended (with duration), outgoing.
+ */
+class CallReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val ctx = context.applicationContext
+        if (!Config.isSender(ctx) || !Config.fwdCalls(ctx)) return
+
+        when (intent.action) {
+            Intent.ACTION_NEW_OUTGOING_CALL -> {
+                val number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER)
+                outgoingNumber = number
+                Relay.send(ctx, Relay.TYPE_CALL, "আউটগোয়িং কল",
+                    Contacts.labelForNumber(ctx, number))
+            }
+            TelephonyManager.ACTION_PHONE_STATE_CHANGED -> {
+                val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
+                @Suppress("DEPRECATION")
+                val number = intent.getStringExtra(TelephonyManager.EXTRA_INCOMING_NUMBER)
+                when (state) {
+                    TelephonyManager.EXTRA_STATE_RINGING -> {
+                        if (lastState != state) {
+                            incomingNumber = number ?: incomingNumber
+                            callStart = System.currentTimeMillis()
+                            answered = false
+                            Relay.send(ctx, Relay.TYPE_CALL, "ইনকামিং কল বাজছে",
+                                Contacts.labelForNumber(ctx, incomingNumber))
+                        }
+                    }
+                    TelephonyManager.EXTRA_STATE_OFFHOOK -> {
+                        if (lastState == TelephonyManager.EXTRA_STATE_RINGING) {
+                            answered = true
+                            callStart = System.currentTimeMillis()
+                        }
+                    }
+                    TelephonyManager.EXTRA_STATE_IDLE -> {
+                        if (lastState == TelephonyManager.EXTRA_STATE_RINGING && !answered) {
+                            Relay.send(ctx, Relay.TYPE_CALL, "মিসড কল",
+                                Contacts.labelForNumber(ctx, incomingNumber))
+                        } else if (lastState == TelephonyManager.EXTRA_STATE_OFFHOOK) {
+                            val secs = ((System.currentTimeMillis() - callStart) / 1000).coerceAtLeast(0)
+                            val who = incomingNumber ?: outgoingNumber
+                            Relay.send(ctx, Relay.TYPE_CALL, "কল শেষ",
+                                "${Contacts.labelForNumber(ctx, who)} — সময়: ${secs / 60} মিনিট ${secs % 60} সেকেন্ড")
+                        }
+                        incomingNumber = null
+                        outgoingNumber = null
+                        answered = false
+                    }
+                }
+                lastState = state
+            }
+        }
+    }
+
+    companion object {
+        private var lastState: String? = null
+        private var incomingNumber: String? = null
+        private var outgoingNumber: String? = null
+        private var callStart: Long = 0L
+        private var answered: Boolean = false
+    }
+}

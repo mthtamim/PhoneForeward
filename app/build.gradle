@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.mthtamim.phonelink'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.mthtamim.phonelink"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+dependencies {
+    // No external dependencies — pure Android framework + Kotlin stdlib.
+    // This keeps the APK small and the build fully reproducible offline
+    // after the first plugin download.
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
+}
