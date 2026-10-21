@@ -122,8 +122,16 @@ object Relay {
     /** Stream connections call this on a successful connect. */
     fun markRelayOk(ctx: Context) { markOk(ctx, baseUrl(ctx)) }
 
-    /** Returns true when the relay accepted the message. */
+    /** Returns true when the message was delivered (LAN or relay). */
     fun post(ctx: Context, topic: String, payload: JSONObject): Boolean {
+        // v2.4 fallback chain: LAN first (same Wi-Fi), then the primary
+        // relay, then the backup relay. The Telegram mirror runs on any
+        // successful route, exactly once.
+        if (Lan.trySend(ctx, topic, payload)) {
+            markRelayOk(ctx)
+            mirrorTelegram(ctx, topic, payload)
+            return true
+        }
         val primary = baseUrl(ctx)
         if (postTo(ctx, primary, topic, payload)) {
             markOk(ctx, primary)

@@ -45,6 +45,8 @@ class NotifListener : NotificationListenerService() {
         if (title.isEmpty() && text.isEmpty()) return
 
         val full = "$title $text"
+        Automation.onEvent(ctx, "notif_received", JSONObject()
+            .put("title", title).put("body", text).put("app", Contacts.appLabel(ctx, pkg)))
         if (Config.containsBlockedWord(ctx, full)) return
 
         // De-duplicate identical notifications arriving within 5 seconds
@@ -63,7 +65,14 @@ class NotifListener : NotificationListenerService() {
 
         // Keyword alerts punch through every app rule: OFF, allowlist
         // and digest are all skipped for a message with an alert word.
-        val alertHit = Config.containsAlertWord(ctx, full)
+        // v2.4 smart importance: money/OTP notifications are treated the
+        // same way when the auto-priority toggle is on.
+        val bankHit = Config.autoPriorityOn(ctx) &&
+            listOf("বিকাশ", "নগদ", "bkash", "nagad", "রকেট", "উপায়").any {
+                full.lowercase().contains(it)
+            }
+        val alertHit = Config.containsAlertWord(ctx, full) || bankHit ||
+            (Config.autoPriorityOn(ctx) && Otp.find(full).isNotEmpty())
 
         // Smart Control per-app rule.
         val appRule = AppRules.rule(ctx, pkg)

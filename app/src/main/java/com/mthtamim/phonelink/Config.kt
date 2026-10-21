@@ -436,6 +436,62 @@ object Config {
     fun wizardShown(ctx: Context): Boolean = prefs(ctx).getBoolean("perm_wizard_shown", false)
     fun setWizardShown(ctx: Context) { prefs(ctx).edit().putBoolean("perm_wizard_shown", true).apply() }
 
+    // ---------- v2.4: group roles & per-peer rules ----------
+    /** Device ids allowed to run commands here; empty = everyone (legacy). */
+    fun commanders(ctx: Context): Set<String> =
+        prefs(ctx).getStringSet("role_commanders", emptySet()) ?: emptySet()
+
+    fun setCommanders(ctx: Context, ids: Set<String>) {
+        prefs(ctx).edit().putStringSet("role_commanders", ids).apply()
+    }
+
+    fun commandsAllowedFrom(ctx: Context, dev: String): Boolean {
+        val set = commanders(ctx)
+        return set.isEmpty() || dev.isEmpty() || dev in set
+    }
+
+    /** Receiver-side per-peer alert mode: "mute" / "digest" / "" (normal). */
+    fun peerMode(ctx: Context, dev: String): String =
+        prefs(ctx).getString("peer_mode_$dev", "") ?: ""
+
+    fun setPeerMode(ctx: Context, dev: String, mode: String) {
+        prefs(ctx).edit().putString("peer_mode_$dev", mode).apply()
+    }
+
+    // ---------- v2.4: lost mode ----------
+    fun lostOn(ctx: Context) = prefs(ctx).getBoolean("lost_on", false)
+    fun setLostOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("lost_on", v).apply() }
+    fun lostContact(ctx: Context): String = prefs(ctx).getString("lost_contact", "") ?: ""
+    fun setLostContact(ctx: Context, t: String) { prefs(ctx).edit().putString("lost_contact", t).apply() }
+    fun lostDarkScreen(ctx: Context) = prefs(ctx).getBoolean("lost_dark", false)
+    fun setLostDarkScreen(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("lost_dark", v).apply() }
+
+    // ---------- v2.4: simple mode & check-in ----------
+    fun simpleMode(ctx: Context) = prefs(ctx).getBoolean("simple_mode", false)
+    fun setSimpleMode(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("simple_mode", v).apply() }
+
+    /** Expected daily check-in time (minutes of day); -1 = off. */
+    fun checkinExpectMin(ctx: Context) = prefs(ctx).getInt("checkin_expect", -1)
+    fun setCheckinExpectMin(ctx: Context, m: Int) { prefs(ctx).edit().putInt("checkin_expect", m).apply() }
+    fun lastCheckinDay(ctx: Context): String = prefs(ctx).getString("checkin_day", "") ?: ""
+    fun setLastCheckinDay(ctx: Context, d: String) { prefs(ctx).edit().putString("checkin_day", d).apply() }
+
+    // ---------- v2.4: LAN direct mode ----------
+    fun lanOn(ctx: Context) = prefs(ctx).getBoolean("lan_on", true)
+    fun setLanOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("lan_on", v).apply() }
+
+    // ---------- v2.4: clipboard auto-sync ----------
+    fun clipSyncOn(ctx: Context) = prefs(ctx).getBoolean("clip_sync", false)
+    fun setClipSyncOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("clip_sync", v).apply() }
+
+    // ---------- v2.4: smart importance ----------
+    fun autoPriorityOn(ctx: Context) = prefs(ctx).getBoolean("auto_priority", true)
+    fun setAutoPriorityOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("auto_priority", v).apply() }
+
+    // ---------- v2.4: automation ----------
+    fun automationOn(ctx: Context) = prefs(ctx).getBoolean("automation_on", true)
+    fun setAutomationOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("automation_on", v).apply() }
+
     private fun generateCode(): String {
         val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // no confusing I/O/0/1
         return (1..10).map { alphabet[Random.nextInt(alphabet.length)] }.joinToString("")

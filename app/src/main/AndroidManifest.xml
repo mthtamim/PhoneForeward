@@ -27,6 +27,10 @@
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -42,6 +46,48 @@
         <activity
             android:name=".PermissionsActivity"
             android:exported="false" />
+
+        <!-- v2.4 screens -->
+        <activity
+            android:name=".AutomationActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".RuleEditorActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ChartsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SimpleActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".DarkActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+
+        <!-- v2.4 consent-based screen sharing -->
+        <service
+            android:name=".ScreenShareService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <!-- v2.4 optional accessibility helper (owner-enabled) -->
+        <service
+            android:name=".A11yService"
+            android:exported="true"
+            android:label="PhoneLink"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/a11y_config" />
+        </service>
 
         <activity
             android:name=".AppsActivity"
@@ -112,7 +158,8 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

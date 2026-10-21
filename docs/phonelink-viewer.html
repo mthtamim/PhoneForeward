@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhoneLink — ডেস্কটপ ভিউয়ার</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: system-ui, "Noto Sans Bengali", sans-serif; margin: 0; background: #f4f1fa; color: #1c1b1f; }
+  @media (prefers-color-scheme: dark) { body { background: #141218; color: #e6e1e5; } }
+  header { padding: 20px 16px 8px; max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 16px; opacity: .75; font-size: 14px; line-height: 1.5; }
+  .card { background: rgba(127,127,180,.10); border: 1px solid rgba(127,127,180,.25); border-radius: 16px; padding: 16px; }
+  label { display: block; font-size: 13px; margin: 10px 0 4px; opacity: .85; }
+  input { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(127,127,180,.4); background: transparent; color: inherit; font-size: 15px; }
+  button { margin-top: 14px; padding: 11px 22px; border: 0; border-radius: 999px; background: #6750a4; color: #fff; font-size: 15px; cursor: pointer; }
+  button.stop { background: #b3261e; }
+  #status { margin-top: 10px; font-size: 13px; opacity: .85; }
+  main { max-width: 760px; margin: 0 auto; padding: 8px 16px 40px; }
+  .msg { border: 1px solid rgba(127,127,180,.25); border-radius: 14px; padding: 12px 14px; margin-top: 10px; background: rgba(127,127,180,.06); }
+  .msg .meta { font-size: 12px; opacity: .7; display: flex; gap: 8px; flex-wrap: wrap; }
+  .msg .title { font-weight: 600; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+  .msg .body { margin-top: 2px; white-space: pre-wrap; word-break: break-word; font-size: 14px; }
+  .empty { opacity: .6; text-align: center; margin-top: 32px; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📱 PhoneLink — ডেস্কটপ ভিউয়ার</h1>
+  <p class="sub">দুই ফোনের মধ্যে যা যা পাঠানো হচ্ছে, তা কম্পিউটারের ব্রাউজার থেকেই দেখো।
+  পেয়ার কোড শুধু তোমার ব্রাউজারেই থাকে — কোথাও পাঠানো হয় না। মেসেজ end-to-end encrypted;
+  ডিক্রিপ্টও এই পেজেই হয়। এই ভিউয়ার শুধু দেখার জন্য — কিছু পাঠানো যায় না।</p>
+  <div class="card">
+    <label for="code">পেয়ার কোড (Pair Code)</label>
+    <input id="code" autocomplete="off" placeholder="যেমন: ABCD-EFGH">
+    <label for="server">রিলে সার্ভার</label>
+    <input id="server" value="https://ntfy.sh">
+    <button id="btn">▶ যুক্ত হও</button>
+    <div id="status">সংযোগ বন্ধ আছে।</div>
+  </div>
+</header>
+<main id="list"><div class="empty">মেসেজ এলে এখানে দেখা যাবে…</div></main>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+let es = null, key = null;
+
+async function sha256(bytes) {
+  return new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+}
+function hex(bytes) {
+  return [...bytes].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function derive(code) {
+  const enc = new TextEncoder();
+  const topicHash = await sha256(enc.encode("phonelink-v1-d-" + code));
+  const topic = "pld" + hex(topicHash).slice(0, 28);
+  const keyBytes = await sha256(enc.encode("phonelink-enc-v1-" + code));
+  const aesKey = await crypto.subtle.importKey("raw", keyBytes,
+    { name: "AES-GCM" }, false, ["decrypt"]);
+  return { topic, aesKey };
+}
+
+async function decryptPayload(text) {
+  let obj;
+  try { obj = JSON.parse(text); } catch { return { type: "TEXT", title: text, body: "" }; }
+  if (obj && obj.enc === 1 && obj.data) {
+    const raw = b64ToBytes(obj.data);
+    const iv = raw.slice(0, 12);
+    const ct = raw.slice(12);
+    const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+  return obj;
+}
+
+const icons = { SMS: "✉️", NOTIF: "🔔", CALL: "📞", BATTERY: "🔋", SYSTEM: "⚙️",
+  INFO: "ℹ️", CLIP: "📋", FILE: "📁", URGENT: "🚨", COMMAND: "🎛️" };
+
+function addMessage(p) {
+  const empty = document.querySelector(".empty");
+  if (empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = "msg";
+  const when = p.time ? new Date(p.time).toLocaleString() : "";
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.textContent = (icons[p.type] || "💬") + " " + (p.type || "") +
+    (p.from ? " • " + p.from : "") + (when ? " • " + when : "");
+  const title = document.createElement("div");
+  title.className = "title";
+  title.textContent = p.title || "";
+  const body = document.createElement("div");
+  body.className = "body";
+  body.textContent = p.body || p.command || "";
+  div.append(meta, title, body);
+  const list = $("list");
+  list.prepend(div);
+  while (list.children.length > 300) list.lastChild.remove();
+}
+
+$("btn").addEventListener("click", async () => {
+  if (es) { es.close(); es = null; $("btn").textContent = "▶ যুক্ত হও";
+    $("btn").classList.remove("stop"); $("status").textContent = "সংযোগ বন্ধ আছে।"; return; }
+  const code = $("code").value.trim().toUpperCase();
+  if (!code) { $("status").textContent = "আগে পেয়ার কোড দাও।"; return; }
+  const server = $("server").value.trim().replace(/\/+$/, "") || "https://ntfy.sh";
+  $("status").textContent = "চাবি তৈরি হচ্ছে…";
+  const derived = await derive(code);
+  key = derived.aesKey;
+  const url = server + "/" + derived.topic + "/sse";
+  es = new EventSource(url);
+  es.onopen = () => { $("status").textContent = "✅ যুক্ত — নতুন মেসেজের অপেক্ষায়…";
+    $("btn").textContent = "⏹ সংযোগ বন্ধ করো"; $("btn").classList.add("stop"); };
+  es.onerror = () => { $("status").textContent = "⚠️ সংযোগে সমস্যা — আবার চেষ্টা হচ্ছে…"; };
+  es.onmessage = async ev => {
+    try {
+      const env = JSON.parse(ev.data);
+      if (env.event !== "message" || !env.message) return;
+      const payload = await decryptPayload(env.message);
+      if (payload && payload.type !== "ACK") addMessage(payload);
+    } catch (e) { /* not ours / undecryptable: skip */ }
+  };
+});
+</script>
+</body>
+</html>

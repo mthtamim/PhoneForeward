@@ -40,6 +40,8 @@ class SmsReceiver : BroadcastReceiver() {
         } else {
             Relay.send(ctx, Relay.TYPE_SMS, "${star}SMS — $who", body, extra)
         }
+        Automation.onEvent(ctx, "sms_received", JSONObject()
+            .put("title", who).put("body", body).put("from", sender))
     }
 
     /**

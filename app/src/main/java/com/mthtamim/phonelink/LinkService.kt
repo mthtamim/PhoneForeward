@@ -62,6 +62,9 @@ class LinkService : Service() {
         registerEventSources()
         registerMediaObserver()
         registerGuardSensor()
+        Automation.refreshWatchers(applicationContext)
+        instance = this
+        Lan.startServer(applicationContext)
     }
 
     // ------------- guard mode (movement alarm) -------------
@@ -121,6 +124,10 @@ class LinkService : Service() {
                 cmdThread = thread(name = "pl-cmd") { listenLoop(cmd = true) }
                 heartbeatThread = thread(name = "pl-heartbeat") { heartbeatLoop() }
             }
+            if (Config.lostOn(applicationContext) && !lostRunning) {
+                lostRunning = true
+                thread(name = "pl-lost") { lostLoop() }
+            }
             thread(name = "pl-flush") {
                 try { Relay.flushQueue(applicationContext) } catch (_: Exception) { }
             }
@@ -130,6 +137,8 @@ class LinkService : Service() {
 
     override fun onDestroy() {
         running = false
+        instance = null
+        Lan.stopServer()
         dataThread?.interrupt(); cmdThread?.interrupt(); heartbeatThread?.interrupt()
         unregisterEventSources()
         try {
@@ -212,6 +221,18 @@ class LinkService : Service() {
             val pr = object : BroadcastReceiver() {
                 override fun onReceive(c: Context?, i: Intent?) {
                     val ctx = applicationContext
+                    when (i?.action) {
+                        Intent.ACTION_USER_PRESENT -> {
+                            Automation.onEvent(ctx, "screen_on", JSONObject())
+                            getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+                                .edit().remove("screen_off_since").apply()
+                        }
+                        Intent.ACTION_SCREEN_OFF -> {
+                            Automation.onEvent(ctx, "screen_off", JSONObject())
+                            getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+                                .edit().putLong("screen_off_since", System.currentTimeMillis()).apply()
+                        }
+                    }
                     if (!Config.isSender(ctx) || !Config.fwdPresence(ctx)) return
                     when (i?.action) {
                         Intent.ACTION_USER_PRESENT ->
@@ -241,6 +262,61 @@ class LinkService : Service() {
             contentResolver.registerContentObserver(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, observer)
             mediaObserver = observer
+            val videoObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean, uri: Uri?) {
+                    thread { checkNewVideo() }
+                }
+            }
+            contentResolver.registerContentObserver(
+                MediaStore.Video.Media.EXTERNAL_CONTENT_URI, true, videoObserver)
+        } catch (_: Exception) { }
+    }
+
+    /** v2.4: new videos are auto-backed-up too (chunks when large). */
+    private fun checkNewVideo() {
+        val ctx = applicationContext
+        if (!Config.isSender(ctx) || !Config.fwdMedia(ctx)) return
+        try {
+            val collection = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            val cursor = contentResolver.query(collection,
+                arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.Media.DISPLAY_NAME,
+                    MediaStore.Video.Media.DATE_ADDED),
+                null, null, "${MediaStore.Video.Media.DATE_ADDED} DESC") ?: return
+            cursor.use { c ->
+                if (!c.moveToFirst()) return
+                val id = c.getLong(0)
+                val name = c.getString(1) ?: "video.mp4"
+                val addedSec = c.getLong(2)
+                val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+                val lastId = prefs.getLong("last_video_id", -1L)
+                if (lastId == -1L) {
+                    prefs.edit().putLong("last_video_id", id).apply()
+                    return
+                }
+                if (id == lastId) return
+                prefs.edit().putLong("last_video_id", id).apply()
+                if (System.currentTimeMillis() / 1000 - addedSec > 300) return
+                val itemUri = ContentUris.withAppendedId(collection, id)
+                val bytes = contentResolver.openInputStream(itemUri)?.use { input ->
+                    val buf = java.io.ByteArrayOutputStream()
+                    val chunk = ByteArray(64 * 1024)
+                    var total = 0
+                    var overflow = false
+                    while (true) {
+                        val n = input.read(chunk)
+                        if (n < 0) break
+                        total += n
+                        if (total > 60 * 1024 * 1024) { overflow = true; break }
+                        buf.write(chunk, 0, n)
+                    }
+                    if (overflow) null else buf.toByteArray()
+                } ?: return
+                if (bytes.size > 4_500_000) {
+                    Chunks.sendLarge(ctx, name, bytes)
+                } else {
+                    Relay.postFile(ctx, name, bytes, "video/mp4")
+                }
+            }
         } catch (_: Exception) { }
     }
 
@@ -448,7 +524,7 @@ class LinkService : Service() {
         } catch (_: Exception) { }
     }
 
-    private fun handleLine(line: String, cmd: Boolean) {
+    fun handleLine(line: String, cmd: Boolean) {
         try {
             val outer = JSONObject(line)
             if (outer.optString("event") != "message") return
@@ -479,6 +555,11 @@ class LinkService : Service() {
                     size < 1024 -> "$size B"
                     size < 1024 * 1024 -> "${size / 1024} KB"
                     else -> String.format("%.1f MB", size / 1048576.0)
+                }
+                val chunkRef = Chunks.parse(name)
+                if (chunkRef != null && !cmd) {
+                    Chunks.onChunkArrived(applicationContext, chunkRef, urlStr)
+                    return
                 }
                 val filePayload = JSONObject().apply {
                     put("type", Relay.TYPE_FILE)
@@ -539,10 +620,16 @@ class LinkService : Service() {
         val type = payload.optString("type", "INFO")
         val from = payload.optString("from", "")
         if (from.isNotEmpty()) {
+            val prevSeen = Config.lastSenderSeen(ctx)
             Config.setLastSenderSeen(ctx, System.currentTimeMillis())
             Config.setLastSenderName(ctx, from)
+            if (prevSeen > 0 && System.currentTimeMillis() - prevSeen > 10 * 60_000L) {
+                Automation.onEvent(ctx, "peer_online",
+                    JSONObject().put("title", from))
+            }
             Peers.touch(ctx, from, payload.optInt("battery", -1),
-                payload.optString("cfg", ""), payload.optString("status", ""))
+                payload.optString("cfg", ""), payload.optString("status", ""),
+                payload.optString("dev", ""))
         }
         if (type == Relay.TYPE_HEARTBEAT) {
             val battery = payload.optInt("battery", -1)
@@ -579,10 +666,20 @@ class LinkService : Service() {
         )
         History.add(ctx, item)
         Stats.incRecv(ctx, type)
-        showInboxNotification(item, priority)
+        // v2.4 per-peer rules on this receiver: mute = store silently,
+        // digest = hold notifications from this peer for the bundle.
+        val peerMode = Config.peerMode(ctx, payload.optString("dev", ""))
+        if (peerMode == "digest" && type == Relay.TYPE_NOTIF) {
+            DigestStore.add(ctx, from, item.title, item.body)
+            if (item.id.isNotEmpty()) Relay.sendAck(ctx, item.id, item.title)
+            sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
+            return
+        }
+        val peerMuted = peerMode == "mute"
+        if (!peerMuted) showInboxNotification(item, priority)
         // Siren messages demand attention: full screen + loud ringing
         // until the page is opened (opening it stops the ring).
-        if (type == Relay.TYPE_URGENT) {
+        if (type == Relay.TYPE_URGENT && !peerMuted) {
             showScreenMessage(item.title + "\n" + item.body)
             RingHelper.start(ctx, maxAll = true)
         }
@@ -596,9 +693,19 @@ class LinkService : Service() {
             item.extra.startsWith("http")) {
             downloadToDevice(item.extra, item.title.removePrefix("📁 "))
         }
+        // v2.4 clipboard auto-sync: apply a received clip right away
+        // (Android may block background clipboard writes; then the
+        // inbox item remains as the manual path).
+        if (type == Relay.TYPE_CLIP && Config.clipSyncOn(ctx) && item.body.isNotEmpty()) {
+            try {
+                startActivity(Intent(this, CopyActivity::class.java)
+                    .putExtra("text", item.body)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (_: Exception) { }
+        }
         // A ringing call gets a full-screen alert with quick SMS replies,
         // and (when enabled) the caller's name is spoken aloud.
-        if (ringing && type == Relay.TYPE_CALL && extraStr.startsWith("tel:")) {
+        if (ringing && type == Relay.TYPE_CALL && extraStr.startsWith("tel:") && !peerMuted) {
             showCallAlert(item, extraStr.removePrefix("tel:"))
             if (Config.ttsCalls(ctx) && !Config.isQuietNow(ctx)) {
                 val lc = localized(ctx)
@@ -898,6 +1005,13 @@ class LinkService : Service() {
             return
         }
         if (payload.optString("type") != "COMMAND") return
+        // v2.4 group roles: when a commander list exists, only those
+        // devices may run actual commands here (viewers only receive).
+        if (!Config.commandsAllowedFrom(ctx, dev)) {
+            Relay.send(ctx, Relay.TYPE_INFO, "⛔ কমান্ডের অনুমতি নেই",
+                "এই ফোনে তোমার ডিভাইস কমান্ড চালানোর তালিকায় নেই (শুধু দেখার ভূমিকা)।")
+            return
+        }
         // (Our own commands were already filtered by device id above.)
         when (payload.optString("command")) {
             "LOCATION" -> if (Config.allowLocation(ctx)) LocationHelper.fetchAndSend(ctx)
@@ -976,6 +1090,11 @@ class LinkService : Service() {
                     if (ok) text.take(80)
                     else "নোটিফিকেশনটা আর সক্রিয় নেই, বা ওই অ্যাপে রিপ্লাই সুবিধা নেই।")
             }
+            "CHUNK_NEED" -> {
+                val missing = payload.optJSONArray("missing")
+                if (missing != null) Chunks.resend(ctx, payload.optString("arg", ""), missing)
+            }
+            "CHUNK_DONE" -> Chunks.forgetSent(ctx, payload.optString("arg", ""))
             "STATUS" -> thread {
                 val upMin = (System.currentTimeMillis() - startedAt) / 60000
                 val body = PhoneInfo.text(ctx) +
@@ -1059,6 +1178,16 @@ class LinkService : Service() {
                 }
             }
             "OPEN" -> openLinkNotification(payload.optString("url", ""))
+            "LOST_ON" -> if (pinOk(payload)) setLostMode(ctx, true)
+            "LOST_OFF" -> if (pinOk(payload)) setLostMode(ctx, false)
+            "SCREENSHOT" -> {
+                if (!pinOk(payload)) {
+                    // pinOk already replied
+                } else if (!ScreenShareService.capture(applicationContext)) {
+                    Relay.send(ctx, Relay.TYPE_INFO, "স্ক্রিন সেশন চালু নেই",
+                        "স্ক্রিনশটের জন্য ওই ফোনে PhoneLink খুলে 'স্ক্রিন শেয়ার সেশন' একবার চালু করতে হবে (Android-এর সম্মতি লাগে)।")
+                }
+            }
             "DELETE_MSG" -> {
                 val id = payload.optString("msgId", "")
                 if (id.isNotEmpty()) {
@@ -1300,7 +1429,7 @@ class LinkService : Service() {
                 val extra = JSONObject()
                     .put("battery", SystemReceiver.batteryPercent(hctx))
                     .put("cfg", cfg)
-                    .put("status", Config.myStatus(hctx))
+                    .put("status", Config.myStatus(hctx).ifEmpty { autoSleepStatus(hctx) })
                 Relay.send(hctx, Relay.TYPE_HEARTBEAT, "heartbeat", "", extra)
                 Relay.flushQueue(applicationContext)
                 checkSimChanged()
@@ -1315,6 +1444,11 @@ class LinkService : Service() {
                 checkChargeFull()
                 checkDataUsage()
                 checkWeeklyReport()
+                checkCheckin()
+                Automation.tick(hctx)
+                Chunks.requestMissing(hctx)
+                Chunks.cleanupSent(hctx)
+                if (Lan.peerIp(hctx).isEmpty()) Lan.discoverAsync(hctx)
             } catch (_: Exception) { }
             // Battery-friendly: the poorer the battery, the rarer the beat.
             val pct = SystemReceiver.batteryPercent(applicationContext)
@@ -1325,6 +1459,99 @@ class LinkService : Service() {
             }
             try { Thread.sleep(sleepMin * 60 * 1000L) } catch (_: InterruptedException) { break }
         }
+    }
+
+    // ------------- v2.4 lost mode -------------
+
+    @Volatile private var lostRunning = false
+    private var lostFrontNext = true
+    private var lostDarkShown = false
+
+    private fun lostLoop() {
+        val ctx = applicationContext
+        while (running && Config.lostOn(ctx)) {
+            try {
+                LocationHelper.fetchAndSend(ctx)
+                // Alternate front/back photos (camera permission needed;
+                // lost mode itself is the owner's consent).
+                if (ctx.checkSelfPermission(android.Manifest.permission.CAMERA) ==
+                    PackageManager.PERMISSION_GRANTED) {
+                    SessionState.snapFront = lostFrontNext
+                    lostFrontNext = !lostFrontNext
+                    try {
+                        androidx.core.content.ContextCompat.startForegroundService(
+                            ctx, Intent(ctx, SnapService::class.java))
+                    } catch (_: Exception) { }
+                }
+                recordAmbient(ctx)
+                if (Config.lostDarkScreen(ctx) && !lostDarkShown) {
+                    lostDarkShown = true
+                    startActivity(Intent(ctx, DarkActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
+                // Dying battery: one last immediate location burst.
+                if (SystemReceiver.batteryPercent(ctx) in 1..5) {
+                    LocationHelper.fetchAndSend(ctx)
+                }
+            } catch (_: Exception) { }
+            try { Thread.sleep(3 * 60_000L) } catch (_: InterruptedException) { break }
+        }
+        lostRunning = false
+        lostDarkShown = false
+    }
+
+    /** Records ~25 s of ambient audio and sends it as a file. */
+    private fun recordAmbient(ctx: Context) {
+        if (ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED) return
+        try {
+            val file = java.io.File(ctx.cacheDir, "lost-audio.m4a")
+            @Suppress("DEPRECATION")
+            val rec = android.media.MediaRecorder()
+            rec.setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+            rec.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+            rec.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+            rec.setOutputFile(file.absolutePath)
+            rec.prepare(); rec.start()
+            Thread.sleep(25_000)
+            try { rec.stop() } catch (_: Exception) { }
+            rec.release()
+            if (file.exists() && file.length() > 0) {
+                Relay.postFile(ctx, "lost-audio-${System.currentTimeMillis()}.m4a",
+                    file.readBytes(), "audio/mp4")
+            }
+        } catch (_: Exception) { }
+    }
+
+    /** Expected check-in watchdog: alert the peer when it never came. */
+    private fun checkCheckin() {
+        val ctx = applicationContext
+        val expect = Config.checkinExpectMin(ctx)
+        if (expect < 0) return
+        val cal = java.util.Calendar.getInstance()
+        val mins = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+            cal.get(java.util.Calendar.MINUTE)
+        if (mins < expect + 30) return
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
+        if (Config.lastCheckinDay(ctx) == today) return
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        if (prefs.getString("checkin_alert_day", "") == today) return
+        prefs.edit().putString("checkin_alert_day", today).apply()
+        Relay.send(ctx, Relay.TYPE_SYSTEM, "⚠️ আজকের চেক-ইন আসেনি",
+            "${Config.deviceName(ctx)} আজ প্রত্যাশিত সময়ে চেক-ইন করেনি।")
+    }
+
+    /** v2.4 inferred status: long screen-off at night reads as sleep. */
+    private fun autoSleepStatus(ctx: Context): String {
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        val offSince = prefs.getLong("screen_off_since", 0L)
+        if (offSince == 0L) return ""
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        val night = hour >= 22 || hour < 6
+        return if (night && System.currentTimeMillis() - offSince > 90 * 60_000L) {
+            "💤 সম্ভবত ঘুমিয়ে"
+        } else ""
     }
 
     /** Sends any scheduled messages that are due. */
@@ -1509,7 +1736,28 @@ class LinkService : Service() {
         val entries = DigestStore.drain(ctx)
         if (entries.isEmpty()) return
         prefs.edit().putLong("last_digest", System.currentTimeMillis()).apply()
-        val body = entries.take(25).joinToString("\n") {
+        // v2.4 smart digest: a one-line category summary on top.
+        val bankWords = listOf("বিকাশ", "নগদ", "ব্যাংক", "bkash", "nagad", "bank", "টাকা", "otp", "কোড")
+        val deliveryWords = listOf("ডেলিভারি", "কুরিয়ার", "delivery", "courier", "daraz", "parcel", "পাঠাও")
+        val socialWords = listOf("facebook", "messenger", "whatsapp", "instagram", "telegram", "imo")
+        var bank = 0; var delivery = 0; var social = 0
+        for (e in entries) {
+            val hay = (e.app + " " + e.title + " " + e.body).lowercase()
+            when {
+                bankWords.any { hay.contains(it) } -> bank++
+                deliveryWords.any { hay.contains(it) } -> delivery++
+                socialWords.any { hay.contains(it) } -> social++
+            }
+        }
+        val other = entries.size - bank - delivery - social
+        val summary = "সারসংক্ষেপ: " +
+            listOfNotNull(
+                if (bank > 0) "💰 $bank ব্যাংক/টাকা" else null,
+                if (delivery > 0) "📦 $delivery ডেলিভারি" else null,
+                if (social > 0) "💬 $social সামাজিক" else null,
+                if (other > 0) "🔔 $other অন্যান্য" else null
+            ).joinToString(" • ")
+        val body = summary + "\n\n" + entries.take(25).joinToString("\n") {
             "• ${it.app}: ${it.title} — ${it.body}".take(160)
         }
         Relay.send(ctx, Relay.TYPE_SYSTEM, "🗞️ নোটিফিকেশন সারাংশ (${entries.size})", body)
@@ -1531,9 +1779,11 @@ class LinkService : Service() {
                 if (prev == 1 && !inside) {
                     Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকা ছেড়েছে",
                         "${Config.deviceName(ctx)} নির্ধারিত এলাকার বাইরে (প্রায় ${res[0].toInt()} মিটার দূরে)।")
+                    Automation.onEvent(ctx, "geofence_out", JSONObject())
                 } else if (prev == 0 && inside) {
                     Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকায় ফিরেছে",
                         "${Config.deviceName(ctx)} আবার নির্ধারিত এলাকায়।")
+                    Automation.onEvent(ctx, "geofence_in", JSONObject())
                 }
             } catch (_: Exception) { }
         }, { })
@@ -1555,6 +1805,18 @@ class LinkService : Service() {
     }
 
     companion object {
+        /** The live service instance, used by the LAN transport. */
+        @Volatile var instance: LinkService? = null
+
+        /** v2.4 lost mode on/off (also used by automation actions). */
+        fun setLostMode(ctx: Context, on: Boolean) {
+            Config.setLostOn(ctx, on)
+            start(ctx)
+            Relay.send(ctx, Relay.TYPE_SYSTEM,
+                if (on) "🚨 হারানো মোড চালু হয়েছে" else "✅ হারানো মোড বন্ধ হয়েছে",
+                if (on) "লোকেশন, ছবি ও শব্দ পাঠানো শুরু হয়েছে।" else "")
+        }
+
         const val CHANNEL_SERVICE = "phonelink_service"
         const val CHANNEL_INBOX = "phonelink_inbox"
         const val CHANNEL_URGENT = "phonelink_urgent"

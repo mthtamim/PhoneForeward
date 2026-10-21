@@ -4,10 +4,27 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
+import org.json.JSONObject
 
 class SystemReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val ctx = context.applicationContext
+        // Automation events fire regardless of forwarding roles.
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED ->
+                Automation.onEvent(ctx, "boot", JSONObject())
+            Intent.ACTION_POWER_CONNECTED ->
+                Automation.onEvent(ctx, "charging_on", JSONObject())
+            Intent.ACTION_POWER_DISCONNECTED ->
+                Automation.onEvent(ctx, "charging_off", JSONObject())
+            "android.intent.action.HEADSET_PLUG" -> {
+                val state = intent.getIntExtra("state", 0)
+                Automation.onEvent(ctx, if (state == 1) "headphone_in" else "headphone_out",
+                    JSONObject())
+            }
+            "android.hardware.usb.action.USB_DEVICE_ATTACHED" ->
+                Automation.onEvent(ctx, "usb_connected", JSONObject())
+        }
         if (!Config.isSender(ctx)) return
 
         when (intent.action) {

@@ -10,7 +10,17 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- ===== Status card ===== -->
+        
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/sec_h_status"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+<!-- ===== Status card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -180,8 +190,7 @@
                     android:text="@string/btn_mode" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- ===== Pairing card ===== -->
+<!-- ===== Pairing card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -312,8 +321,16 @@
                     android:layout_marginTop="8dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/sec_h_remote"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-        <!-- ===== Role card ===== -->
+<!-- ===== Role card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -367,8 +384,7 @@
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- ===== Remote command card ===== -->
+<!-- ===== Remote command card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -641,10 +657,31 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_remote_panel" />
-            </LinearLayout>
+            
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnScreenshot"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_screenshot_cmd" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnScreenShare"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_screen_share" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLostMode"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_lost_mode" />
+                </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- ===== Remote info card ===== -->
+<!-- ===== Remote info card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -705,8 +742,16 @@
                     android:text="@string/cmd_note" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/sec_h_quick"
+            android:textSize="18sp"
+            android:textStyle="bold" />
 
-        <!-- ===== Quick send card ===== -->
+<!-- ===== Quick send card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -853,7 +898,15 @@
                     android:text="@string/btn_sos"
                     android:textColor="#FFFFFF"
                     app:backgroundTint="@color/status_bad" />
-            </LinearLayout>
+            
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckin"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_checkin" />
+                </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </ScrollView>

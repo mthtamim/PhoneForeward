@@ -20,9 +20,28 @@ object Stats {
         } catch (_: Exception) { }
     }
 
-    fun incSent(ctx: Context, type: String) { bump(ctx, "st_sent"); bumpType(ctx, "st_sent_types", type) }
-    fun incRecv(ctx: Context, type: String) { bump(ctx, "st_recv"); bumpType(ctx, "st_recv_types", type) }
+    fun incSent(ctx: Context, type: String) { bump(ctx, "st_sent"); bumpType(ctx, "st_sent_types", type); bumpDaily(ctx, "s") }
+    fun incRecv(ctx: Context, type: String) { bump(ctx, "st_recv"); bumpType(ctx, "st_recv_types", type); bumpDaily(ctx, "r") }
     fun incCmd(ctx: Context) { bump(ctx, "st_cmd") }
+
+    // v2.4 daily history for the charts screen: hist_<yyyy-MM-dd> = {s, r}.
+    private fun bumpDaily(ctx: Context, field: String) {
+        try {
+            val day = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                .format(java.util.Date())
+            val key = "hist_$day"
+            val o = JSONObject(prefs(ctx).getString(key, "{}"))
+            o.put(field, o.optInt(field, 0) + 1)
+            prefs(ctx).edit().putString(key, o.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    fun daily(ctx: Context, day: String): Pair<Int, Int> {
+        return try {
+            val o = JSONObject(prefs(ctx).getString("hist_$day", "{}"))
+            o.optInt("s", 0) to o.optInt("r", 0)
+        } catch (_: Exception) { 0 to 0 }
+    }
 
     fun sent(ctx: Context) = prefs(ctx).getLong("st_sent", 0L)
     fun recv(ctx: Context) = prefs(ctx).getLong("st_recv", 0L)

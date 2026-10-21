@@ -158,6 +158,86 @@ class MainActivity : LocalizedActivity() {
         }
     }
 
+    // ------------- v2.4 launchers -------------
+    private val cfgExportLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data
+        if (result.resultCode == RESULT_OK && uri != null) {
+            thread {
+                var ok = false
+                try {
+                    contentResolver.openOutputStream(uri)?.use {
+                        it.write(SettingsTransfer.export(applicationContext)
+                            .toByteArray(Charsets.UTF_8))
+                    }
+                    ok = true
+                } catch (_: Exception) { }
+                Handler(Looper.getMainLooper()).post {
+                    toast(getString(if (ok) R.string.toast_cfg_exported
+                        else R.string.toast_cfg_failed))
+                }
+            }
+        }
+    }
+
+    private val cfgImportLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            thread {
+                var ok = false
+                try {
+                    val text = contentResolver.openInputStream(uri)?.bufferedReader()
+                        ?.readText().orEmpty()
+                    ok = SettingsTransfer.import(applicationContext, text)
+                } catch (_: Exception) { }
+                Handler(Looper.getMainLooper()).post {
+                    toast(getString(if (ok) R.string.toast_cfg_imported
+                        else R.string.toast_cfg_failed))
+                    if (ok) recreate()
+                }
+            }
+        }
+    }
+
+    private val csvLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data
+        if (result.resultCode == RESULT_OK && uri != null) {
+            thread {
+                try {
+                    contentResolver.openOutputStream(uri)?.use {
+                        it.write(buildInboxCsv().toByteArray(Charsets.UTF_8))
+                    }
+                } catch (_: Exception) { }
+            }
+        }
+    }
+
+    private val pdfLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data
+        if (result.resultCode == RESULT_OK && uri != null) {
+            thread {
+                try {
+                    contentResolver.openOutputStream(uri)?.use { out ->
+                        buildInboxPdf().writeTo(out)
+                    }
+                } catch (_: Exception) { }
+            }
+        }
+    }
+
+    private val screenLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            val intent = Intent(this, ScreenShareService::class.java)
+                .putExtra("resultCode", result.resultCode)
+                .putExtra("data", result.data)
+            ContextCompat.startForegroundService(this, intent)
+            toast(getString(R.string.toast_screen_session))
+        }
+    }
+
     private var pendingBackupUri: Uri? = null
 
     private val backupLauncher = registerForActivityResult(
@@ -283,12 +363,16 @@ class MainActivity : LocalizedActivity() {
                         val n = input.read(chunk)
                         if (n < 0) break
                         total += n
-                        if (total > 5 * 1024 * 1024) throw IllegalStateException("too big")
+                        if (total > 60 * 1024 * 1024) throw IllegalStateException("too big")
                         buf.write(chunk, 0, n)
                     }
                     buf.toByteArray()
                 } ?: throw IllegalStateException("unreadable")
-                ok = Relay.postFile(applicationContext, name, bytes, mime)
+                ok = if (bytes.size > 4_500_000) {
+                    Chunks.sendLarge(applicationContext, name, bytes)
+                } else {
+                    Relay.postFile(applicationContext, name, bytes, mime)
+                }
             } catch (_: Exception) { ok = false }
             Handler(Looper.getMainLooper()).post {
                 toast(getString(if (ok) R.string.file_sent else R.string.file_failed))
@@ -314,6 +398,15 @@ class MainActivity : LocalizedActivity() {
         // App lock gate.
         if (Config.appLockOn(this) && !SessionState.unlocked) {
             startActivity(Intent(this, LockActivity::class.java))
+            finish()
+            return
+        }
+
+        // v2.4 simple mode: land on the big-button screen instead
+        // (long-press there comes back here with the bypass extra).
+        if (Config.simpleMode(this) &&
+            intent?.getBooleanExtra("simple_bypass", false) != true) {
+            startActivity(Intent(this, SimpleActivity::class.java))
             finish()
             return
         }
@@ -754,6 +847,7 @@ class MainActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnCmdSummary).setOnClickListener {
             Relay.sendCommand(this, "SUMMARY"); toast(getString(R.string.toast_cmd_summary))
         }
+        wireV24()
 
         // ----- v2.3 wiring -----
         findViewById<Button>(R.id.btnCmdLock).setOnClickListener {
@@ -905,6 +999,33 @@ class MainActivity : LocalizedActivity() {
         super.onResume()
         refreshStatus()
         refreshInbox()
+        // v2.4 NFC tag trigger (foreground dispatch).
+        try {
+            val adapter = android.nfc.NfcAdapter.getDefaultAdapter(this)
+            if (adapter != null && adapter.isEnabled) {
+                val pi = android.app.PendingIntent.getActivity(this, 0,
+                    Intent(this, javaClass).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    android.app.PendingIntent.FLAG_IMMUTABLE or
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT)
+                adapter.enableForegroundDispatch(this, pi, null, null)
+            }
+        } catch (_: Exception) { }
+        // v2.4 clipboard auto-sync: a new clip while the app is open
+        // is forwarded to the other phone right away.
+        if (Config.clipSyncOn(this)) {
+            try {
+                val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                val text = cm.primaryClip?.getItemAt(0)?.coerceToText(this)
+                    ?.toString().orEmpty()
+                val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+                if (text.isNotEmpty() &&
+                    text != prefs.getString("last_clip_sent", "")) {
+                    prefs.edit().putString("last_clip_sent", text).apply()
+                    Relay.send(this, Relay.TYPE_CLIP,
+                        getString(R.string.clip_title_auto), text)
+                }
+            } catch (_: Exception) { }
+        }
         if (pageInbox.visibility == View.VISIBLE) markInboxSeen()
         inboxReceiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, i: Intent?) { refreshInbox(); refreshStatus() }
@@ -920,8 +1041,295 @@ class MainActivity : LocalizedActivity() {
 
     override fun onPause() {
         super.onPause()
+        try {
+            android.nfc.NfcAdapter.getDefaultAdapter(this)
+                ?.disableForegroundDispatch(this)
+        } catch (_: Exception) { }
         inboxReceiver?.let { try { unregisterReceiver(it) } catch (_: Exception) {} }
         inboxReceiver = null
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        when (intent.action) {
+            android.nfc.NfcAdapter.ACTION_TAG_DISCOVERED,
+            android.nfc.NfcAdapter.ACTION_TECH_DISCOVERED,
+            android.nfc.NfcAdapter.ACTION_NDEF_DISCOVERED -> {
+                Automation.onEvent(this, "nfc_tag", org.json.JSONObject())
+                toast(getString(R.string.toast_nfc))
+            }
+        }
+    }
+
+    // ------------- v2.4 wiring -------------
+
+    private val settingsPanels = listOf(
+        R.id.panelGeneral, R.id.panelForward, R.id.panelSmart,
+        R.id.panelSecurity, R.id.panelRelay, R.id.panelData,
+        R.id.panelGroup, R.id.panelFamily
+    )
+
+    private fun showSettingsMenu() {
+        findViewById<View>(R.id.settingsMenu).visibility = View.VISIBLE
+        findViewById<View>(R.id.panelBar).visibility = View.GONE
+        for (id in settingsPanels) findViewById<View>(id).visibility = View.GONE
+    }
+
+    private fun showSettingsPanel(panelId: Int, titleRes: Int) {
+        findViewById<View>(R.id.settingsMenu).visibility = View.GONE
+        findViewById<View>(R.id.panelBar).visibility = View.VISIBLE
+        findViewById<TextView>(R.id.tvPanelTitle).setText(titleRes)
+        for (id in settingsPanels) {
+            findViewById<View>(id).visibility =
+                if (id == panelId) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun doCheckin() {
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
+        Config.setLastCheckinDay(this, today)
+        Relay.send(this, Relay.TYPE_INFO, "✅ চেক-ইন",
+            "${Config.deviceName(this)} — " +
+                java.text.SimpleDateFormat("HH:mm", java.util.Locale.US)
+                    .format(java.util.Date()))
+        LocationHelper.fetchAndSend(this)
+        toast(getString(R.string.toast_checkin))
+    }
+
+    private fun buildInboxCsv(): String {
+        val sb = StringBuilder("Time,Type,From,Title,Body\n")
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
+        fun esc(s: String) = "\"" + s.replace("\"", "\"\"")
+            .replace("\n", " ") + "\""
+        for (item in History.all(this)) {
+            sb.append(esc(fmt.format(java.util.Date(item.time)))).append(',')
+                .append(esc(item.type)).append(',').append(esc(item.from)).append(',')
+                .append(esc(item.title)).append(',').append(esc(item.body)).append('\n')
+        }
+        return sb.toString()
+    }
+
+    private fun buildInboxPdf(): java.io.ByteArrayOutputStream {
+        val doc = android.graphics.pdf.PdfDocument()
+        val paint = android.graphics.Paint().apply { textSize = 11f }
+        val fmt = java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.US)
+        val items = History.all(this)
+        var pageNum = 1
+        var idx = 0
+        val perPage = 42
+        while (true) {
+            val info = android.graphics.pdf.PdfDocument.PageInfo
+                .Builder(595, 842, pageNum).create()
+            val page = doc.startPage(info)
+            var y = 40f
+            val end = minOf(idx + perPage, items.size)
+            while (idx < end) {
+                val it2 = items[idx]
+                val line = ("${fmt.format(java.util.Date(it2.time))} " +
+                    "[${it2.type}] ${it2.title} — ${it2.body}").take(100)
+                page.canvas.drawText(line, 24f, y, paint)
+                y += 19f
+                idx++
+            }
+            doc.finishPage(page)
+            pageNum++
+            if (idx >= items.size) break
+        }
+        val out = java.io.ByteArrayOutputStream()
+        doc.writeTo(out)
+        doc.close()
+        return out
+    }
+
+    private fun wireV24() {
+        // --- settings category menu ---
+        findViewById<Button>(R.id.btnPanelBack).setOnClickListener { showSettingsMenu() }
+        findViewById<Button>(R.id.menuGeneral).setOnClickListener {
+            showSettingsPanel(R.id.panelGeneral, R.string.cat_general) }
+        findViewById<Button>(R.id.menuForward).setOnClickListener {
+            showSettingsPanel(R.id.panelForward, R.string.cat_forward) }
+        findViewById<Button>(R.id.menuSmart).setOnClickListener {
+            showSettingsPanel(R.id.panelSmart, R.string.cat_smart) }
+        findViewById<Button>(R.id.menuSecurity).setOnClickListener {
+            showSettingsPanel(R.id.panelSecurity, R.string.cat_security) }
+        findViewById<Button>(R.id.menuRelay).setOnClickListener {
+            showSettingsPanel(R.id.panelRelay, R.string.cat_relay) }
+        findViewById<Button>(R.id.menuData).setOnClickListener {
+            showSettingsPanel(R.id.panelData, R.string.cat_data) }
+        findViewById<Button>(R.id.menuGroup).setOnClickListener {
+            showSettingsPanel(R.id.panelGroup, R.string.cat_group) }
+        findViewById<Button>(R.id.menuFamily).setOnClickListener {
+            showSettingsPanel(R.id.panelFamily, R.string.cat_family) }
+        findViewById<Button>(R.id.menuAutomation).setOnClickListener {
+            startActivity(Intent(this, AutomationActivity::class.java)) }
+        showSettingsMenu()
+
+        // --- new switches ---
+        fun bindSw(id: Int, initial: Boolean, onChange: (Boolean) -> Unit) {
+            val sw = findViewById<CompoundButton>(id)
+            sw.isChecked = initial
+            sw.setOnCheckedChangeListener { _, c -> onChange(c) }
+        }
+        bindSw(R.id.swLan, Config.lanOn(this)) { on ->
+            Config.setLanOn(this, on)
+            if (on) Lan.discoverAsync(applicationContext)
+        }
+        bindSw(R.id.swAutoPriority, Config.autoPriorityOn(this)) {
+            Config.setAutoPriorityOn(this, it) }
+        bindSw(R.id.swClipSync, Config.clipSyncOn(this)) {
+            Config.setClipSyncOn(this, it) }
+        bindSw(R.id.swLostDark, Config.lostDarkScreen(this)) {
+            Config.setLostDarkScreen(this, it) }
+        bindSw(R.id.swSimpleMode, Config.simpleMode(this)) {
+            Config.setSimpleMode(this, it) }
+        bindSw(R.id.swLostLocal, Config.lostOn(this)) {
+            LinkService.setLostMode(this, it) }
+
+        // --- family panel ---
+        findViewById<EditText>(R.id.etLostContact).setText(Config.lostContact(this))
+        findViewById<Button>(R.id.btnSaveLostContact).setOnClickListener {
+            Config.setLostContact(this,
+                findViewById<EditText>(R.id.etLostContact).text.toString().trim())
+            toast(getString(R.string.toast_saved))
+        }
+        val btnTime = findViewById<Button>(R.id.btnCheckinTime)
+        btnTime.setOnClickListener {
+            val expect = Config.checkinExpectMin(this)
+            val h = if (expect >= 0) expect / 60 else 21
+            val m = if (expect >= 0) expect % 60 else 0
+            android.app.TimePickerDialog(this, { _, hh, mm ->
+                Config.setCheckinExpectMin(this, hh * 60 + mm)
+                toast(getString(R.string.toast_checkin_time_set))
+            }, h, m, false).show()
+        }
+        btnTime.setOnLongClickListener {
+            Config.setCheckinExpectMin(this, -1)
+            toast(getString(R.string.toast_checkin_time_cleared))
+            true
+        }
+
+        // --- security panel ---
+        findViewById<Button>(R.id.btnA11y).setOnClickListener {
+            try {
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            } catch (_: Exception) { }
+        }
+
+        // --- group panel ---
+        findViewById<Button>(R.id.btnCommanders).setOnClickListener {
+            val peers = Peers.list(this).filter { it.dev.isNotEmpty() }
+            if (peers.isEmpty()) { toast(getString(R.string.toast_no_peers)); return@setOnClickListener }
+            val current = Config.commanders(this)
+            val chosen = current.toMutableSet()
+            val checked = BooleanArray(peers.size) { peers[it].dev in current }
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_commanders))
+                .setMultiChoiceItems(peers.map { it.name }.toTypedArray(), checked) { _, which, on ->
+                    if (on) chosen.add(peers[which].dev) else chosen.remove(peers[which].dev)
+                }
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    Config.setCommanders(this, chosen)
+                    toast(getString(R.string.toast_saved))
+                }
+                .setNegativeButton(getString(R.string.btn_cancel), null)
+                .show()
+        }
+        findViewById<Button>(R.id.btnPeerModes).setOnClickListener {
+            val peers = Peers.list(this).filter { it.dev.isNotEmpty() }
+            if (peers.isEmpty()) { toast(getString(R.string.toast_no_peers)); return@setOnClickListener }
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_peer_modes))
+                .setItems(peers.map { it.name }.toTypedArray()) { _, which ->
+                    val peer = peers[which]
+                    val modes = arrayOf("normal", "mute", "digest")
+                    val labels = arrayOf(
+                        getString(R.string.peer_mode_normal),
+                        getString(R.string.peer_mode_mute),
+                        getString(R.string.peer_mode_digest))
+                    AlertDialog.Builder(this)
+                        .setTitle(peer.name)
+                        .setItems(labels) { _, mi ->
+                            Config.setPeerMode(this, peer.dev, modes[mi])
+                            toast(getString(R.string.toast_saved))
+                        }
+                        .show()
+                }
+                .show()
+        }
+        findViewById<Button>(R.id.btnCharts).setOnClickListener {
+            startActivity(Intent(this, ChartsActivity::class.java)) }
+        findViewById<Button>(R.id.btnExportConfig).setOnClickListener {
+            cfgExportLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("application/json")
+                .putExtra(Intent.EXTRA_TITLE, "phonelink-settings.json"))
+        }
+        findViewById<Button>(R.id.btnImportConfig).setOnClickListener {
+            cfgImportLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+        }
+        findViewById<Button>(R.id.btnConfigCode).setOnClickListener {
+            val input = EditText(this).apply {
+                setText(SettingsTransfer.export(this@MainActivity))
+                setSelection(0)
+            }
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_config_code))
+                .setView(input)
+                .setPositiveButton(getString(R.string.menu_copy)) { _, _ ->
+                    copyToClipboard(input.text.toString()) }
+                .setNeutralButton(getString(R.string.btn_import_config)) { _, _ ->
+                    val ok = SettingsTransfer.import(this, input.text.toString())
+                    toast(getString(if (ok) R.string.toast_cfg_imported
+                        else R.string.toast_cfg_failed))
+                    if (ok) recreate()
+                }
+                .setNegativeButton(getString(R.string.btn_cancel), null)
+                .show()
+        }
+
+        // --- data panel ---
+        findViewById<Button>(R.id.btnExportCsv).setOnClickListener {
+            csvLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("text/csv")
+                .putExtra(Intent.EXTRA_TITLE, "phonelink-history.csv"))
+        }
+        findViewById<Button>(R.id.btnExportPdf).setOnClickListener {
+            pdfLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT)
+                .addCategory(Intent.CATEGORY_OPENABLE)
+                .setType("application/pdf")
+                .putExtra(Intent.EXTRA_TITLE, "phonelink-history.pdf"))
+        }
+
+        // --- home additions ---
+        findViewById<Button>(R.id.btnCheckin).setOnClickListener { doCheckin() }
+        findViewById<Button>(R.id.btnScreenshot).setOnClickListener {
+            askPin { digest ->
+                Relay.sendCommand(this, "SCREENSHOT", null,
+                    org.json.JSONObject().put("pin", digest))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnScreenShare).setOnClickListener {
+            val mgr = getSystemService(Context.MEDIA_PROJECTION_SERVICE)
+                as android.media.projection.MediaProjectionManager
+            screenLauncher.launch(mgr.createScreenCaptureIntent())
+        }
+        findViewById<Button>(R.id.btnLostMode).setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_lost_mode))
+                .setItems(arrayOf(getString(R.string.lost_turn_on),
+                    getString(R.string.lost_turn_off))) { _, which ->
+                    askPin { digest ->
+                        Relay.sendCommand(this,
+                            if (which == 0) "LOST_ON" else "LOST_OFF", null,
+                            org.json.JSONObject().put("pin", digest))
+                        toast(getString(R.string.toast_cmd_sent))
+                    }
+                }
+                .show()
+        }
     }
 
     private fun showPage(itemId: Int) {
@@ -929,6 +1337,7 @@ class MainActivity : LocalizedActivity() {
         pageInbox.visibility = if (itemId == R.id.navInbox) View.VISIBLE else View.GONE
         pageSettings.visibility = if (itemId == R.id.navSettings) View.VISIBLE else View.GONE
         if (itemId == R.id.navInbox) markInboxSeen()
+        if (itemId == R.id.navSettings) showSettingsMenu()
     }
 
     private fun bindModeSwitch(id: Int, initial: Boolean, onChange: (Boolean) -> Unit) {

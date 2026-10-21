@@ -47,6 +47,9 @@ class CallReceiver : BroadcastReceiver() {
                                 "${star(ctx, incomingNumber)}ইনকামিং কল বাজছে",
                                 Contacts.labelForNumber(ctx, incomingNumber),
                                 extraFor(ctx, incomingNumber, ringing = true))
+                            Automation.onEvent(ctx, "call_incoming", org.json.JSONObject()
+                                .put("title", Contacts.labelForNumber(ctx, incomingNumber))
+                                .put("from", incomingNumber ?: ""))
                         }
                     }
                     TelephonyManager.EXTRA_STATE_OFFHOOK -> {
@@ -61,6 +64,9 @@ class CallReceiver : BroadcastReceiver() {
                                 "${star(ctx, incomingNumber)}মিসড কল",
                                 Contacts.labelForNumber(ctx, incomingNumber),
                                 extraFor(ctx, incomingNumber))
+                            Automation.onEvent(ctx, "call_missed", org.json.JSONObject()
+                                .put("title", Contacts.labelForNumber(ctx, incomingNumber))
+                                .put("from", incomingNumber ?: ""))
                             maybeAutoReply(ctx, incomingNumber)
                         } else if (lastState == TelephonyManager.EXTRA_STATE_OFFHOOK) {
                             val secs = ((System.currentTimeMillis() - callStart) / 1000).coerceAtLeast(0)

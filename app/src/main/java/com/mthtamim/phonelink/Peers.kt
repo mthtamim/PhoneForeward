@@ -11,13 +11,15 @@ import org.json.JSONObject
  */
 object Peers {
     data class Peer(val name: String, val seen: Long, val battery: Int,
-                    val cfg: String = "", val status: String = "")
+                    val cfg: String = "", val status: String = "",
+                    val dev: String = "")
 
     private fun prefs(ctx: Context) =
         ctx.getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
 
     @Synchronized
-    fun touch(ctx: Context, name: String, battery: Int, cfg: String = "", status: String = "") {
+    fun touch(ctx: Context, name: String, battery: Int, cfg: String = "",
+              status: String = "", dev: String = "") {
         if (name.isBlank()) return
         try {
             val all = JSONObject(prefs(ctx).getString("peers", "{}"))
@@ -28,6 +30,7 @@ object Peers {
                 put("battery", batt)
                 put("cfg", cfg.ifEmpty { prev?.optString("cfg") ?: "" })
                 put("status", status.ifEmpty { prev?.optString("status") ?: "" })
+                put("dev", dev.ifEmpty { prev?.optString("dev") ?: "" })
             })
             prefs(ctx).edit().putString("peers", all.toString()).apply()
         } catch (_: Exception) { }
@@ -42,7 +45,7 @@ object Peers {
                 val name = keys.next()
                 val o = all.getJSONObject(name)
                 out.add(Peer(name, o.optLong("seen"), o.optInt("battery", -1),
-                    o.optString("cfg"), o.optString("status")))
+                    o.optString("cfg"), o.optString("status"), o.optString("dev")))
             }
         } catch (_: Exception) { }
         return out.sortedByDescending { it.seen }
