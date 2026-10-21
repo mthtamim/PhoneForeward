@@ -464,6 +464,13 @@ object Automation {
                     on == (param != "off")
                 }
                 "process_running" -> appRecentlyUsed(ctx, param.trim())
+                "mobile_data" -> {
+                    val on = try {
+                        android.provider.Settings.Global.getInt(
+                            ctx.contentResolver, "mobile_data", 0) == 1
+                    } catch (e: Exception) { false }
+                    on == (param != "off")
+                }
                 else -> true
             }
         } catch (e: Exception) { true }
@@ -1073,6 +1080,182 @@ object Automation {
                     }
                     FlashHelper.setTorch(ctx, false)
                 }.start()
+                // ---- v2.10 Shizuku (root-class) actions ----
+                "reboot_device" -> {
+                    val cmd = when (param.trim().lowercase()) {
+                        "off" -> "svc power shutdown"
+                        "recovery" -> "svc power reboot recovery"
+                        "bootloader" -> "svc power reboot bootloader"
+                        else -> "svc power reboot"
+                    }
+                    shAction(ctx, cmd)
+                }
+                "airplane_toggle" -> {
+                    val on = param != "off"
+                    shAction(ctx, "settings put global airplane_mode_on " +
+                        (if (on) "1" else "0") +
+                        "; am broadcast -a android.intent.action.AIRPLANE_MODE" +
+                        " --ez state " + on)
+                }
+                "mobile_data_toggle" ->
+                    shAction(ctx, if (param == "off") "svc data disable"
+                        else "svc data enable")
+                "wifi_toggle" ->
+                    shAction(ctx, if (param == "off") "svc wifi disable"
+                        else "svc wifi enable")
+                "shell_screenshot" -> {
+                    val path = param.trim().ifEmpty {
+                        "/sdcard/Pictures/phonelink_" +
+                            System.currentTimeMillis() + ".png" }
+                    Thread {
+                        if (!ShizukuHelper.granted()) {
+                            localNotify(ctx, "Shizuku অনুমতি নেই।")
+                            return@Thread
+                        }
+                        ShizukuHelper.run("screencap -p " + shq(path))
+                        localNotify(ctx, "স্ক্রিনশট: $path")
+                    }.start()
+                }
+                "clear_app_data" -> {
+                    val pkg = param.trim()
+                    if (validPkg(pkg)) shAction(ctx, "pm clear " + shq(pkg))
+                }
+                "app_disable" -> {
+                    val pkg = param.trim()
+                    if (validPkg(pkg))
+                        shAction(ctx, "pm disable-user --user 0 " + shq(pkg))
+                }
+                "app_enable" -> {
+                    val pkg = param.trim()
+                    if (validPkg(pkg)) shAction(ctx, "pm enable " + shq(pkg))
+                }
+                "force_stop" -> {
+                    val pkg = param.trim()
+                    if (validPkg(pkg)) shAction(ctx, "am force-stop " + shq(pkg))
+                }
+                "install_silent" -> {
+                    val path = param.trim()
+                    Thread {
+                        if (!ShizukuHelper.granted()) {
+                            localNotify(ctx, "Shizuku অনুমতি নেই।")
+                            return@Thread
+                        }
+                        val out = ShizukuHelper.run("pm install -r " + shq(path))
+                        localNotify(ctx, "ইনস্টল: " + out.take(200)
+                            .ifEmpty { "কোনো ফলাফল নেই" })
+                    }.start()
+                }
+                "perm_grant" -> {
+                    val parts = param.split("|")
+                    val pkg = parts.getOrNull(0)?.trim() ?: ""
+                    val perm = parts.getOrNull(1)?.trim() ?: ""
+                    if (validPkg(pkg) && validPkg(perm))
+                        shAction(ctx, "pm grant " + shq(pkg) + " " + shq(perm))
+                }
+                "perm_revoke" -> {
+                    val parts = param.split("|")
+                    val pkg = parts.getOrNull(0)?.trim() ?: ""
+                    val perm = parts.getOrNull(1)?.trim() ?: ""
+                    if (validPkg(pkg) && validPkg(perm))
+                        shAction(ctx, "pm revoke " + shq(pkg) + " " + shq(perm))
+                }
+                "appops_set" -> {
+                    val parts = param.split("|")
+                    val pkg = parts.getOrNull(0)?.trim() ?: ""
+                    val op = parts.getOrNull(1)?.trim()?.uppercase() ?: ""
+                    val mode = parts.getOrNull(2)?.trim()?.lowercase() ?: "allow"
+                    if (validPkg(pkg) && op.matches(Regex("[A-Z0-9_]+")) &&
+                        (mode == "allow" || mode == "ignore" || mode == "deny"))
+                        shAction(ctx, "cmd appops set " + shq(pkg) + " " +
+                            op + " " + mode)
+                }
+                "wm_density" -> {
+                    val p = param.trim()
+                    if (p == "reset") shAction(ctx, "wm density reset")
+                    else p.toIntOrNull()?.let {
+                        if (it in 120..600) shAction(ctx, "wm density $it") }
+                }
+                "wm_size" -> {
+                    val p = param.trim()
+                    if (p == "reset") shAction(ctx, "wm size reset")
+                    else if (p.matches(Regex("\\d{3,4}x\\d{3,4}")))
+                        shAction(ctx, "wm size $p")
+                }
+                "anim_scale" -> {
+                    val v = param.trim().toFloatOrNull()
+                    if (v != null && v in 0f..5f) shAction(ctx,
+                        "settings put global window_animation_scale $v" +
+                        "; settings put global transition_animation_scale $v" +
+                        "; settings put global animator_duration_scale $v")
+                }
+                "stay_on" -> {
+                    val p = param.trim().lowercase()
+                    val v = when (p) {
+                        "off" -> "false"; "usb" -> "usb"; "ac" -> "ac"
+                        else -> "true"
+                    }
+                    shAction(ctx, "svc power stayon $v")
+                }
+                "set_time" -> {
+                    val parts = param.trim().split(":")
+                    val h = parts.getOrNull(0)?.toIntOrNull() ?: -1
+                    val m = parts.getOrNull(1)?.toIntOrNull() ?: -1
+                    if (h in 0..23 && m in 0..59) {
+                        val cal = java.util.Calendar.getInstance()
+                        cal.set(java.util.Calendar.HOUR_OF_DAY, h)
+                        cal.set(java.util.Calendar.MINUTE, m)
+                        cal.set(java.util.Calendar.SECOND, 0)
+                        shAction(ctx, "settings put global auto_time 0" +
+                            "; service call alarm 3 i64 " + cal.timeInMillis)
+                    }
+                }
+                "set_locale" -> {
+                    val loc = param.trim()
+                    if (loc.matches(Regex("[A-Za-z-]+"))) {
+                        shAction(ctx, "setprop persist.sys.locale " + shq(loc))
+                        localNotify(ctx, "ভাষা সেট হয়েছে — কার্যকর হতে রিবুট লাগতে পারে।")
+                    }
+                }
+                "shell_tap" -> {
+                    val parts = param.split(",")
+                    val x = parts.getOrNull(0)?.trim()?.toIntOrNull()
+                    val y = parts.getOrNull(1)?.trim()?.toIntOrNull()
+                    if (x != null && y != null)
+                        shAction(ctx, "input tap $x $y")
+                }
+                "shell_swipe" -> {
+                    val n = param.split(",").map { it.trim().toIntOrNull() }
+                    if (n.size >= 4 && n.all { it != null })
+                        shAction(ctx, "input swipe ${n[0]} ${n[1]} ${n[2]} " +
+                            "${n[3]} ${n.getOrNull(4) ?: 300}")
+                }
+                "shell_input" ->
+                    shAction(ctx, "input text " + shq(param.replace(" ", "%s")))
+                "shell_key" -> {
+                    val code = param.trim().toIntOrNull() ?: when (
+                        param.trim().lowercase()) {
+                        "enter" -> 66; "back" -> 4; "home" -> 3
+                        "del" -> 67; "tab" -> 61; "space" -> 62
+                        else -> -1
+                    }
+                    if (code > 0) shAction(ctx, "input keyevent $code")
+                }
+                "shell_to_var" -> {
+                    val idx = param.lastIndexOf('|')
+                    if (idx > 0) {
+                        val cmd = param.substring(0, idx)
+                        val name = param.substring(idx + 1).trim()
+                        Thread {
+                            if (!ShizukuHelper.granted()) {
+                                localNotify(ctx, "Shizuku অনুমতি নেই।")
+                                return@Thread
+                            }
+                            val out = ShizukuHelper.run(cmd)
+                            if (name.isNotEmpty())
+                                setVar(ctx, name, out.take(4000))
+                        }.start()
+                    }
+                }
                 // ---- v2.9 actions ----
                 "call_number" -> {
                     try {
@@ -1302,6 +1485,24 @@ object Automation {
         } catch (e: Exception) { /* keep the chain alive */ }
     }
 
+    // ---- v2.10 Shizuku helpers ----
+    private fun shq(v: String): String = "'" + v.replace("'", "'\\''") + "'"
+
+    private fun validPkg(v: String): Boolean =
+        v.matches(Regex("[A-Za-z0-9_.]+"))
+
+    /** Fire-and-forget Shizuku command; warns locally when not granted. */
+    private fun shAction(ctx: Context, cmd: String) {
+        Thread {
+            if (!ShizukuHelper.granted()) {
+                localNotify(ctx, "Shizuku চলছে না বা অনুমতি নেই — " +
+                    "Relay প্যানেলের Shizuku বোতাম থেকে ঠিক করো।")
+                return@Thread
+            }
+            ShizukuHelper.run(cmd)
+        }.start()
+    }
+
     /** v2.9: notification with up to two buttons; a tap fires the
      *  "notify_button" automation event with the label as its title. */
     private fun richNotify(ctx: Context, param: String) {
@@ -1437,6 +1638,10 @@ object Automation {
                 if (locked && !prev) onEvent(ctx, "screen_locked", JSONObject())
                 if (locked != prev) wp.edit().putBoolean("edge_locked", locked).apply()
             } else wp.edit().putBoolean("edge_locked", locked).apply()
+            stateEdge(ctx, "poll_mdata", try {
+                android.provider.Settings.Global.getInt(
+                    ctx.contentResolver, "mobile_data", 0) == 1
+            } catch (e: Exception) { false }, "mobile_data_on", "mobile_data_off")
             val ip = localIp()
             val prevIp = wp.getString("edge_ip", "") ?: ""
             if (prevIp.isNotEmpty() && ip.isNotEmpty() && ip != prevIp)

@@ -39,7 +39,9 @@ object AutoCatalog {
         "screen_locked", "screenshot_taken", "photo_taken", "video_taken",
         "app_updated", "sms_delivered", "orientation_changed", "pick_up",
         "bt_near", "bt_far", "sim_changed", "ip_changed", "camera_used",
-        "mic_used", "split_screen", "notify_button")
+        "mic_used", "split_screen", "notify_button",
+        // v2.10 Shizuku round
+        "mobile_data_on", "mobile_data_off")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
         "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
@@ -52,7 +54,9 @@ object AutoCatalog {
         "date_range", "day_of_month", "signal_above", "rule_enabled",
         // v2.9 final round
         "keyguard_locked", "battery_saver", "data_saver", "speed_above",
-        "uptime_above", "calendar_busy", "headset_mic", "process_running")
+        "uptime_above", "calendar_busy", "headset_mic", "process_running",
+        // v2.10 Shizuku round
+        "mobile_data")
     val actions = listOf(
         "notify_peer", "local_notify", "speak_local", "speak_peer", "command_peer",
         "send_sms", "torch", "ringer", "open_app", "http", "write_file",
@@ -77,7 +81,14 @@ object AutoCatalog {
         "http_to_var", "regex_op", "date_calc", "loop_start", "loop_end",
         "break", "else", "end_if", "shell_cmd", "screen_pin", "unpin",
         "private_dns", "install_app", "uninstall_app", "aod_toggle",
-        "sqlite_query")
+        "sqlite_query",
+        // v2.10 Shizuku (root-class) round
+        "reboot_device", "airplane_toggle", "mobile_data_toggle",
+        "wifi_toggle", "shell_screenshot", "clear_app_data", "app_disable",
+        "app_enable", "force_stop", "install_silent", "perm_grant",
+        "perm_revoke", "appops_set", "wm_density", "wm_size", "anim_scale",
+        "stay_on", "set_time", "set_locale", "shell_tap", "shell_swipe",
+        "shell_input", "shell_key", "shell_to_var")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {
