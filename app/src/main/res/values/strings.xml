@@ -1138,4 +1138,17 @@
     <string name="accent_purple">Purple</string>
     <string name="accent_amber">Amber</string>
     <string name="accent_rose">Rose</string>
+    <string name="sw_hide_icon">Hide the launcher icon</string>
+    <string name="hide_title">Hide PhoneLink?</string>
+    <string name="hide_msg">The icon will disappear from the launcher and app drawer. The app keeps working in the background.
+
+To open it again:
+• Dial *#*#7646#*#*
+• Or tap the PhoneLink notification
+• Or ask the other phone (SHOWAPP command)
+
+Settings → Apps → PhoneLink also always works.</string>
+    <string name="hide_yes">Hide it</string>
+    <string name="toast_hidden">Icon hidden — dial *#*#7646#*#* to open</string>
+    <string name="toast_shown">Icon is visible again</string>
 </resources>

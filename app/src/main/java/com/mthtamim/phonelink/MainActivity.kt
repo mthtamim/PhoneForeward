@@ -1112,6 +1112,28 @@ class MainActivity : LocalizedActivity() {
         // ----- security card -----
         bindToggle(R.id.swGuard, "guard_on", Config.guardOn(this))
         bindToggle(R.id.swIntruder, "intruder_on", Config.intruderOn(this))
+        // v2.11.1: hide the launcher icon (with a safety briefing first)
+        val swHide = findViewById<CompoundButton>(R.id.swHideIcon)
+        swHide.isChecked = Config.iconHidden(this)
+        swHide.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.hide_title))
+                    .setMessage(getString(R.string.hide_msg))
+                    .setPositiveButton(getString(R.string.hide_yes)) { _, _ ->
+                        Config.setIconHidden(this, true)
+                        toast(getString(R.string.toast_hidden))
+                    }
+                    .setNegativeButton(getString(R.string.btn_cancel)) { _, _ ->
+                        swHide.isChecked = false
+                    }
+                    .setOnCancelListener { swHide.isChecked = false }
+                    .show()
+            } else {
+                Config.setIconHidden(this, false)
+                toast(getString(R.string.toast_shown))
+            }
+        }
         bindToggle(R.id.swAutosave, "autosave_media", Config.autosaveMedia(this))
         findViewById<Button>(R.id.btnSetPin).setOnClickListener { showSetPinDialog() }
         findViewById<Button>(R.id.btnAdmin).setOnClickListener {

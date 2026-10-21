@@ -230,15 +230,39 @@
             android:exported="true"
             android:launchMode="singleTop">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-            <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!-- v2.11.1: the launcher icon lives on this alias so the app
+             can hide from the launcher without disabling MainActivity
+             itself (notifications, widgets and intents keep working). -->
+        <activity-alias
+            android:name=".MainAlias"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher"
+            android:label="@string/app_name"
+            android:targetActivity=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <!-- v2.11.1: dial *#*#7646#*#* to open the app while hidden -->
+        <receiver
+            android:name=".SecretReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SECRET_CODE" />
+                <data
+                    android:host="7646"
+                    android:scheme="android_secret_code" />
+            </intent-filter>
+        </receiver>
 
         <!-- Keeps the realtime links (receiver inbox + sender command channel) alive -->
         <service

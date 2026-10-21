@@ -550,6 +550,21 @@ object Config {
         prefs(ctx).edit().putInt("focus_start", start).putInt("focus_end", end).apply()
     }
     fun pttAutoplay(ctx: Context): Boolean = prefs(ctx).getBoolean("ptt_autoplay", true)
+    // ---- v2.11.1 launcher hide (icon lives on .MainAlias) ----
+    fun iconHidden(ctx: Context): Boolean = try {
+        ctx.packageManager.getComponentEnabledSetting(
+            android.content.ComponentName(ctx, "com.mthtamim.phonelink.MainAlias")) ==
+            android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+    } catch (_: Exception) { false }
+    fun setIconHidden(ctx: Context, hidden: Boolean) {
+        try {
+            ctx.packageManager.setComponentEnabledSetting(
+                android.content.ComponentName(ctx, "com.mthtamim.phonelink.MainAlias"),
+                if (hidden) android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+                else android.content.pm.PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                android.content.pm.PackageManager.DONT_KILL_APP)
+        } catch (_: Exception) { }
+    }
     fun updateLastCheck(ctx: Context): Long = prefs(ctx).getLong("update_last_check", 0L)
     fun setUpdateLastCheck(ctx: Context, v: Long) { prefs(ctx).edit().putLong("update_last_check", v).apply() }
     fun setRulesSyncOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("rules_sync_on", v).apply() }

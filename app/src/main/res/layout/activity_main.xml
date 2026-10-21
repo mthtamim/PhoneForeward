@@ -1575,6 +1575,11 @@
                     style="@style/PL.SwitchRow"
                     android:text="@string/intruder_label" />
 
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swHideIcon"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/sw_hide_icon" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSecLog"
                     style="@style/PL.BtnTonal"

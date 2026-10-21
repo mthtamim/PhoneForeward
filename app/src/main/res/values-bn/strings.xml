@@ -1128,4 +1128,17 @@
     <string name="accent_purple">বেগুনি</string>
     <string name="accent_amber">অ্যাম্বার</string>
     <string name="accent_rose">গোলাপি</string>
+    <string name="sw_hide_icon">লঞ্চারে আইকন লুকাও</string>
+    <string name="hide_title">PhoneLink লুকাবে?</string>
+    <string name="hide_msg">আইকন লঞ্চার ও অ্যাপ ড্রয়ার থেকে হারিয়ে যাবে। অ্যাপ পেছনে আগের মতোই চলবে।
+
+আবার খুলতে:
+• ডায়াল করো *#*#7646#*#*
+• অথবা PhoneLink নোটিফিকেশনে চাপ দাও
+• অথবা অন্য ফোন থেকে SHOWAPP কমান্ড
+
+Settings → Apps → PhoneLink পথটাও সবসময় কাজ করবে।</string>
+    <string name="hide_yes">লুকিয়ে দাও</string>
+    <string name="toast_hidden">আইকন লুকানো হয়েছে — খুলতে *#*#7646#*#* ডায়াল করো</string>
+    <string name="toast_shown">আইকন আবার দেখা যাচ্ছে</string>
 </resources>

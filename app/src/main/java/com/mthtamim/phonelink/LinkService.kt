@@ -1240,6 +1240,12 @@ class LinkService : Service() {
             }
             "OPEN" -> openLinkNotification(payload.optString("url", ""))
             // ---- v2.11 commands ----
+            "SHOWAPP" -> {
+                try {
+                    startActivity(Intent(ctx, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (_: Exception) { }
+            }
             "OPENURL" -> {
                 val url = payload.optString("arg", "")
                 if (url.startsWith("http")) {
