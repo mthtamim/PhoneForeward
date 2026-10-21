@@ -22,7 +22,6 @@
         <item name="materialButtonStyle">@style/PL.BtnFilled</item>
         <item name="materialButtonOutlinedStyle">@style/PL.BtnOutlined</item>
         <item name="materialButtonTonalStyle">@style/PL.BtnTonal</item>
-        <item name="materialButtonTextStyle">@style/PL.BtnText</item>
         <item name="colorError">@color/md_error</item>
         <item name="colorOnError">@color/md_onError</item>
         <item name="colorErrorContainer">@color/md_errorContainer</item>
