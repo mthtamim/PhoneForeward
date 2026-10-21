@@ -84,7 +84,7 @@
     <string name="sec_server">রিলে সার্ভার</string>
     <string name="hint_server">https://ntfy.sh</string>
     <string name="btn_save_server">সার্ভার সেভ করো</string>
-    <string name="footer_about">PhoneLink v2.4 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।</string>
+    <string name="footer_about">PhoneLink v2.5 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।</string>
 
     <string name="perm_title">Permission</string>
     <string name="perm_intro">PhoneLink ঠিকমতো কাজ করতে এই permission গুলো লাগে। যেগুলো দেওয়া আছে সেগুলো সবুজ দেখাবে। এই স্ক্রিনটা অটোমেটিক শুধু প্রথমবারই আসে।</string>

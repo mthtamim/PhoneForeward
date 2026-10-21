@@ -6,7 +6,9 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
     android:layout_marginVertical="5dp"
-    app:contentPadding="14dp">
+    app:contentPadding="14dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"

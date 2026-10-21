@@ -91,7 +91,7 @@
     <string name="sec_server">Relay server</string>
     <string name="hint_server">https://ntfy.sh</string>
     <string name="btn_save_server">Save server</string>
-    <string name="footer_about">PhoneLink v2.4 — default relay is ntfy.sh (free, no account needed). Both phones just need the same code and the same server. Messages travel through the relay, so keep your pair code secret.</string>
+    <string name="footer_about">PhoneLink v2.5 — default relay is ntfy.sh (free, no account needed). Both phones just need the same code and the same server. Messages travel through the relay, so keep your pair code secret.</string>
 
     <!-- Permissions screen -->
     <string name="perm_title">Permissions</string>
