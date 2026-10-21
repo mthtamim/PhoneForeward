@@ -2259,18 +2259,7 @@ class MainActivity : LocalizedActivity() {
     }
 
     private fun renderInbox() {
-        val fmt = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
-        val rows = filteredInbox().map { item ->
-            val icon = when (item.type) {
-                Relay.TYPE_SMS -> "✉️"; Relay.TYPE_NOTIF -> "🔔"; Relay.TYPE_CALL -> "📞"
-                Relay.TYPE_BATTERY -> "🔋"; Relay.TYPE_APP -> "📦"; Relay.TYPE_LOCATION -> "📍"
-                Relay.TYPE_SYSTEM -> "⚙️"; Relay.TYPE_TEST -> "🧪"; else -> "•"
-            }
-            val pin = if (item.pinned) "📌 " else ""
-            "$pin$icon [${item.type}] ${item.title}\n${item.body}\n— ${item.from} • ${fmt.format(Date(item.time))}"
-        }
-        val display = if (rows.isEmpty()) listOf(getString(R.string.inbox_empty)) else rows
-        lvInbox.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, display)
+        lvInbox.adapter = InboxAdapter(this, filteredInbox(), getString(R.string.inbox_empty))
     }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
