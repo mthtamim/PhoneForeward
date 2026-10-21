@@ -212,7 +212,8 @@ object Automation {
         val arr = rule.optJSONArray("actions") ?: return
         var i = fromIndex
         while (i < arr.length()) {
-            val a = arr.optJSONObject(i) ?: run { i++; continue }
+            val a = arr.optJSONObject(i)
+            if (a == null) { i++; continue }
             val type = a.optString("type")
             val param = fill(a.optString("param"), data)
             when (type) {
