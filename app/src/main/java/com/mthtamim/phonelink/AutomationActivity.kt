@@ -33,7 +33,13 @@ object AutoCatalog {
         // v2.8 final MacroDroid round
         "volume_up", "volume_down", "qr_scanned", "webhook", "weather_forecast",
         "calendar_start", "calendar_end", "magnet_above", "pressure_above",
-        "hotspot_on", "hotspot_off", "rule_toggled")
+        "hotspot_on", "hotspot_off", "rule_toggled",
+        // v2.9 final round
+        "battery_saver_on", "battery_saver_off", "wireless_charging",
+        "screen_locked", "screenshot_taken", "photo_taken", "video_taken",
+        "app_updated", "sms_delivered", "orientation_changed", "pick_up",
+        "bt_near", "bt_far", "sim_changed", "ip_changed", "camera_used",
+        "mic_used", "split_screen", "notify_button")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
         "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
@@ -43,7 +49,10 @@ object AutoCatalog {
         "proximity_near", "light_below", "light_above", "airplane",
         "peer_battery_above", "bt_connected",
         // v2.8 final MacroDroid round
-        "date_range", "day_of_month", "signal_above", "rule_enabled")
+        "date_range", "day_of_month", "signal_above", "rule_enabled",
+        // v2.9 final round
+        "keyguard_locked", "battery_saver", "data_saver", "speed_above",
+        "uptime_above", "calendar_busy", "headset_mic", "process_running")
     val actions = listOf(
         "notify_peer", "local_notify", "speak_local", "speak_peer", "command_peer",
         "send_sms", "torch", "ringer", "open_app", "http", "write_file",
@@ -59,7 +68,16 @@ object AutoCatalog {
         // v2.8 final MacroDroid round
         "gesture_tap", "gesture_swipe", "read_screen", "send_email",
         "calendar_event", "set_alarm", "set_timer", "file_copy", "file_move",
-        "file_zip", "dialog_choice", "keep_awake", "brightness_auto", "flash_pattern")
+        "file_zip", "dialog_choice", "keep_awake", "brightness_auto", "flash_pattern",
+        // v2.9 final round
+        "call_number", "ussd_run", "whatsapp_msg", "telegram_msg",
+        "notif_reply", "rich_notify", "type_text", "font_scale",
+        "night_light", "torch_level", "ftp_upload", "ftp_download",
+        "image_resize", "file_encrypt", "file_decrypt", "json_get",
+        "http_to_var", "regex_op", "date_calc", "loop_start", "loop_end",
+        "break", "else", "end_if", "shell_cmd", "screen_pin", "unpin",
+        "private_dns", "install_app", "uninstall_app", "aod_toggle",
+        "sqlite_query")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {
@@ -140,6 +158,35 @@ class AutomationActivity : LocalizedActivity() {
             .show()
     }
 
+    /** v2.9: pick one of the rotating rule-set backups to restore. */
+    private fun showBackups() {
+        val backs = Automation.backups(this)
+        if (backs.isEmpty()) {
+            android.widget.Toast.makeText(this,
+                getString(R.string.auto_backup_none),
+                android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        val fmt = java.text.SimpleDateFormat("dd MMM HH:mm", java.util.Locale.US)
+        val labels = backs.map { (t, json) ->
+            val n = try { org.json.JSONArray(json).length() }
+                catch (e: Exception) { 0 }
+            fmt.format(java.util.Date(t)) + " — " + n + " rules"
+        }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.auto_backup_title))
+            .setItems(labels) { _, which ->
+                if (Automation.restoreBackup(this, backs[which].second)) {
+                    android.widget.Toast.makeText(this,
+                        getString(R.string.auto_backup_restored),
+                        android.widget.Toast.LENGTH_SHORT).show()
+                    render()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun showImport() {
         val input = android.widget.EditText(this).apply {
             hint = getString(R.string.auto_import_hint)
@@ -179,6 +226,13 @@ class AutomationActivity : LocalizedActivity() {
             startActivity(Intent.createChooser(send, getString(R.string.auto_export)))
         }
         findViewById<Button>(R.id.btnAutoImport).setOnClickListener { showImport() }
+        findViewById<android.widget.Switch>(R.id.swRulesSync).apply {
+            isChecked = Config.rulesSyncOn(this@AutomationActivity)
+            setOnCheckedChangeListener { _, on ->
+                Config.setRulesSyncOn(this@AutomationActivity, on)
+            }
+        }
+        findViewById<Button>(R.id.btnAutoBackup).setOnClickListener { showBackups() }
     }
 
     override fun onResume() {
@@ -211,7 +265,8 @@ class AutomationActivity : LocalizedActivity() {
                     })
                 }
             }
-            val trig = rule.optJSONObject("trigger")
+            val trigList = Automation.ruleTriggers(rule)
+            val trig = trigList.firstOrNull()
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 setPadding(20, 14, 20, 14)
@@ -236,6 +291,7 @@ class AutomationActivity : LocalizedActivity() {
             row.addView(TextView(this).apply {
                 text = "⚡ " + AutoCatalog.label(this@AutomationActivity, "t",
                     trig?.optString("type") ?: "") +
+                    (if (trigList.size > 1) " +${trigList.size - 1}" else "") +
                     (trig?.optString("param")?.takeIf { it.isNotBlank() }?.let { " — $it" } ?: "")
                 alpha = 0.75f
             })

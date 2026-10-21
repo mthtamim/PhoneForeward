@@ -1324,6 +1324,18 @@ class MainActivity : LocalizedActivity() {
                 findViewById<EditText>(R.id.etSmtpFrom).text.toString().trim())
             toast(getString(R.string.toast_saved))
         }
+        findViewById<Button>(R.id.btnShizuku).setOnClickListener {
+            when {
+                !ShizukuHelper.available() ->
+                    toast(getString(R.string.shizuku_absent))
+                ShizukuHelper.granted() ->
+                    toast(getString(R.string.shizuku_ready))
+                else -> {
+                    ShizukuHelper.request()
+                    toast(getString(R.string.shizuku_ask))
+                }
+            }
+        }
         findViewById<Button>(R.id.btnSaveFallback).setOnClickListener {
             Config.setSmsFallbackNumber(this,
                 findViewById<EditText>(R.id.etFallbackNumber).text.toString().trim())

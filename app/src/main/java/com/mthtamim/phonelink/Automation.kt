@@ -55,8 +55,59 @@ object Automation {
     fun saveAll(ctx: Context, list: List<JSONObject>) {
         val arr = JSONArray()
         list.forEach { arr.put(it) }
-        prefs(ctx).edit().putString("rules", arr.toString()).apply()
+        val newJson = arr.toString()
+        // v2.9: keep the last 5 previous rule sets as restorable backups.
+        val oldJson = prefs(ctx).getString("rules", "[]") ?: "[]"
+        if (oldJson != newJson && oldJson.length > 2) {
+            try {
+                val backs = try { JSONArray(
+                    prefs(ctx).getString("rules_backups", "[]")) }
+                    catch (e: Exception) { JSONArray() }
+                backs.put(JSONObject().put("t", System.currentTimeMillis())
+                    .put("json", oldJson))
+                while (backs.length() > 5) backs.remove(0)
+                prefs(ctx).edit().putString("rules_backups",
+                    backs.toString()).apply()
+            } catch (_: Exception) { }
+        }
+        prefs(ctx).edit().putString("rules", newJson).apply()
         refreshWatchers(ctx)
+        // v2.9: optional two-phone rule sync over the existing relay.
+        if (!applyingRemote && Config.rulesSyncOn(ctx) && newJson.length < 120_000) {
+            try { Relay.send(ctx, "RULESYNC", "", newJson) } catch (_: Exception) { }
+        }
+    }
+
+    /** v2.9: replaces the rule set with one received from the peer phone. */
+    fun applyRemoteRules(ctx: Context, json: String): Boolean {
+        val incoming = try { JSONArray(json) } catch (e: Exception) { return false }
+        val list = mutableListOf<JSONObject>()
+        for (i in 0 until incoming.length())
+            incoming.optJSONObject(i)?.let { list.add(it) }
+        applyingRemote = true
+        try { saveAll(ctx, list) } finally { applyingRemote = false }
+        return true
+    }
+
+    /** v2.9: (time, json) pairs of the stored rule backups, newest first. */
+    fun backups(ctx: Context): List<Pair<Long, String>> {
+        val out = mutableListOf<Pair<Long, String>>()
+        try {
+            val arr = JSONArray(prefs(ctx).getString("rules_backups", "[]") ?: "[]")
+            for (i in arr.length() - 1 downTo 0) {
+                val o = arr.optJSONObject(i) ?: continue
+                out.add(o.optLong("t") to o.optString("json"))
+            }
+        } catch (_: Exception) { }
+        return out
+    }
+
+    fun restoreBackup(ctx: Context, json: String): Boolean {
+        val arr = try { JSONArray(json) } catch (e: Exception) { return false }
+        val list = mutableListOf<JSONObject>()
+        for (i in 0 until arr.length()) arr.optJSONObject(i)?.let { list.add(it) }
+        saveAll(ctx, list)
+        return true
     }
 
     fun upsert(ctx: Context, rule: JSONObject) {
@@ -158,6 +209,18 @@ object Automation {
         e.apply()
     }
 
+    /** v2.9: a rule may carry several triggers ("trigger" + "triggers[]"). */
+    fun ruleTriggers(rule: JSONObject): List<JSONObject> {
+        val out = mutableListOf<JSONObject>()
+        rule.optJSONObject("trigger")?.let { out.add(it) }
+        val arr = rule.optJSONArray("triggers")
+        if (arr != null) for (i in 0 until arr.length())
+            arr.optJSONObject(i)?.let { out.add(it) }
+        return out
+    }
+
+    @Volatile var applyingRemote = false
+
     // ---------------- event entry ----------------
     fun onEvent(ctx: Context, event: String, data: JSONObject = JSONObject()) {
         if (!Config.automationOn(ctx)) return
@@ -166,8 +229,8 @@ object Automation {
                 val now = System.currentTimeMillis()
                 for (rule in rules(ctx)) {
                     if (!rule.optBoolean("enabled", true)) continue
-                    val trig = rule.optJSONObject("trigger") ?: continue
-                    if (trig.optString("type") != event) continue
+                    val trig = ruleTriggers(rule).firstOrNull {
+                        it.optString("type") == event } ?: continue
                     if (!triggerParamMatches(ctx, event, trig.optString("param"), data)) continue
                     if (debounced(ctx, rule.optString("id"), now)) continue
                     if (!constraintsPass(ctx, rule)) continue
@@ -194,15 +257,19 @@ object Automation {
         return when (event) {
             "sms_received", "notif_received", "screen_text", "notif_cleared",
             "sms_sent", "call_outgoing", "call_ended", "qr_scanned",
-            "calendar_start", "calendar_end", "rule_toggled" -> {
+            "calendar_start", "calendar_end", "rule_toggled",
+            "notify_button", "sms_delivered", "screenshot_taken",
+            "photo_taken", "video_taken" -> {
                 val hay = (data.optString("title") + " " + data.optString("body") +
                     " " + data.optString("app")).lowercase()
                 hay.contains(param.lowercase())
             }
-            "app_launched", "app_closed", "app_installed", "app_removed" ->
+            "app_launched", "app_closed", "app_installed", "app_removed",
+            "app_updated", "camera_used", "mic_used" ->
                 data.optString("pkg") == param
-            "bt_connected", "bt_disconnected" ->
+            "bt_connected", "bt_disconnected", "bt_near", "bt_far" ->
                 data.optString("title").contains(param, ignoreCase = true)
+            "orientation_changed" -> data.optString("kind") == param
             "webhook" -> data.optString("title") == param
             "wifi_connected" -> data.optString("ssid").equals(param, true)
             "activity" -> data.optString("kind") == param
@@ -213,11 +280,17 @@ object Automation {
     // ---------------- constraints ----------------
     fun constraintsPass(ctx: Context, rule: JSONObject): Boolean {
         val arr = rule.optJSONArray("constraints") ?: return true
+        val any = rule.optString("constraints_mode") == "any"
+        var saw = false
         for (i in 0 until arr.length()) {
             val c = arr.optJSONObject(i) ?: continue
-            if (!constraintOk(ctx, c.optString("type"), c.optString("param"))) return false
+            saw = true
+            var ok = constraintOk(ctx, c.optString("type"), c.optString("param"))
+            if (c.optBoolean("negate")) ok = !ok
+            if (any && ok) return true
+            if (!any && !ok) return false
         }
-        return true
+        return if (any) !saw else true
     }
 
     private fun constraintOk(ctx: Context, type: String, param: String): Boolean {
@@ -362,6 +435,35 @@ object Automation {
                     } catch (e: Exception) { false }
                     on == (param != "off")
                 }
+                // ---- v2.9 constraints ----
+                "keyguard_locked" -> {
+                    val km = ctx.getSystemService(Context.KEYGUARD_SERVICE)
+                        as android.app.KeyguardManager
+                    km.isKeyguardLocked == (param != "off")
+                }
+                "battery_saver" -> {
+                    val pm = ctx.getSystemService(Context.POWER_SERVICE)
+                        as android.os.PowerManager
+                    pm.isPowerSaveMode == (param != "off")
+                }
+                "data_saver" -> {
+                    val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE)
+                        as android.net.ConnectivityManager
+                    (cm.restrictBackgroundStatus ==
+                        android.net.ConnectivityManager
+                            .RESTRICT_BACKGROUND_STATUS_ENABLED) == (param != "off")
+                }
+                "speed_above" -> speedKmh(ctx) >= (param.toDoubleOrNull() ?: 0.0)
+                "uptime_above" -> (android.os.SystemClock.elapsedRealtime() / 60_000) >=
+                    (param.toLongOrNull() ?: 0)
+                "calendar_busy" -> calendarBusyNow(ctx) == (param != "off")
+                "headset_mic" -> {
+                    val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    @Suppress("DEPRECATION")
+                    val on = am.isWiredHeadsetOn || am.isBluetoothA2dpOn
+                    on == (param != "off")
+                }
+                "process_running" -> appRecentlyUsed(ctx, param.trim())
                 else -> true
             }
         } catch (e: Exception) { true }
@@ -390,10 +492,27 @@ object Automation {
     }
 
     // ---------------- actions ----------------
+    private const val SIG_OK = 0
+    private const val SIG_STOP = 1
+    private const val SIG_BREAK = 2
+
     fun runActions(ctx: Context, rule: JSONObject, data: JSONObject, fromIndex: Int) {
         val arr = rule.optJSONArray("actions") ?: return
-        var i = fromIndex
-        while (i < arr.length()) {
+        execRange(ctx, rule, data, fromIndex, arr.length(), 0)
+    }
+
+    /**
+     * v2.9 interpreter: supports loop_start/loop_end blocks, if_var/else/
+     * end_if blocks and an optional per-action "cond" constraint. A "wait"
+     * at top level parks the rule (existing scheduleWait behaviour); inside
+     * a loop it sleeps the (background) thread instead. A wait resumed after
+     * parking continues flat from that index (the loop is not re-entered).
+     */
+    private fun execRange(ctx: Context, rule: JSONObject, data: JSONObject,
+                          start: Int, end: Int, depth: Int): Int {
+        val arr = rule.optJSONArray("actions") ?: return SIG_OK
+        var i = start
+        while (i < end) {
             val a = arr.optJSONObject(i)
             if (a == null) { i++; continue }
             val type = a.optString("type")
@@ -401,18 +520,144 @@ object Automation {
             when (type) {
                 "wait" -> {
                     val mins = param.toLongOrNull() ?: 1
-                    scheduleWait(ctx, rule, i + 1, System.currentTimeMillis() + mins * 60_000, data)
-                    return
+                    if (depth == 0) {
+                        scheduleWait(ctx, rule, i + 1,
+                            System.currentTimeMillis() + mins * 60_000, data)
+                        return SIG_STOP
+                    }
+                    try { Thread.sleep(mins * 60_000) } catch (_: Exception) { }
+                    i++
                 }
-                "if_var" -> if (!evalVar(ctx, param)) return
-                "stop" -> return
-                else -> runAction(ctx, type, param, data)
+                "stop" -> return SIG_STOP
+                "break" -> return if (depth > 0) SIG_BREAK else SIG_STOP
+                "loop_start" -> {
+                    val endIdx = findLoopEnd(arr, i, end)
+                    val bodyEnd = if (endIdx >= 0) endIdx else end
+                    val count = loopCount(ctx, param)
+                    var stopped = false
+                    var n = 0
+                    while (n < count && !stopped) {
+                        val sig = execRange(ctx, rule, data, i + 1, bodyEnd, depth + 1)
+                        if (sig == SIG_STOP) stopped = true
+                        n++
+                    }
+                    if (stopped) return SIG_STOP
+                    i = bodyEnd + 1
+                }
+                "loop_end" -> i++
+                "if_var" -> {
+                    if (evalVar(ctx, param)) i++
+                    else {
+                        val (elseIdx, endIdx) = findElseEnd(arr, i, end)
+                        when {
+                            elseIdx >= 0 -> i = elseIdx + 1
+                            endIdx >= 0 -> i = endIdx + 1
+                            depth > 0 -> return SIG_BREAK
+                            else -> return SIG_STOP
+                        }
+                    }
+                }
+                "else" -> {
+                    val (_, endIdx) = findElseEnd(arr, i, end)
+                    i = if (endIdx >= 0) endIdx + 1 else end
+                }
+                "end_if" -> i++
+                else -> {
+                    val cond = a.optJSONObject("cond")
+                    if (cond == null || constraintOk(ctx, cond.optString("type"),
+                            fill(cond.optString("param"), data)))
+                        runAction(ctx, type, param, data, rule)
+                    i++
+                }
             }
-            i++
         }
+        return SIG_OK
     }
 
-    private fun runAction(ctx: Context, type: String, param: String, data: JSONObject) {
+    private fun findLoopEnd(arr: org.json.JSONArray, start: Int, limit: Int): Int {
+        var d = 1
+        var j = start + 1
+        while (j < limit) {
+            val t = arr.optJSONObject(j)?.optString("type") ?: ""
+            if (t == "loop_start") d++
+            else if (t == "loop_end") { d--; if (d == 0) return j }
+            j++
+        }
+        return -1
+    }
+
+    /** Returns (elseIndex, endIfIndex) for the if block opened at ifIdx. */
+    private fun findElseEnd(arr: org.json.JSONArray, ifIdx: Int,
+                            limit: Int): Pair<Int, Int> {
+        var d = 0
+        var elseIdx = -1
+        var j = ifIdx + 1
+        while (j < limit) {
+            val t = arr.optJSONObject(j)?.optString("type") ?: ""
+            when (t) {
+                "if_var" -> d++
+                "end_if" -> { if (d == 0) return Pair(elseIdx, j); d-- }
+                "else" -> if (d == 0 && elseIdx < 0) elseIdx = j
+            }
+            j++
+        }
+        return Pair(elseIdx, -1)
+    }
+
+    private fun loopCount(ctx: Context, param: String): Int {
+        val p = param.trim()
+        val n = if (p.startsWith("var:"))
+            getVar(ctx, p.substring(4).trim()).toIntOrNull() ?: 0
+        else p.toIntOrNull() ?: 0
+        return n.coerceIn(0, 200)
+    }
+
+    // ---- v2.9 constraint helpers ----
+    private fun speedKmh(ctx: Context): Double {
+        return try {
+            val lm = ctx.getSystemService(Context.LOCATION_SERVICE)
+                as android.location.LocationManager
+            @Suppress("MissingPermission")
+            val loc = try { lm.getLastKnownLocation(
+                android.location.LocationManager.GPS_PROVIDER) } catch (e: Exception) { null }
+                ?: try { lm.getLastKnownLocation(
+                    android.location.LocationManager.NETWORK_PROVIDER) }
+                    catch (e: Exception) { null }
+            if (loc != null && loc.hasSpeed()) loc.speed * 3.6 else 0.0
+        } catch (e: Exception) { 0.0 }
+    }
+
+    private fun calendarBusyNow(ctx: Context): Boolean {
+        return try {
+            if (ctx.checkSelfPermission(android.Manifest.permission.READ_CALENDAR) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED) return false
+            val now = System.currentTimeMillis()
+            val uri = android.provider.CalendarContract.Instances.CONTENT_URI.buildUpon()
+            android.content.ContentUris.appendId(uri, now - 60_000)
+            android.content.ContentUris.appendId(uri, now + 60_000)
+            val cur = ctx.contentResolver.query(uri.build(),
+                arrayOf(android.provider.CalendarContract.Instances.EVENT_ID),
+                null, null, null)
+            var busy = false
+            cur?.use { if (it.moveToFirst()) busy = true }
+            busy
+        } catch (e: Exception) { false }
+    }
+
+    private fun appRecentlyUsed(ctx: Context, pkg: String): Boolean {
+        if (pkg.isEmpty()) return false
+        return try {
+            val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE)
+                as android.app.usage.UsageStatsManager
+            val now = System.currentTimeMillis()
+            usm.queryUsageStats(android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                now - 15 * 60_000, now)
+                .any { it.packageName == pkg && it.lastTimeUsed > now - 15 * 60_000 }
+        } catch (e: Exception) { false }
+    }
+
+    private fun runAction(ctx: Context, type: String, param: String,
+                          data: JSONObject, rule: JSONObject) {
         try {
             when (type) {
                 "notify_peer" -> Relay.send(ctx, Relay.TYPE_INFO,
@@ -424,9 +669,19 @@ object Automation {
                 "send_sms" -> {
                     val parts = param.split("|", limit = 2)
                     if (parts.size == 2) {
+                        val num = parts[0].trim()
+                        val deliveredPi = try {
+                            android.app.PendingIntent.getBroadcast(ctx,
+                                (System.currentTimeMillis() % 100000).toInt(),
+                                Intent("com.mthtamim.phonelink.SMS_DELIVERED")
+                                    .putExtra("number", num),
+                                android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                                    android.app.PendingIntent.FLAG_IMMUTABLE)
+                        } catch (e: Exception) { null }
                         @Suppress("DEPRECATION")
                         android.telephony.SmsManager.getDefault()
-                            .sendTextMessage(parts[0].trim(), null, parts[1].trim().take(600), null, null)
+                            .sendTextMessage(num, null,
+                                parts[1].trim().take(600), null, deliveredPi)
                     }
                 }
                 "torch" -> FlashHelper.setTorch(ctx, param != "off")
@@ -639,17 +894,26 @@ object Automation {
                 "stopwatch_stop" ->
                     prefs(ctx).edit().remove("sw_${param.trim()}").apply()
                 "rule_enable", "rule_disable", "rule_run" -> {
+                    // v2.9: rule_run accepts "Name|key=value;key2=value2"
+                    // and passes those pairs as the sub-rule's event data.
+                    val namePart = param.substringBefore("|").trim()
                     val target = rules(ctx).firstOrNull {
-                        it.optString("name").equals(param.trim(), true) }
+                        it.optString("name").equals(namePart, true) }
                     if (target != null) {
                         when (type) {
                             "rule_enable" -> setEnabled(ctx, target.optString("id"), true)
                             "rule_disable" -> setEnabled(ctx, target.optString("id"), false)
-                            else -> if (!target.optString("name")
-                                    .equals(ruleNameHint, true) &&
+                            else -> if (target.optString("id") != rule.optString("id") &&
                                 constraintsPass(ctx, target)) {
+                                val sub = JSONObject(data.toString())
+                                param.substringAfter("|", "").split(";")
+                                    .forEach { kv ->
+                                        val eq = kv.indexOf('=')
+                                        if (eq > 0) sub.put(kv.substring(0, eq).trim(),
+                                            kv.substring(eq + 1).trim())
+                                    }
                                 ruleNameHint = target.optString("name")
-                                runActions(ctx, target, data, 0)
+                                runActions(ctx, target, sub, 0)
                             }
                         }
                     }
@@ -809,6 +1073,226 @@ object Automation {
                     }
                     FlashHelper.setTorch(ctx, false)
                 }.start()
+                // ---- v2.9 actions ----
+                "call_number" -> {
+                    try {
+                        val has = ctx.checkSelfPermission(
+                            android.Manifest.permission.CALL_PHONE) ==
+                            android.content.pm.PackageManager.PERMISSION_GRANTED
+                        ctx.startActivity(Intent(
+                            if (has) Intent.ACTION_CALL else Intent.ACTION_DIAL,
+                            android.net.Uri.parse("tel:" + param.trim()))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { }
+                }
+                "ussd_run" -> {
+                    try {
+                        ctx.startActivity(Intent(Intent.ACTION_DIAL,
+                            android.net.Uri.parse("tel:" +
+                                android.net.Uri.encode(param.trim())))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { }
+                }
+                "whatsapp_msg" -> {
+                    val parts = param.split("|", limit = 2)
+                    val num = (parts.getOrNull(0) ?: "")
+                        .filter { it.isDigit() || it == '+' }.removePrefix("+")
+                    val text = parts.getOrNull(1)?.trim() ?: ""
+                    try {
+                        val url = "https://wa.me/" + num + if (text.isNotEmpty())
+                            "?text=" + android.net.Uri.encode(text) else ""
+                        ctx.startActivity(Intent(Intent.ACTION_VIEW,
+                            android.net.Uri.parse(url))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { }
+                }
+                "telegram_msg" -> {
+                    val user = param.substringBefore("|").trim().removePrefix("@")
+                    if (user.isNotEmpty()) try {
+                        ctx.startActivity(Intent(Intent.ACTION_VIEW,
+                            android.net.Uri.parse("https://t.me/$user"))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { }
+                }
+                "notif_reply" -> {
+                    val parts = param.split("|", limit = 2)
+                    if (parts.size == 2)
+                        NotifListener.replyByPackage(ctx, parts[0].trim(), parts[1].trim())
+                }
+                "rich_notify" -> richNotify(ctx, param)
+                "type_text" -> A11yService.typeText(param)
+                "font_scale" -> {
+                    if (android.provider.Settings.System.canWrite(ctx)) {
+                        val v = (param.toFloatOrNull() ?: 1.0f).coerceIn(0.7f, 1.5f)
+                        android.provider.Settings.System.putFloat(ctx.contentResolver,
+                            android.provider.Settings.System.FONT_SCALE, v)
+                    } else localNotify(ctx,
+                        "ফন্ট বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
+                }
+                "night_light" -> {
+                    var ok = false
+                    try { ok = android.provider.Settings.Secure.putInt(
+                        ctx.contentResolver, "night_display_activated",
+                        if (param == "off") 0 else 1) } catch (_: Exception) { }
+                    if (!ok) localNotify(ctx,
+                        "নাইট লাইট এই ডিভাইসে সরাসরি বদলানো যায়নি।")
+                }
+                "torch_level" -> FlashHelper.setTorchLevel(ctx,
+                    (param.toIntOrNull() ?: 3).coerceIn(0, 5))
+                "ftp_upload" -> Thread {
+                    if (!Ftp.transfer(ctx, param, true))
+                        localNotify(ctx, "FTP আপলোড ব্যর্থ হয়েছে।")
+                }.start()
+                "ftp_download" -> Thread {
+                    if (!Ftp.transfer(ctx, param, false))
+                        localNotify(ctx, "FTP ডাউনলোড ব্যর্থ হয়েছে।")
+                }.start()
+                "image_resize" -> Thread { imageResize(ctx, param) }.start()
+                "file_encrypt" -> fileCrypt(param, true)
+                "file_decrypt" -> fileCrypt(param, false)
+                "json_get" -> {
+                    val parts = param.split("|", limit = 3)
+                    if (parts.size == 3) {
+                        val raw = parts[1].trim()
+                        val src = if (raw.startsWith("{") || raw.startsWith("["))
+                            raw else getVar(ctx, raw)
+                        jsonPath(src, parts[2].trim())
+                            ?.let { setVar(ctx, parts[0].trim(), it) }
+                    }
+                }
+                "http_to_var" -> {
+                    val parts = param.split("|", limit = 2)
+                    if (parts.size == 2) Thread {
+                        try {
+                            val conn = java.net.URL(parts[0].trim())
+                                .openConnection() as java.net.HttpURLConnection
+                            conn.connectTimeout = 8000; conn.readTimeout = 8000
+                            val text = conn.inputStream.bufferedReader()
+                                .readText().take(4000)
+                            conn.disconnect()
+                            setVar(ctx, parts[1].trim(), text)
+                        } catch (_: Exception) { }
+                    }.start()
+                }
+                "regex_op" -> {
+                    val parts = param.split("|", limit = 3)
+                    if (parts.size == 3) {
+                        val name = parts[0].trim()
+                        val cur = getVar(ctx, name)
+                        try {
+                            val rx = Regex(parts[1])
+                            if (parts[2] == "@match") {
+                                val m = rx.find(cur)
+                                setVar(ctx, name, m?.groupValues?.getOrNull(1)
+                                    ?: m?.value ?: "")
+                            } else setVar(ctx, name, rx.replace(cur, parts[2]))
+                        } catch (_: Exception) { }
+                    }
+                }
+                "date_calc" -> {
+                    val parts = param.split("|", limit = 2)
+                    if (parts.size == 2) {
+                        val cal = java.util.Calendar.getInstance()
+                        val m = Regex("^([+-])(\\d+)([mhd])$")
+                            .find(parts[1].trim())
+                        if (m != null) {
+                            val amt = m.groupValues[2].toInt() *
+                                if (m.groupValues[1] == "-") -1 else 1
+                            when (m.groupValues[3]) {
+                                "m" -> cal.add(java.util.Calendar.MINUTE, amt)
+                                "h" -> cal.add(java.util.Calendar.HOUR_OF_DAY, amt)
+                                else -> cal.add(java.util.Calendar.DAY_OF_YEAR, amt)
+                            }
+                        }
+                        setVar(ctx, parts[0].trim(),
+                            java.text.SimpleDateFormat("yyyy-MM-dd HH:mm",
+                                java.util.Locale.US).format(cal.time))
+                    }
+                }
+                "shell_cmd" -> Thread {
+                    val out = ShizukuHelper.run(param)
+                    localNotify(ctx, if (out.isBlank())
+                        "Shell: কোনো আউটপুট নেই — Shizuku চলছে তো?" else out.take(300))
+                }.start()
+                "screen_pin" -> try {
+                    ctx.startActivity(Intent(ctx, PinActivity::class.java)
+                        .putExtra("pin", true)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (_: Exception) { }
+                "unpin" -> try {
+                    ctx.startActivity(Intent(ctx, PinActivity::class.java)
+                        .putExtra("pin", false)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (_: Exception) { }
+                "private_dns" -> {
+                    var ok = false
+                    try {
+                        val mode = param.trim().lowercase()
+                        ok = when {
+                            mode == "off" -> android.provider.Settings.Global
+                                .putString(ctx.contentResolver, "private_dns_mode", "off")
+                            mode == "auto" || mode == "opportunistic" ->
+                                android.provider.Settings.Global.putString(
+                                    ctx.contentResolver, "private_dns_mode", "opportunistic")
+                            mode.isNotEmpty() -> {
+                                val a = android.provider.Settings.Global.putString(
+                                    ctx.contentResolver, "private_dns_mode", "hostname")
+                                if (a) android.provider.Settings.Global.putString(
+                                    ctx.contentResolver, "private_dns_specifier", mode)
+                                else false
+                            }
+                            else -> false
+                        }
+                    } catch (_: Exception) { }
+                    if (!ok) localNotify(ctx,
+                        "Private DNS বদলাতে WRITE_SECURE_SETTINGS অনুমতি লাগবে (adb দিয়ে একবার দিলেই হবে)।")
+                }
+                "install_app" -> {
+                    try {
+                        val f = File(param.trim())
+                        if (f.exists() && allowedPath(ctx, f)) {
+                            val uri = androidx.core.content.FileProvider
+                                .getUriForFile(ctx, ctx.packageName + ".files", f)
+                            ctx.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                                setDataAndType(uri,
+                                    "application/vnd.android.package-archive")
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                                    Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            })
+                        }
+                    } catch (_: Exception) { }
+                }
+                "uninstall_app" -> try {
+                    ctx.startActivity(Intent(Intent.ACTION_DELETE,
+                        android.net.Uri.parse("package:" + param.trim()))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                } catch (_: Exception) { }
+                "aod_toggle" -> {
+                    var ok = false
+                    try { ok = android.provider.Settings.Secure.putInt(
+                        ctx.contentResolver, "aod_mode",
+                        if (param == "off") 0 else 1) } catch (_: Exception) { }
+                    if (!ok) localNotify(ctx,
+                        "Always-on display এই ডিভাইসে সরাসরি বদলানো যায়নি।")
+                }
+                "sqlite_query" -> {
+                    val parts = param.split("|", limit = 3)
+                    if (parts.size == 3) try {
+                        val f = File(parts[0].trim())
+                        if (f.exists() && allowedPath(ctx, f)) {
+                            val db = android.database.sqlite.SQLiteDatabase
+                                .openDatabase(f.absolutePath, null,
+                                    android.database.sqlite.SQLiteDatabase.OPEN_READONLY)
+                            db.use { d ->
+                                d.rawQuery(parts[1], null)?.use { cur ->
+                                    if (cur.moveToFirst() && cur.columnCount > 0)
+                                        setVar(ctx, parts[2].trim(),
+                                            cur.getString(0) ?: "")
+                                }
+                            }
+                        }
+                    } catch (_: Exception) { }
+                }
                 "toast_local" -> android.os.Handler(android.os.Looper.getMainLooper())
                     .post {
                         android.widget.Toast.makeText(ctx, param,
@@ -816,6 +1300,98 @@ object Automation {
                     }
             }
         } catch (e: Exception) { /* keep the chain alive */ }
+    }
+
+    /** v2.9: notification with up to two buttons; a tap fires the
+     *  "notify_button" automation event with the label as its title. */
+    private fun richNotify(ctx: Context, param: String) {
+        val parts = param.split("|")
+        val title = (parts.getOrNull(0)?.trim() ?: "").ifEmpty { "PhoneLink" }
+        val body = parts.getOrNull(1)?.trim() ?: ""
+        val nid = (System.currentTimeMillis() % 100000).toInt() + 7000
+        val open = android.app.PendingIntent.getActivity(ctx, nid,
+            Intent(ctx, MainActivity::class.java),
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                android.app.PendingIntent.FLAG_IMMUTABLE)
+        val b = androidx.core.app.NotificationCompat.Builder(ctx, LinkService.CHANNEL_INBOX)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title).setContentText(body)
+            .setStyle(androidx.core.app.NotificationCompat.BigTextStyle().bigText(body))
+            .setContentIntent(open).setAutoCancel(true)
+        for (idx in 2..3) {
+            val label = parts.getOrNull(idx)?.trim() ?: ""
+            if (label.isEmpty()) continue
+            val pi = android.app.PendingIntent.getBroadcast(ctx, nid * 10 + idx,
+                Intent(ctx, NotifyButtonReceiver::class.java)
+                    .putExtra("label", label).putExtra("nid", nid),
+                android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                    android.app.PendingIntent.FLAG_IMMUTABLE)
+            b.addAction(0, label, pi)
+        }
+        try {
+            (ctx.getSystemService(Context.NOTIFICATION_SERVICE)
+                as android.app.NotificationManager).notify(nid, b.build())
+        } catch (_: Exception) { }
+    }
+
+    /** v2.9: walks "a.b.0.c" through JSON text; returns leaf as string. */
+    private fun jsonPath(src: String, path: String): String? {
+        return try {
+            var cur: Any = if (src.trimStart().startsWith("["))
+                org.json.JSONArray(src) else JSONObject(src)
+            for (seg in path.split(".")) {
+                cur = when (cur) {
+                    is JSONObject -> (cur as JSONObject).get(seg)
+                    is org.json.JSONArray -> (cur as org.json.JSONArray)
+                        .get(seg.toInt())
+                    else -> return null
+                }
+            }
+            if (cur is JSONObject || cur is org.json.JSONArray) cur.toString()
+            else cur.toString()
+        } catch (e: Exception) { null }
+    }
+
+    /** v2.9: param "src|dst|widthPx" — scales an image, keeps format by ext. */
+    private fun imageResize(ctx: Context, param: String) {
+        try {
+            val parts = param.split("|")
+            if (parts.size < 3) return
+            val src = File(parts[0].trim()); val dst = File(parts[1].trim())
+            val w = parts[2].trim().toIntOrNull() ?: return
+            if (!src.exists() || !allowedPath(ctx, src) || !allowedPath(ctx, dst)) return
+            val bmp = android.graphics.BitmapFactory.decodeFile(src.absolutePath) ?: return
+            val scale = w.toFloat() / bmp.width
+            val h = (bmp.height * scale).toInt().coerceAtLeast(1)
+            val out = android.graphics.Bitmap.createScaledBitmap(bmp, w, h, true)
+            dst.parentFile?.mkdirs()
+            val fmt = if (dst.name.lowercase().endsWith(".png"))
+                android.graphics.Bitmap.CompressFormat.PNG
+                else android.graphics.Bitmap.CompressFormat.JPEG
+            dst.outputStream().use { out.compress(fmt, 90, it) }
+        } catch (_: Exception) { }
+    }
+
+    /** v2.9: param "src|dst|password" — file bytes ride the BackupCrypto
+     *  envelope (Base64 inside), so any file type round-trips. */
+    private fun fileCrypt(param: String, encrypt: Boolean) {
+        try {
+            val parts = param.split("|", limit = 3)
+            if (parts.size < 3) return
+            val src = File(parts[0].trim()); val dst = File(parts[1].trim())
+            val pass = parts[2]
+            if (!src.exists()) return
+            dst.parentFile?.mkdirs()
+            if (encrypt) {
+                val b64 = android.util.Base64.encodeToString(
+                    src.readBytes(), android.util.Base64.NO_WRAP)
+                dst.writeText(BackupCrypto.encrypt(b64, pass))
+            } else {
+                val plain = BackupCrypto.decrypt(src.readText(), pass) ?: return
+                dst.writeBytes(android.util.Base64.decode(plain,
+                    android.util.Base64.NO_WRAP))
+            }
+        } catch (_: Exception) { }
     }
 
     private var ruleNameHint: String = ""
@@ -836,6 +1412,64 @@ object Automation {
         prefs(ctx).edit().putString("waits", arr.toString()).apply()
     }
 
+    // ---------------- v2.9 polled edges ----------------
+    /** Wireless-charging, keyguard-lock and local-IP edges, plus the
+     *  periodic Bluetooth discovery the bt_near/bt_far triggers need. */
+    private fun pollEdges(ctx: Context) {
+        try {
+            val wp = prefs(ctx)
+            val bi = ctx.registerReceiver(null,
+                android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val plugged = bi?.getIntExtra(
+                android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+            val wireless = plugged == android.os.BatteryManager.BATTERY_PLUGGED_WIRELESS
+            if (wp.contains("edge_wireless")) {
+                val prev = wp.getBoolean("edge_wireless", false)
+                if (wireless && !prev) onEvent(ctx, "wireless_charging", JSONObject())
+                if (wireless != prev)
+                    wp.edit().putBoolean("edge_wireless", wireless).apply()
+            } else wp.edit().putBoolean("edge_wireless", wireless).apply()
+            val km = ctx.getSystemService(Context.KEYGUARD_SERVICE)
+                as android.app.KeyguardManager
+            val locked = km.isKeyguardLocked
+            if (wp.contains("edge_locked")) {
+                val prev = wp.getBoolean("edge_locked", false)
+                if (locked && !prev) onEvent(ctx, "screen_locked", JSONObject())
+                if (locked != prev) wp.edit().putBoolean("edge_locked", locked).apply()
+            } else wp.edit().putBoolean("edge_locked", locked).apply()
+            val ip = localIp()
+            val prevIp = wp.getString("edge_ip", "") ?: ""
+            if (prevIp.isNotEmpty() && ip.isNotEmpty() && ip != prevIp)
+                onEvent(ctx, "ip_changed", JSONObject()
+                    .put("title", ip).put("body", prevIp))
+            if (ip.isNotEmpty() && ip != prevIp)
+                wp.edit().putString("edge_ip", ip).apply()
+            val needsBt = rules(ctx).any { r -> r.optBoolean("enabled", true) &&
+                ruleTriggers(r).any { it.optString("type") == "bt_near" ||
+                    it.optString("type") == "bt_far" } }
+            if (needsBt) {
+                @Suppress("MissingPermission")
+                try { BtShare.adapter()?.takeIf { !it.isDiscovering }
+                    ?.startDiscovery() } catch (_: Exception) { }
+            }
+        } catch (_: Exception) { }
+    }
+
+    private fun localIp(): String {
+        try {
+            val ifaces = java.net.NetworkInterface.getNetworkInterfaces()
+            while (ifaces.hasMoreElements()) {
+                val addrs = ifaces.nextElement().inetAddresses
+                while (addrs.hasMoreElements()) {
+                    val a = addrs.nextElement()
+                    if (!a.isLoopbackAddress && a is java.net.Inet4Address)
+                        return a.hostAddress ?: ""
+                }
+            }
+        } catch (_: Exception) { }
+        return ""
+    }
+
     // ---------------- tick: time & polled triggers ----------------
     fun tick(ctx: Context) {
         if (!Config.automationOn(ctx)) return
@@ -845,7 +1479,7 @@ object Automation {
                 val now = System.currentTimeMillis()
                 val list = rules(ctx).filter { it.optBoolean("enabled", true) }
                 for (rule in list) {
-                    val trig = rule.optJSONObject("trigger") ?: continue
+                    for (trig in ruleTriggers(rule)) {
                     val type = trig.optString("type")
                     val param = trig.optString("param")
                     val should = when (type) {
@@ -886,8 +1520,11 @@ object Automation {
                         ruleNameHint = rule.optString("name")
                         log(ctx, "▶ " + rule.optString("name") + " (" + type + ")")
                         runActions(ctx, rule, JSONObject(), 0)
+                        break
+                    }
                     }
                 }
+                pollEdges(ctx)
                 pollWifi(ctx)
                 pollAppUsage(ctx, list)
                 pollStates(ctx)
@@ -1000,8 +1637,9 @@ object Automation {
 
     private fun pollAppUsage(ctx: Context, list: List<JSONObject>) {
         val watched = list.filter {
-            val t = it.optJSONObject("trigger")?.optString("type") ?: ""
-            t == "app_launched" || t == "app_closed"
+            ruleTriggers(it).any { t ->
+                t.optString("type") == "app_launched" ||
+                    t.optString("type") == "app_closed" }
         }
         if (watched.isEmpty()) return
         try {
@@ -1023,8 +1661,8 @@ object Automation {
                 if (states[pkg] == kind) continue
                 states[pkg] = kind
                 for (rule in watched) {
-                    val trig = rule.optJSONObject("trigger") ?: continue
-                    if (trig.optString("type") != kind) continue
+                    val trig = ruleTriggers(rule).firstOrNull {
+                        it.optString("type") == kind } ?: continue
                     if (trig.optString("param").isNotBlank() && trig.optString("param") != pkg) continue
                     val data = JSONObject().put("pkg", pkg)
                         .put("app", appLabel(ctx, pkg)).put("title", appLabel(ctx, pkg))
@@ -1093,6 +1731,9 @@ object Automation {
     private var lastProxNear: Boolean? = null
     private var lastLightBand: Boolean? = null
     private var lastShakeAt = 0L
+    private var lastOrient: String? = null
+    private var lastStillAt = 0L
+    private var lastPickUpAt = 0L
 
     @Synchronized
     // ---------------- v2.8: forecast / calendar / hotspot ----------------
@@ -1145,9 +1786,9 @@ object Automation {
             if (ctx.checkSelfPermission(android.Manifest.permission.READ_CALENDAR) !=
                 android.content.pm.PackageManager.PERMISSION_GRANTED) return
             val hasRules = rules(ctx).any {
-                it.optBoolean("enabled", true) &&
-                    (it.optJSONObject("trigger")?.optString("type") == "calendar_start" ||
-                     it.optJSONObject("trigger")?.optString("type") == "calendar_end")
+                it.optBoolean("enabled", true) && ruleTriggers(it).any { t ->
+                    t.optString("type") == "calendar_start" ||
+                        t.optString("type") == "calendar_end" }
             }
             if (!hasRules) return
             val now = System.currentTimeMillis()
@@ -1308,9 +1949,13 @@ object Automation {
         sensorListener = null
         if (!Config.automationOn(app)) return
         registerSysReceiver(app)
+        registerSmsDelivered(app)
         val types = rules(app).filter { it.optBoolean("enabled", true) }
-            .mapNotNull { it.optJSONObject("trigger")?.optString("type") }.toSet()
-        val needAccel = types.any { it == "shake" || it == "flip_down" || it == "flip_up" }
+            .flatMap { r -> ruleTriggers(r).map { it.optString("type") } }.toSet()
+        registerMediaObserver(app, types)
+        registerOps(app, types)
+        val needAccel = types.any { it == "shake" || it == "flip_down" || it == "flip_up" ||
+            it == "orientation_changed" || it == "pick_up" }
         val needProx = types.any { it == "proximity_near" || it == "proximity_far" }
         val needLight = types.any { it == "light_below" || it == "light_above" }
         val needMagnet = types.any { it == "magnet_above" }
@@ -1338,6 +1983,30 @@ object Automation {
                         } else if (up && lastFlipDown != false) {
                             if (lastFlipDown == true) onEvent(app, "flip_up", JSONObject())
                             lastFlipDown = false
+                        }
+                        // v2.9: orientation change + pick-up heuristic
+                        val orient = when {
+                            kotlin.math.abs(x) > kotlin.math.abs(y) + 2 &&
+                                kotlin.math.abs(x) > 6 -> "landscape"
+                            kotlin.math.abs(y) > kotlin.math.abs(x) + 2 &&
+                                y > 6 -> "portrait"
+                            else -> lastOrient
+                        }
+                        if (orient != null && orient != lastOrient) {
+                            val first = lastOrient == null
+                            lastOrient = orient
+                            if (!first) onEvent(app, "orientation_changed",
+                                JSONObject().put("kind", orient))
+                        }
+                        if (mag < 10.6) lastStillAt = now
+                        if (mag > 16 && now - lastStillAt > 1500 &&
+                            now - lastPickUpAt > 15_000) {
+                            val pm = app.getSystemService(Context.POWER_SERVICE)
+                                as android.os.PowerManager
+                            if (!pm.isInteractive) {
+                                lastPickUpAt = now
+                                onEvent(app, "pick_up", JSONObject())
+                            }
                         }
                     }
                     Sensor.TYPE_PROXIMITY -> {
@@ -1367,9 +2036,10 @@ object Automation {
                             prefs(app).edit().putFloat("last_lux", lux).apply()
                         for (rule in rules(app)) {
                             if (!rule.optBoolean("enabled", true)) continue
-                            val trig = rule.optJSONObject("trigger") ?: continue
+                            val trig = ruleTriggers(rule).firstOrNull {
+                                val tt = it.optString("type")
+                                tt == "light_below" || tt == "light_above" } ?: continue
                             val t = trig.optString("type")
-                            if (t != "light_below" && t != "light_above") continue
                             val target = trig.optString("param").toFloatOrNull() ?: continue
                             val bandKey = "lightband_${rule.optString("id")}"
                             val wasIn = prefs(app).getBoolean(bandKey, false)
@@ -1407,8 +2077,8 @@ object Automation {
     private fun bandFire(app: Context, type: String, value: Float, keyPrefix: String) {
         for (rule in rules(app)) {
             if (!rule.optBoolean("enabled", true)) continue
-            val trig = rule.optJSONObject("trigger") ?: continue
-            if (trig.optString("type") != type) continue
+            val trig = ruleTriggers(rule).firstOrNull {
+                it.optString("type") == type } ?: continue
             val target = trig.optString("param").toFloatOrNull() ?: continue
             val bandKey = keyPrefix + rule.optString("id")
             val wasIn = prefs(app).getBoolean(bandKey, false)
@@ -1420,6 +2090,124 @@ object Automation {
                 prefs(app).edit().putBoolean(bandKey, false).apply()
             }
         }
+    }
+
+    // ---------------- v2.9 registrations ----------------
+    @Volatile private var smsDeliveredReceiver: android.content.BroadcastReceiver? = null
+
+    private fun registerSmsDelivered(app: Context) {
+        if (smsDeliveredReceiver != null) return
+        val r = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: Context, intent: Intent) {
+                onEvent(c.applicationContext, "sms_delivered", JSONObject()
+                    .put("title", intent.getStringExtra("number") ?: ""))
+            }
+        }
+        try {
+            val f = android.content.IntentFilter("com.mthtamim.phonelink.SMS_DELIVERED")
+            if (android.os.Build.VERSION.SDK_INT >= 33)
+                app.registerReceiver(r, f, Context.RECEIVER_NOT_EXPORTED)
+            else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                app.registerReceiver(r, f)
+            }
+            smsDeliveredReceiver = r
+        } catch (_: Exception) { }
+    }
+
+    @Volatile private var mediaObserver: android.database.ContentObserver? = null
+
+    private fun registerMediaObserver(app: Context, types: Set<String>) {
+        if (mediaObserver != null) return
+        if (!types.contains("screenshot_taken") && !types.contains("photo_taken") &&
+            !types.contains("video_taken")) return
+        val obs = object : android.database.ContentObserver(
+            android.os.Handler(android.os.Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) { checkLatestMedia(app) }
+        }
+        try {
+            app.contentResolver.registerContentObserver(
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, obs)
+            app.contentResolver.registerContentObserver(
+                android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI, true, obs)
+            mediaObserver = obs
+            checkLatestMedia(app) // baseline only; fires on later changes
+        } catch (_: Exception) { }
+    }
+
+    private fun checkLatestMedia(app: Context) {
+        try {
+            val p = prefs(app)
+            app.contentResolver.query(
+                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(android.provider.MediaStore.Images.Media._ID,
+                    android.provider.MediaStore.Images.Media.DISPLAY_NAME,
+                    android.provider.MediaStore.Images.Media.RELATIVE_PATH),
+                null, null,
+                android.provider.MediaStore.Images.Media._ID + " DESC")?.use { cur ->
+                if (cur.moveToFirst()) {
+                    val id = cur.getLong(0)
+                    val name = (cur.getString(1) ?: "") + " " +
+                        (cur.getString(2) ?: "")
+                    val last = p.getLong("media_img_id", -1)
+                    if (last >= 0 && id > last) {
+                        if (name.contains("screenshot", true))
+                            onEvent(app, "screenshot_taken",
+                                JSONObject().put("title", name.trim()))
+                        else onEvent(app, "photo_taken",
+                            JSONObject().put("title", name.trim()))
+                    }
+                    if (id != last) p.edit().putLong("media_img_id", id).apply()
+                }
+            }
+            app.contentResolver.query(
+                android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(android.provider.MediaStore.Video.Media._ID,
+                    android.provider.MediaStore.Video.Media.DISPLAY_NAME),
+                null, null,
+                android.provider.MediaStore.Video.Media._ID + " DESC")?.use { cur ->
+                if (cur.moveToFirst()) {
+                    val id = cur.getLong(0)
+                    val last = p.getLong("media_vid_id", -1)
+                    if (last >= 0 && id > last)
+                        onEvent(app, "video_taken",
+                            JSONObject().put("title", cur.getString(1) ?: ""))
+                    if (id != last) p.edit().putLong("media_vid_id", id).apply()
+                }
+            }
+        } catch (_: Exception) { }
+    }
+
+    @Volatile private var opsRegistered = false
+
+    /** Camera/microphone-in-use triggers via AppOps (Android 11+). */
+    private fun registerOps(app: Context, types: Set<String>) {
+        if (opsRegistered) return
+        if (!types.contains("camera_used") && !types.contains("mic_used")) return
+        if (android.os.Build.VERSION.SDK_INT < 30) return
+        try {
+            val aom = app.getSystemService(Context.APP_OPS_SERVICE)
+                as android.app.AppOpsManager
+            val listener = android.app.AppOpsManager.OnOpActiveChangedListener {
+                    op, _, packageName, active ->
+                if (active) {
+                    val ev = when (op) {
+                        android.app.AppOpsManager.OPSTR_CAMERA -> "camera_used"
+                        android.app.AppOpsManager.OPSTR_RECORD_AUDIO -> "mic_used"
+                        else -> ""
+                    }
+                    if (ev.isNotEmpty()) onEvent(app, ev, JSONObject()
+                        .put("pkg", packageName)
+                        .put("app", appLabel(app, packageName))
+                        .put("title", packageName))
+                }
+            }
+            aom.startWatchingActive(arrayOf(
+                android.app.AppOpsManager.OPSTR_CAMERA,
+                android.app.AppOpsManager.OPSTR_RECORD_AUDIO),
+                app.mainExecutor, listener)
+            opsRegistered = true
+        } catch (_: Exception) { }
     }
 
     // ---------------- v2.7: system broadcast triggers ----------------
@@ -1435,6 +2223,9 @@ object Automation {
                         Intent.ACTION_PACKAGE_ADDED -> if (!intent.getBooleanExtra(
                                 Intent.EXTRA_REPLACING, false))
                             onEvent(ctx, "app_installed", JSONObject()
+                                .put("pkg", intent.data?.schemeSpecificPart ?: ""))
+                        Intent.ACTION_PACKAGE_REPLACED ->
+                            onEvent(ctx, "app_updated", JSONObject()
                                 .put("pkg", intent.data?.schemeSpecificPart ?: ""))
                         Intent.ACTION_PACKAGE_REMOVED -> if (!intent.getBooleanExtra(
                                 Intent.EXTRA_REPLACING, false))
@@ -1472,6 +2263,29 @@ object Automation {
                             onEvent(ctx, "timezone_changed", JSONObject())
                         Intent.ACTION_LOCALE_CHANGED ->
                             onEvent(ctx, "locale_changed", JSONObject())
+                        android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
+                            val pm = ctx.getSystemService(Context.POWER_SERVICE)
+                                as android.os.PowerManager
+                            onEvent(ctx, if (pm.isPowerSaveMode)
+                                "battery_saver_on" else "battery_saver_off", JSONObject())
+                        }
+                        "android.intent.action.SIM_STATE_CHANGED" ->
+                            onEvent(ctx, "sim_changed", JSONObject())
+                        android.bluetooth.BluetoothDevice.ACTION_FOUND -> {
+                            @Suppress("DEPRECATION")
+                            val dev = intent.getParcelableExtra<android.bluetooth.BluetoothDevice>(
+                                android.bluetooth.BluetoothDevice.EXTRA_DEVICE)
+                            val name = try { dev?.name ?: "" }
+                                catch (e: Exception) { "" }
+                            val rssi = intent.getShortExtra(
+                                android.bluetooth.BluetoothDevice.EXTRA_RSSI,
+                                Short.MIN_VALUE).toInt()
+                            if (name.isNotEmpty()) {
+                                val d = JSONObject().put("title", name)
+                                if (rssi >= -70) onEvent(ctx, "bt_near", d)
+                                if (rssi in -200..-90) onEvent(ctx, "bt_far", d)
+                            }
+                        }
                     }
                 } catch (_: Exception) { }
             }
@@ -1488,6 +2302,10 @@ object Automation {
             addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
             addAction(Intent.ACTION_LOCALE_CHANGED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addAction(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+            addAction("android.intent.action.SIM_STATE_CHANGED")
+            addAction(android.bluetooth.BluetoothDevice.ACTION_FOUND)
         }
         try {
             if (android.os.Build.VERSION.SDK_INT >= 33) {

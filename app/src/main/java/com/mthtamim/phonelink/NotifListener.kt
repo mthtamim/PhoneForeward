@@ -197,5 +197,13 @@ class NotifListener : NotificationListenerService() {
                 true
             } catch (e: Exception) { false }
         }
+
+        /** v2.9: replies to the most recent replyable notification of a package. */
+        fun replyByPackage(ctx: Context, pkg: String, text: String): Boolean {
+            val key = synchronized(lock) {
+                replyTargets.entries.lastOrNull { it.value.pkg == pkg }?.key
+            } ?: return false
+            return fireReply(ctx, key, text)
+        }
     }
 }

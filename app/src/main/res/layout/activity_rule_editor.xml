@@ -64,30 +64,18 @@
             android:text="@string/auto_trigger"
             android:textStyle="bold" />
 
-        <Spinner
-            android:id="@+id/spTrigger"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/PL.Field"
+        <LinearLayout
+            android:id="@+id/trigContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/auto_param_hint">
+            android:orientation="vertical" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etTriggerParam"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <TextView
-            android:id="@+id/tvTriggerHint"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddTrigger"
+            style="@style/PL.BtnTonal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:alpha="0.7"
-            android:textSize="12sp" />
+            android:text="@string/auto_add_trigger" />
 
         <TextView
             android:layout_width="match_parent"
@@ -95,6 +83,11 @@
             android:layout_marginTop="16dp"
             android:text="@string/auto_constraints"
             android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spConsMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
 
         <LinearLayout
             android:id="@+id/consContainer"

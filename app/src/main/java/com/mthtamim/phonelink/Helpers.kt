@@ -73,6 +73,22 @@ object FlashHelper {
         } catch (_: Exception) { null }
     }
 
+    /** v2.9: torch with a 1..5 strength level (Android 13+); 0 = off. */
+    fun setTorchLevel(ctx: Context, level: Int) {
+        try {
+            if (level <= 0) { setTorch(ctx, false); return }
+            if (android.os.Build.VERSION.SDK_INT < 33) { setTorch(ctx, true); return }
+            val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
+            val id = cameraId(ctx) ?: return
+            val maxLevel = cm.getCameraCharacteristics(id).get(
+                android.hardware.camera2.CameraCharacteristics
+                    .FLASH_INFO_STRENGTH_MAXIMUM_LEVEL) ?: 1
+            if (maxLevel <= 1) { cm.setTorchMode(id, true); return }
+            val strength = (level * maxLevel / 5).coerceIn(1, maxLevel)
+            cm.turnOnTorchWithStrengthLevel(id, strength)
+        } catch (_: Exception) { try { setTorch(ctx, level > 0) } catch (_: Exception) { } }
+    }
+
     fun setTorch(ctx: Context, on: Boolean) {
         try {
             val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager

@@ -512,6 +512,8 @@ object Config {
 
     // ---------- v2.4: automation ----------
     fun automationOn(ctx: Context) = prefs(ctx).getBoolean("automation_on", true)
+    fun rulesSyncOn(ctx: Context) = prefs(ctx).getBoolean("rules_sync_on", false)
+    fun setRulesSyncOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("rules_sync_on", v).apply() }
     fun setAutomationOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("automation_on", v).apply() }
 
     private fun generateCode(): String {

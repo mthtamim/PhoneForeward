@@ -16,6 +16,7 @@ class A11yService : AccessibilityService() {
 
     private var lastText = ""
     private var lastFireAt = 0L
+    private var lastSplit = false
 
     override fun onServiceConnected() {
         instance = this
@@ -59,6 +60,15 @@ class A11yService : AccessibilityService() {
         event ?: return
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        // v2.9: split-screen edge (checked before the text throttle)
+        try {
+            val split = (windows?.size ?: 0) >= 2
+            if (split != lastSplit) {
+                lastSplit = split
+                if (split) Automation.onEvent(applicationContext, "split_screen",
+                    JSONObject())
+            }
+        } catch (_: Exception) { }
         val now = System.currentTimeMillis()
         if (now - lastFireAt < 2500) return
         val root = rootInActiveWindow ?: return
@@ -128,6 +138,23 @@ class A11yService : AccessibilityService() {
 
         /** v2.8: current screen text, for the read_screen action. */
         fun readScreenText(): String = instance?.dumpText() ?: ""
+
+        /** v2.9: sets text into the currently focused input field. */
+        fun typeText(text: String): Boolean {
+            val svc = instance ?: return false
+            val root = svc.rootInActiveWindow ?: return false
+            val node = root.findFocus(
+                android.view.accessibility.AccessibilityNodeInfo.FOCUS_INPUT)
+                ?: return false
+            val args = android.os.Bundle().apply {
+                putCharSequence(
+                    android.view.accessibility.AccessibilityNodeInfo
+                        .ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
+            }
+            return try { node.performAction(
+                android.view.accessibility.AccessibilityNodeInfo.ACTION_SET_TEXT,
+                args) } catch (_: Exception) { false }
+        }
 
         /** Taps the first on-screen element containing the given text. */
         fun tapByText(text: String): Boolean {

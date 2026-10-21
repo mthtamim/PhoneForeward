@@ -670,6 +670,15 @@ class LinkService : Service() {
                 payload.optString("cfg", ""), payload.optString("status", ""),
                 payload.optString("dev", ""))
         }
+        // v2.9: peer rule sync (only lands when this phone opted in too)
+        if (type == "RULESYNC") {
+            if (Config.rulesSyncOn(ctx)) {
+                val body = payload.optString("body", "")
+                if (body.isNotEmpty()) Automation.applyRemoteRules(ctx, body)
+            }
+            return
+        }
+
         if (type == Relay.TYPE_HEARTBEAT) {
             val battery = payload.optInt("battery", -1)
             if (battery >= 0) {
