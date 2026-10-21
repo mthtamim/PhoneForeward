@@ -30,10 +30,21 @@ object ShizukuHelper {
     fun run(command: String): String {
         if (!granted()) return ""
         return try {
-            val proc = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            val proc = newProcess(arrayOf("sh", "-c", command))
             val out = proc.inputStream.bufferedReader().readText()
             proc.waitFor()
             out.trim()
         } catch (_: Throwable) { "" }
+    }
+
+    /** Shizuku.newProcess is library-restricted in API 13, which the
+     *  Kotlin compiler refuses to call directly; reach it reflectively. */
+    private fun newProcess(cmd: Array<String>): Process {
+        val m = Shizuku::class.java.getDeclaredMethod(
+            "newProcess",
+            Array<String>::class.java, Array<String>::class.java,
+            String::class.java)
+        m.isAccessible = true
+        return m.invoke(null, cmd, null, null) as Process
     }
 }
