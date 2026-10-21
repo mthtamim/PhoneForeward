@@ -32,6 +32,9 @@ class CallReceiver : BroadcastReceiver() {
                 outgoingNumber = number
                 Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, number)}আউটগোয়িং কল",
                     Contacts.labelForNumber(ctx, number), extraFor(ctx, number))
+                Automation.onEvent(ctx, "call_outgoing", org.json.JSONObject()
+                    .put("title", Contacts.labelForNumber(ctx, number))
+                    .put("from", number ?: ""))
             }
             TelephonyManager.ACTION_PHONE_STATE_CHANGED -> {
                 val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
@@ -74,6 +77,9 @@ class CallReceiver : BroadcastReceiver() {
                             Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, who)}কল শেষ",
                                 "${Contacts.labelForNumber(ctx, who)} — সময়: ${secs / 60} মিনিট ${secs % 60} সেকেন্ড",
                                 extraFor(ctx, who))
+                            Automation.onEvent(ctx, "call_ended", org.json.JSONObject()
+                                .put("title", Contacts.labelForNumber(ctx, who))
+                                .put("from", who ?: ""))
                         }
                         incomingNumber = null
                         outgoingNumber = null

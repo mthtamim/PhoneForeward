@@ -80,5 +80,30 @@ class ChartsActivity : LocalizedActivity() {
                 setPadding(4, 6, 4, 6)
             })
         }
+
+        // v2.7: peer battery history (points recorded from peer status).
+        container.addView(TextView(this).apply {
+            text = getString(R.string.charts_peer_batt)
+            textSize = 17f
+            setPadding(4, 20, 4, 8)
+        })
+        val hist = Peers.batteryHistory(this)
+        if (hist.isEmpty()) {
+            container.addView(TextView(this).apply {
+                text = getString(R.string.charts_peer_batt_empty)
+                setPadding(4, 4, 4, 12)
+            })
+        } else {
+            val vals = hist.flatMap { listOf(0, it.second) }
+            val chart = BarsView(this, vals)
+            chart.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 120)
+            container.addView(chart)
+            val last = hist.last()
+            container.addView(TextView(this).apply {
+                text = getString(R.string.charts_peer_batt_last, last.second)
+                setPadding(4, 8, 4, 12)
+            })
+        }
     }
 }

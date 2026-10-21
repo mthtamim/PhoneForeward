@@ -62,6 +62,14 @@ class StatusWidgetProvider : AppWidgetProvider() {
             val pi = PendingIntent.getActivity(ctx, 0, intent,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             views.setOnClickPendingIntent(R.id.widgetRoot, pi)
+            val ringPi = PendingIntent.getBroadcast(ctx, 11,
+                Intent(ctx, WidgetActionReceiver::class.java).setAction("pl_widget_ring"),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            views.setOnClickPendingIntent(R.id.wBtnRing, ringPi)
+            val locPi = PendingIntent.getBroadcast(ctx, 12,
+                Intent(ctx, WidgetActionReceiver::class.java).setAction("pl_widget_loc"),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            views.setOnClickPendingIntent(R.id.wBtnLoc, locPi)
             return views
         }
     }

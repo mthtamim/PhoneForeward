@@ -56,6 +56,20 @@ class A11yService : AccessibilityService() {
     companion object {
         @Volatile var instance: A11yService? = null
 
+        /** v2.7: performs a global navigation action (home/back/recents/notifications). */
+        fun globalKey(name: String): Boolean {
+            val svc = instance ?: return false
+            val action = when (name.lowercase()) {
+                "home" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_HOME
+                "back" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK
+                "recents" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_RECENTS
+                "notifications" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS
+                "quick_settings" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS
+                else -> return false
+            }
+            return try { svc.performGlobalAction(action) } catch (_: Exception) { false }
+        }
+
         /** Taps the first on-screen element containing the given text. */
         fun tapByText(text: String): Boolean {
             val svc = instance ?: return false

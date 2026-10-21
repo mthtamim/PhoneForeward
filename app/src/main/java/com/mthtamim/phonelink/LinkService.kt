@@ -63,8 +63,46 @@ class LinkService : Service() {
         registerMediaObserver()
         registerGuardSensor()
         Automation.refreshWatchers(applicationContext)
+        registerSmsObserver()
         instance = this
         Lan.startServer(applicationContext)
+        if (Config.btReceiveOn(applicationContext)) BtShare.startServer(applicationContext)
+    }
+
+    // ------------- v2.7: SMS-sent observer (automation trigger) -------------
+    private val smsSentObserver = object : android.database.ContentObserver(
+        android.os.Handler(android.os.Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            try {
+                val ctx = applicationContext
+                val cur = contentResolver.query(
+                    android.provider.Telephony.Sms.Sent.CONTENT_URI,
+                    arrayOf("_id", "address", "body"), null, null, "_id DESC LIMIT 1")
+                cur?.use {
+                    if (it.moveToFirst()) {
+                        val id = it.getLong(0)
+                        val prefs = getSharedPreferences("phonelink_state", MODE_PRIVATE)
+                        val last = prefs.getLong("sms_sent_last_id", -1)
+                        if (last < 0) {
+                            prefs.edit().putLong("sms_sent_last_id", id).apply()
+                        } else if (id > last) {
+                            prefs.edit().putLong("sms_sent_last_id", id).apply()
+                            Automation.onEvent(ctx, "sms_sent", JSONObject()
+                                .put("from", it.getString(1) ?: "")
+                                .put("body", it.getString(2) ?: "")
+                                .put("title", it.getString(1) ?: ""))
+                        }
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
+    private fun registerSmsObserver() {
+        try {
+            contentResolver.registerContentObserver(
+                android.provider.Telephony.Sms.CONTENT_URI, true, smsSentObserver)
+        } catch (_: Exception) { }
     }
 
     // ------------- guard mode (movement alarm) -------------

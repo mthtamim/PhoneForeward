@@ -33,7 +33,37 @@ object Peers {
                 put("dev", dev.ifEmpty { prev?.optString("dev") ?: "" })
             })
             prefs(ctx).edit().putString("peers", all.toString()).apply()
+            if (batt >= 0) recordBattery(ctx, batt)
         } catch (_: Exception) { }
+    }
+
+    /** v2.7: peer battery history points (throttled) for the chart. */
+    @Synchronized
+    fun recordBattery(ctx: Context, pct: Int) {
+        try {
+            val arr = try { org.json.JSONArray(
+                prefs(ctx).getString("peerbat_hist", "[]") ?: "[]")
+            } catch (e: Exception) { org.json.JSONArray() }
+            val now = System.currentTimeMillis()
+            val last = if (arr.length() > 0) arr.optJSONObject(arr.length() - 1) else null
+            if (last != null && now - last.optLong("t") < 15 * 60_000 &&
+                kotlin.math.abs(last.optInt("p") - pct) < 3) return
+            arr.put(JSONObject().put("t", now).put("p", pct))
+            while (arr.length() > 120) arr.remove(0)
+            prefs(ctx).edit().putString("peerbat_hist", arr.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    fun batteryHistory(ctx: Context): List<Pair<Long, Int>> {
+        val out = mutableListOf<Pair<Long, Int>>()
+        try {
+            val arr = org.json.JSONArray(prefs(ctx).getString("peerbat_hist", "[]") ?: "[]")
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                out.add(o.optLong("t") to o.optInt("p"))
+            }
+        } catch (_: Exception) { }
+        return out
     }
 
     fun list(ctx: Context): List<Peer> {

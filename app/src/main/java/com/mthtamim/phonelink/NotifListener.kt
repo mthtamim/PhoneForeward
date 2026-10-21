@@ -22,6 +22,18 @@ class NotifListener : NotificationListenerService() {
         super.onListenerDisconnected()
     }
 
+    override fun onNotificationRemoved(sbn: StatusBarNotification?) {
+        sbn ?: return
+        try {
+            val extras = sbn.notification?.extras
+            val title = extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
+            Automation.onEvent(applicationContext, "notif_cleared", JSONObject()
+                .put("title", title)
+                .put("app", sbn.packageName ?: "")
+                .put("body", ""))
+        } catch (_: Exception) { }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
         val ctx = applicationContext
@@ -136,6 +148,18 @@ class NotifListener : NotificationListenerService() {
         fun dismiss(key: String): Boolean {
             val svc = instance ?: return false
             return try { svc.cancelNotification(key); true } catch (_: Exception) { false }
+        }
+
+        /** v2.7: dismisses every notification posted by one package. */
+        fun cancelPackage(pkg: String): Boolean {
+            val svc = instance ?: return false
+            return try {
+                var n = 0
+                for (sbn in svc.activeNotifications) {
+                    if (sbn.packageName == pkg) { svc.cancelNotification(sbn.key); n++ }
+                }
+                n > 0
+            } catch (_: Exception) { false }
         }
 
         /** Dismisses all of this phone's notifications. */

@@ -61,9 +61,29 @@ object Relay {
             if (post(appCtx, Config.dataTopic(appCtx), payload)) {
                 if (type != TYPE_HEARTBEAT) addPendingAck(appCtx, payload)
             } else {
+                maybeSmsFallback(appCtx, type, payload)
                 enqueue(appCtx, payload)
             }
         }
+    }
+
+    /** v2.7: when the relay cannot be reached, an URGENT alert also goes
+     *  out as a plain SMS to the configured fallback number. */
+    private fun maybeSmsFallback(ctx: Context, type: String, payload: JSONObject) {
+        if (type != TYPE_URGENT) return
+        try {
+            if (!Config.smsFallbackOn(ctx)) return
+            val num = Config.smsFallbackNumber(ctx).trim()
+            if (num.isEmpty()) return
+            if (ctx.checkSelfPermission(android.Manifest.permission.SEND_SMS) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED) return
+            val text = ("[PhoneLink] " + payload.optString("title") + " — " +
+                payload.optString("body")).take(600)
+            @Suppress("DEPRECATION")
+            val sm = android.telephony.SmsManager.getDefault()
+            val parts = sm.divideMessage(text)
+            sm.sendMultipartTextMessage(num, null, parts, null, null)
+        } catch (_: Exception) { }
     }
 
     fun sendCommand(ctx: Context, command: String, arg: String? = null, extra: JSONObject? = null) {

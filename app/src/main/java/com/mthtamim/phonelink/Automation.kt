@@ -118,12 +118,16 @@ object Automation {
     private fun triggerParamMatches(ctx: Context, event: String, param: String, data: JSONObject): Boolean {
         if (param.isBlank()) return true
         return when (event) {
-            "sms_received", "notif_received", "screen_text" -> {
+            "sms_received", "notif_received", "screen_text", "notif_cleared",
+            "sms_sent", "call_outgoing", "call_ended" -> {
                 val hay = (data.optString("title") + " " + data.optString("body") +
                     " " + data.optString("app")).lowercase()
                 hay.contains(param.lowercase())
             }
-            "app_launched", "app_closed" -> data.optString("pkg") == param
+            "app_launched", "app_closed", "app_installed", "app_removed" ->
+                data.optString("pkg") == param
+            "bt_connected", "bt_disconnected" ->
+                data.optString("title").contains(param, ignoreCase = true)
             "wifi_connected" -> data.optString("ssid").equals(param, true)
             "activity" -> data.optString("kind") == param
             else -> true
@@ -180,6 +184,81 @@ object Automation {
                     Config.lastSenderSeen(ctx) < 75L * 60 * 1000
                 "foreground_app" -> foregroundPkg(ctx) == param
                 "variable" -> evalVar(ctx, param)
+                // ---- v2.7 ----
+                "music_playing" -> musicActive(ctx) == (param != "off")
+                "call_active" -> {
+                    val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE)
+                        as android.telephony.TelephonyManager
+                    @Suppress("DEPRECATION")
+                    (try { tm.callState } catch (e: Exception) {
+                        android.telephony.TelephonyManager.CALL_STATE_IDLE }) !=
+                        android.telephony.TelephonyManager.CALL_STATE_IDLE
+                }
+                "vpn" -> isVpnOn(ctx) == (param != "off")
+                "roaming" -> (try {
+                    (ctx.getSystemService(Context.TELEPHONY_SERVICE)
+                        as android.telephony.TelephonyManager).isNetworkRoaming
+                } catch (e: Exception) { false }) == (param != "off")
+                "dark_mode" -> isDarkMode(ctx) == (param != "off")
+                "dnd" -> {
+                    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE)
+                        as android.app.NotificationManager
+                    (nm.currentInterruptionFilter !=
+                        android.app.NotificationManager.INTERRUPTION_FILTER_ALL) ==
+                        (param != "off")
+                }
+                "charging_type" -> {
+                    val bi = ctx.registerReceiver(null,
+                        android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                    val plugged = bi?.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+                    val kind = when (plugged) {
+                        BatteryManager.BATTERY_PLUGGED_AC -> "ac"
+                        BatteryManager.BATTERY_PLUGGED_USB -> "usb"
+                        BatteryManager.BATTERY_PLUGGED_WIRELESS -> "wireless"
+                        else -> "none"
+                    }
+                    kind == param.trim().lowercase()
+                }
+                "battery_temp_below" -> {
+                    val tv = batteryTempC(ctx)
+                    tv >= 0 && tv <= (param.toFloatOrNull() ?: 999f)
+                }
+                "battery_temp_above" -> {
+                    val tv = batteryTempC(ctx)
+                    tv >= (param.toFloatOrNull() ?: -999f)
+                }
+                "steps_today" -> ctx.getSharedPreferences("phonelink_state",
+                    Context.MODE_PRIVATE).getInt("steps_today", 0) >=
+                    (param.toIntOrNull() ?: Int.MAX_VALUE)
+                "proximity_near" ->
+                    prefs(ctx).getBoolean("last_prox_near", false) == (param != "off")
+                "light_below" -> {
+                    val lux = prefs(ctx).getFloat("last_lux", -1f)
+                    lux >= 0 && lux < (param.toFloatOrNull() ?: 0f)
+                }
+                "light_above" -> {
+                    val lux = prefs(ctx).getFloat("last_lux", -1f)
+                    lux > (param.toFloatOrNull() ?: Float.MAX_VALUE)
+                }
+                "airplane" -> (android.provider.Settings.Global.getInt(
+                    ctx.contentResolver,
+                    android.provider.Settings.Global.AIRPLANE_MODE_ON, 0) == 1) ==
+                    (param != "off")
+                "peer_battery_above" ->
+                    (Peers.list(ctx).firstOrNull()?.battery ?: -1) >=
+                        (param.toIntOrNull() ?: 101)
+                "bt_connected" -> {
+                    val ad = BtShare.adapter()
+                    val on = try {
+                        ad != null && (ad.getProfileConnectionState(
+                            android.bluetooth.BluetoothProfile.A2DP) ==
+                            android.bluetooth.BluetoothProfile.STATE_CONNECTED ||
+                            ad.getProfileConnectionState(
+                                android.bluetooth.BluetoothProfile.HEADSET) ==
+                            android.bluetooth.BluetoothProfile.STATE_CONNECTED)
+                    } catch (e: Exception) { false }
+                    on == (param != "off")
+                }
                 else -> true
             }
         } catch (e: Exception) { true }
@@ -223,6 +302,7 @@ object Automation {
                     return
                 }
                 "if_var" -> if (!evalVar(ctx, param)) return
+                "stop" -> return
                 else -> runAction(ctx, type, param, data)
             }
             i++
@@ -260,6 +340,254 @@ object Automation {
                 "lost_on" -> LinkService.setLostMode(ctx, true)
                 "lost_off" -> LinkService.setLostMode(ctx, false)
                 "tap_text" -> A11yService.tapByText(param)
+                // ---- v2.7 MacroDroid expansion actions ----
+                "media_control" -> {
+                    val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    val code = when (param.trim().lowercase()) {
+                        "play" -> android.view.KeyEvent.KEYCODE_MEDIA_PLAY
+                        "pause" -> android.view.KeyEvent.KEYCODE_MEDIA_PAUSE
+                        "next" -> android.view.KeyEvent.KEYCODE_MEDIA_NEXT
+                        "prev" -> android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS
+                        "stop" -> android.view.KeyEvent.KEYCODE_MEDIA_STOP
+                        else -> android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
+                    }
+                    val now = android.os.SystemClock.uptimeMillis()
+                    am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now,
+                        android.view.KeyEvent.ACTION_DOWN, code, 0))
+                    am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now,
+                        android.view.KeyEvent.ACTION_UP, code, 0))
+                }
+                "volume_set" -> {
+                    val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    val parts = param.split(":")
+                    val stream = when (parts.getOrNull(0)?.trim()?.lowercase()) {
+                        "ring" -> AudioManager.STREAM_RING
+                        "alarm" -> AudioManager.STREAM_ALARM
+                        "call" -> AudioManager.STREAM_VOICE_CALL
+                        else -> AudioManager.STREAM_MUSIC
+                    }
+                    val pct = (parts.lastOrNull()?.trim()?.toIntOrNull() ?: 50)
+                        .coerceIn(0, 100)
+                    val max = am.getStreamMaxVolume(stream)
+                    am.setStreamVolume(stream, (max * pct / 100).coerceIn(0, max), 0)
+                }
+                "brightness_set" -> {
+                    if (android.provider.Settings.System.canWrite(ctx)) {
+                        val pct = (param.toIntOrNull() ?: 50).coerceIn(0, 100)
+                        android.provider.Settings.System.putInt(ctx.contentResolver,
+                            android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
+                            android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
+                        android.provider.Settings.System.putInt(ctx.contentResolver,
+                            android.provider.Settings.System.SCREEN_BRIGHTNESS,
+                            (pct * 255 / 100).coerceIn(1, 255))
+                    } else localNotify(ctx,
+                        "উজ্জ্বলতা বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
+                }
+                "screen_timeout_set" -> {
+                    if (android.provider.Settings.System.canWrite(ctx)) {
+                        val secs = (param.toIntOrNull() ?: 60).coerceIn(15, 3600)
+                        android.provider.Settings.System.putInt(ctx.contentResolver,
+                            android.provider.Settings.System.SCREEN_OFF_TIMEOUT, secs * 1000)
+                    } else localNotify(ctx,
+                        "স্ক্রিন টাইমআউট বদলাতে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
+                }
+                "auto_rotate_set" -> {
+                    if (android.provider.Settings.System.canWrite(ctx)) {
+                        android.provider.Settings.System.putInt(ctx.contentResolver,
+                            android.provider.Settings.System.ACCELEROMETER_ROTATION,
+                            if (param == "off") 0 else 1)
+                    }
+                }
+                "bt_toggle" -> {
+                    try {
+                        @Suppress("DEPRECATION")
+                        val ok = if (param == "off") BtShare.adapter()?.disable()
+                            else BtShare.adapter()?.enable()
+                        if (ok != true) localNotify(ctx,
+                            "Bluetooth সরাসরি বদলানো যায়নি — নতুন Android-এ সীমাবদ্ধ।")
+                    } catch (e: Exception) {
+                        localNotify(ctx,
+                            "Bluetooth সরাসরি বদলানো যায়নি — নতুন Android-এ সীমাবদ্ধ।")
+                    }
+                }
+                "dnd_set" -> {
+                    val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE)
+                        as android.app.NotificationManager
+                    if (nm.isNotificationPolicyAccessGranted) {
+                        nm.setInterruptionFilter(when (param.trim().lowercase()) {
+                            "priority" -> android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                            "alarms" -> android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS
+                            "none" -> android.app.NotificationManager.INTERRUPTION_FILTER_NONE
+                            else -> android.app.NotificationManager.INTERRUPTION_FILTER_ALL
+                        })
+                    } else localNotify(ctx, "DND বদলাতে Do Not Disturb access দাও।")
+                }
+                "vibrate" -> {
+                    val v = ctx.getSystemService(Context.VIBRATOR_SERVICE)
+                        as android.os.Vibrator
+                    val parts = param.split(",").mapNotNull { it.trim().toLongOrNull() }
+                    if (parts.size >= 2) v.vibrate(
+                        android.os.VibrationEffect.createWaveform(parts.toLongArray(), -1))
+                    else v.vibrate(android.os.VibrationEffect.createOneShot(
+                        parts.firstOrNull() ?: 400,
+                        android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                }
+                "play_sound" -> {
+                    val uri = if (param.isBlank())
+                        android.media.RingtoneManager.getDefaultUri(
+                            android.media.RingtoneManager.TYPE_NOTIFICATION)
+                        else Uri.parse(param)
+                    val mp = android.media.MediaPlayer()
+                    try {
+                        mp.setDataSource(ctx, uri); mp.prepare(); mp.start()
+                        mp.setOnCompletionListener { it.release() }
+                    } catch (e: Exception) {
+                        try { mp.release() } catch (_: Exception) { }
+                    }
+                }
+                "record_audio" -> {
+                    val secs = (param.toIntOrNull() ?: 30).coerceIn(5, 120)
+                    if (ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        val file = File(ctx.filesDir,
+                            "auto_rec_${System.currentTimeMillis()}.m4a")
+                        val rec = android.media.MediaRecorder()
+                        try {
+                            rec.setAudioSource(android.media.MediaRecorder.AudioSource.MIC)
+                            rec.setOutputFormat(android.media.MediaRecorder.OutputFormat.MPEG_4)
+                            rec.setAudioEncoder(android.media.MediaRecorder.AudioEncoder.AAC)
+                            rec.setOutputFile(file.absolutePath)
+                            rec.prepare(); rec.start()
+                            android.os.Handler(android.os.Looper.getMainLooper())
+                                .postDelayed({
+                                    try { rec.stop() } catch (_: Exception) { }
+                                    try { rec.release() } catch (_: Exception) { }
+                                    History.add(ctx, History.Item(Relay.TYPE_FILE,
+                                        "🎙️ অটোমেশন রেকর্ডিং", file.absolutePath,
+                                        "Automation", System.currentTimeMillis(),
+                                        extra = file.absolutePath))
+                                }, secs * 1000L)
+                        } catch (e: Exception) {
+                            try { rec.release() } catch (_: Exception) { }
+                        }
+                    }
+                }
+                "take_photo" -> {
+                    SessionState.snapFront = param.equals("front", true)
+                    try {
+                        androidx.core.content.ContextCompat.startForegroundService(
+                            ctx, Intent(ctx, SnapService::class.java))
+                    } catch (_: Exception) { }
+                }
+                "open_url" -> {
+                    val url = if (param.startsWith("http")) param else "https://$param"
+                    try {
+                        ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { }
+                }
+                "share_text" -> {
+                    try {
+                        val send = Intent(Intent.ACTION_SEND).setType("text/plain")
+                            .putExtra(Intent.EXTRA_TEXT, param)
+                        ctx.startActivity(Intent.createChooser(send, null)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { }
+                }
+                "kill_app" -> {
+                    try {
+                        (ctx.getSystemService(Context.ACTIVITY_SERVICE)
+                            as android.app.ActivityManager)
+                            .killBackgroundProcesses(param.trim())
+                    } catch (_: Exception) { }
+                }
+                "answer_call" -> {
+                    try {
+                        (ctx.getSystemService(Context.TELECOM_SERVICE)
+                            as android.telecom.TelecomManager).acceptRingingCall()
+                    } catch (_: Exception) { }
+                }
+                "end_call" -> {
+                    try {
+                        @Suppress("DEPRECATION")
+                        (ctx.getSystemService(Context.TELECOM_SERVICE)
+                            as android.telecom.TelecomManager).endCall()
+                    } catch (_: Exception) { }
+                }
+                "set_wallpaper" -> Thread {
+                    try {
+                        val bmp = if (param.startsWith("http")) {
+                            val conn = URL(param).openConnection() as HttpURLConnection
+                            conn.connectTimeout = 10000; conn.readTimeout = 10000
+                            conn.inputStream.use {
+                                android.graphics.BitmapFactory.decodeStream(it) }
+                        } else android.graphics.BitmapFactory.decodeFile(param)
+                        if (bmp != null)
+                            android.app.WallpaperManager.getInstance(ctx).setBitmap(bmp)
+                    } catch (_: Exception) { }
+                }.start()
+                "clear_notif" ->
+                    if (param.isBlank() || param == "all") NotifListener.dismissAll()
+                    else NotifListener.cancelPackage(param.trim())
+                "global_key" -> A11yService.globalKey(param)
+                "stopwatch_start" ->
+                    prefs(ctx).edit().putLong("sw_${param.trim()}",
+                        System.currentTimeMillis()).apply()
+                "stopwatch_stop" ->
+                    prefs(ctx).edit().remove("sw_${param.trim()}").apply()
+                "rule_enable", "rule_disable", "rule_run" -> {
+                    val target = rules(ctx).firstOrNull {
+                        it.optString("name").equals(param.trim(), true) }
+                    if (target != null) {
+                        when (type) {
+                            "rule_enable" -> setEnabled(ctx, target.optString("id"), true)
+                            "rule_disable" -> setEnabled(ctx, target.optString("id"), false)
+                            else -> if (!target.optString("name")
+                                    .equals(ruleNameHint, true) &&
+                                constraintsPass(ctx, target)) {
+                                ruleNameHint = target.optString("name")
+                                runActions(ctx, target, data, 0)
+                            }
+                        }
+                    }
+                }
+                "inc_var" -> {
+                    val parts = param.split(":")
+                    val name = parts[0].trim()
+                    val delta = parts.getOrNull(1)?.trim()?.toIntOrNull() ?: 1
+                    val cur = getVar(ctx, name).toIntOrNull() ?: 0
+                    setVar(ctx, name, (cur + delta).toString())
+                }
+                "delete_file" -> {
+                    try {
+                        val f = File(param.trim())
+                        val canon = f.canonicalPath
+                        val allowed = listOfNotNull(ctx.filesDir,
+                            ctx.getExternalFilesDir(null),
+                            ctx.getExternalFilesDir(
+                                android.os.Environment.DIRECTORY_DOWNLOADS))
+                        if (allowed.any { canon.startsWith(it.canonicalPath) }) f.delete()
+                    } catch (_: Exception) { }
+                }
+                "lock_screen" -> AdminReceiver.lockNow(ctx)
+                "wake_screen" -> {
+                    val pm = ctx.getSystemService(Context.POWER_SERVICE)
+                        as android.os.PowerManager
+                    @Suppress("DEPRECATION")
+                    val wl = pm.newWakeLock(
+                        android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                            android.os.PowerManager.ACQUIRE_CAUSES_WAKEUP or
+                            android.os.PowerManager.ON_AFTER_RELEASE, "phonelink:wake")
+                    wl.acquire(10_000)
+                }
+                "send_intent" -> {
+                    try { ctx.sendBroadcast(Intent(param.trim())) } catch (_: Exception) { }
+                }
+                "toast_local" -> android.os.Handler(android.os.Looper.getMainLooper())
+                    .post {
+                        android.widget.Toast.makeText(ctx, param,
+                            android.widget.Toast.LENGTH_LONG).show()
+                    }
             }
         } catch (e: Exception) { /* keep the chain alive */ }
     }
@@ -315,6 +643,11 @@ object Automation {
                                 now - prefs(ctx).getLong("fired_${rule.optString("id")}", 0) > mins * 60_000
                         }
                         "weather" -> weatherDue(ctx, param)
+                        "battery_full" -> batteryCrossing(ctx, rule, "battery_above", "100")
+                        "battery_temp_above" -> tempCrossing(ctx, rule, param)
+                        "date_at" -> dateDue(ctx, rule, param)
+                        "stopwatch" -> stopwatchDue(ctx, rule, param)
+                        "peer_battery_below" -> peerBatteryCrossing(ctx, rule, param)
                         else -> false
                     }
                     if (should && constraintsPass(ctx, rule)) {
@@ -328,6 +661,7 @@ object Automation {
                 }
                 pollWifi(ctx)
                 pollAppUsage(ctx, list)
+                pollStates(ctx)
             } catch (e: Exception) { }
         }.start()
     }
@@ -531,12 +865,114 @@ object Automation {
     private var lastShakeAt = 0L
 
     @Synchronized
+    // ---------------- v2.7: polled state triggers + crossings ----------------
+    private fun batteryTempC(ctx: Context): Float {
+        val bi = ctx.registerReceiver(null,
+            android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        val tv = bi?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
+        return if (tv > 0) tv / 10f else -1f
+    }
+
+    private fun tempCrossing(ctx: Context, rule: JSONObject, param: String): Boolean {
+        val temp = batteryTempC(ctx); if (temp < 0) return false
+        val target = param.toFloatOrNull() ?: return false
+        val key = "arm_${rule.optString("id")}"
+        val armed = prefs(ctx).getBoolean(key, true)
+        val hit = temp >= target
+        if (hit && armed) {
+            prefs(ctx).edit().putBoolean(key, false).apply(); return true
+        }
+        if (!hit) prefs(ctx).edit().putBoolean(key, true).apply()
+        return false
+    }
+
+    private fun dateDue(ctx: Context, rule: JSONObject, param: String): Boolean {
+        val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
+        val target = try { fmt.parse(param.trim())?.time ?: return false }
+            catch (e: Exception) { return false }
+        val key = "date_${rule.optString("id")}"
+        if (prefs(ctx).getString(key, "") == param) return false
+        if (System.currentTimeMillis() >= target) {
+            prefs(ctx).edit().putString(key, param).apply(); return true
+        }
+        return false
+    }
+
+    private fun stopwatchDue(ctx: Context, rule: JSONObject, param: String): Boolean {
+        val parts = param.split(":")
+        if (parts.size != 2) return false
+        val name = parts[0].trim()
+        val mins = parts[1].trim().toLongOrNull() ?: return false
+        val start = prefs(ctx).getLong("sw_$name", 0)
+        if (start == 0L) return false
+        val key = "swf_${rule.optString("id")}"
+        if (prefs(ctx).getLong(key, 0) == start) return false
+        if (System.currentTimeMillis() - start >= mins * 60_000) {
+            prefs(ctx).edit().putLong(key, start).apply(); return true
+        }
+        return false
+    }
+
+    private fun peerBatteryCrossing(ctx: Context, rule: JSONObject, param: String): Boolean {
+        val pct = Peers.list(ctx).firstOrNull()?.battery ?: -1
+        if (pct < 0) return false
+        val target = param.toIntOrNull() ?: return false
+        val key = "arm_${rule.optString("id")}"
+        val armed = prefs(ctx).getBoolean(key, true)
+        val hit = pct <= target
+        if (hit && armed) {
+            prefs(ctx).edit().putBoolean(key, false).apply(); return true
+        }
+        if (!hit) prefs(ctx).edit().putBoolean(key, true).apply()
+        return false
+    }
+
+    fun musicActive(ctx: Context): Boolean =
+        (ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager).isMusicActive
+
+    fun isVpnOn(ctx: Context): Boolean {
+        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE)
+            as android.net.ConnectivityManager
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN)
+    }
+
+    fun isDarkMode(ctx: Context): Boolean =
+        (ctx.resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+
+    private fun stateEdge(ctx: Context, key: String, now: Boolean,
+                          onEv: String, offEv: String) {
+        val p = prefs(ctx)
+        if (!p.contains(key)) { p.edit().putBoolean(key, now).apply(); return }
+        val prev = p.getBoolean(key, now)
+        if (prev != now) {
+            p.edit().putBoolean(key, now).apply()
+            onEvent(ctx, if (now) onEv else offEv, JSONObject())
+        }
+    }
+
+    private fun pollStates(ctx: Context) {
+        try {
+            stateEdge(ctx, "poll_music", musicActive(ctx), "music_started", "music_stopped")
+            stateEdge(ctx, "poll_vpn", isVpnOn(ctx), "vpn_on", "vpn_off")
+            stateEdge(ctx, "poll_dark", isDarkMode(ctx), "dark_on", "dark_off")
+            val roam = try {
+                (ctx.getSystemService(Context.TELEPHONY_SERVICE)
+                    as android.telephony.TelephonyManager).isNetworkRoaming
+            } catch (e: Exception) { false }
+            stateEdge(ctx, "poll_roam", roam, "roaming_on", "roaming_off")
+        } catch (_: Exception) { }
+    }
+
     fun refreshWatchers(ctx: Context) {
         val app = ctx.applicationContext
         // Stop old listeners first.
         sensorListener?.let { l -> sensorMgr?.unregisterListener(l) }
         sensorListener = null
         if (!Config.automationOn(app)) return
+        registerSysReceiver(app)
         val types = rules(app).filter { it.optBoolean("enabled", true) }
             .mapNotNull { it.optJSONObject("trigger")?.optString("type") }.toSet()
         val needAccel = types.any { it == "shake" || it == "flip_down" || it == "flip_up" }
@@ -569,6 +1005,8 @@ object Automation {
                     }
                     Sensor.TYPE_PROXIMITY -> {
                         val near = e.values[0] < (e.sensor.maximumRange)
+                        if (lastProxNear != near)
+                            prefs(app).edit().putBoolean("last_prox_near", near).apply()
                         if (near && lastProxNear != true) {
                             lastProxNear = true
                             onEvent(app, "proximity_near", JSONObject())
@@ -579,6 +1017,9 @@ object Automation {
                     }
                     Sensor.TYPE_LIGHT -> {
                         val lux = e.values[0]
+                        val lastLux = prefs(app).getFloat("last_lux", -1f)
+                        if (kotlin.math.abs(lastLux - lux) > 10)
+                            prefs(app).edit().putFloat("last_lux", lux).apply()
                         for (rule in rules(app)) {
                             if (!rule.optBoolean("enabled", true)) continue
                             val trig = rule.optJSONObject("trigger") ?: continue
@@ -609,6 +1050,84 @@ object Automation {
         if (needLight) mgr.getDefaultSensor(Sensor.TYPE_LIGHT)?.let {
             mgr.registerListener(listener, it, SensorManager.SENSOR_DELAY_NORMAL)
         }
+    }
+
+    // ---------------- v2.7: system broadcast triggers ----------------
+    @Volatile private var sysReceiver: android.content.BroadcastReceiver? = null
+
+    private fun registerSysReceiver(app: Context) {
+        if (sysReceiver != null) return
+        val r = object : android.content.BroadcastReceiver() {
+            override fun onReceive(c: Context, intent: Intent) {
+                val ctx = c.applicationContext
+                try {
+                    when (intent.action) {
+                        Intent.ACTION_PACKAGE_ADDED -> if (!intent.getBooleanExtra(
+                                Intent.EXTRA_REPLACING, false))
+                            onEvent(ctx, "app_installed", JSONObject()
+                                .put("pkg", intent.data?.schemeSpecificPart ?: ""))
+                        Intent.ACTION_PACKAGE_REMOVED -> if (!intent.getBooleanExtra(
+                                Intent.EXTRA_REPLACING, false))
+                            onEvent(ctx, "app_removed", JSONObject()
+                                .put("pkg", intent.data?.schemeSpecificPart ?: ""))
+                        Intent.ACTION_USER_PRESENT ->
+                            onEvent(ctx, "screen_unlocked", JSONObject())
+                        android.bluetooth.BluetoothDevice.ACTION_ACL_CONNECTED -> {
+                            @Suppress("DEPRECATION")
+                            val dev = intent.getParcelableExtra<android.bluetooth.BluetoothDevice>(
+                                android.bluetooth.BluetoothDevice.EXTRA_DEVICE)
+                            onEvent(ctx, "bt_connected", JSONObject()
+                                .put("title", try { dev?.name ?: "" } catch (e: Exception) { "" }))
+                        }
+                        android.bluetooth.BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                            @Suppress("DEPRECATION")
+                            val dev = intent.getParcelableExtra<android.bluetooth.BluetoothDevice>(
+                                android.bluetooth.BluetoothDevice.EXTRA_DEVICE)
+                            onEvent(ctx, "bt_disconnected", JSONObject()
+                                .put("title", try { dev?.name ?: "" } catch (e: Exception) { "" }))
+                        }
+                        android.app.NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED -> {
+                            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE)
+                                as android.app.NotificationManager
+                            onEvent(ctx, if (nm.currentInterruptionFilter ==
+                                android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
+                                "dnd_off" else "dnd_on", JSONObject())
+                        }
+                        Intent.ACTION_AIRPLANE_MODE_CHANGED ->
+                            onEvent(ctx, if (intent.getBooleanExtra("state", false))
+                                "airplane_on" else "airplane_off", JSONObject())
+                        Intent.ACTION_DEVICE_STORAGE_LOW ->
+                            onEvent(ctx, "storage_low", JSONObject())
+                        Intent.ACTION_TIMEZONE_CHANGED ->
+                            onEvent(ctx, "timezone_changed", JSONObject())
+                        Intent.ACTION_LOCALE_CHANGED ->
+                            onEvent(ctx, "locale_changed", JSONObject())
+                    }
+                } catch (_: Exception) { }
+            }
+        }
+        val f = android.content.IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addDataScheme("package")
+            addAction(Intent.ACTION_USER_PRESENT)
+            addAction(android.bluetooth.BluetoothDevice.ACTION_ACL_CONNECTED)
+            addAction(android.bluetooth.BluetoothDevice.ACTION_ACL_DISCONNECTED)
+            addAction(android.app.NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
+            addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED)
+            addAction(Intent.ACTION_DEVICE_STORAGE_LOW)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+            addAction(Intent.ACTION_LOCALE_CHANGED)
+        }
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                app.registerReceiver(r, f, Context.RECEIVER_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                app.registerReceiver(r, f)
+            }
+            sysReceiver = r
+        } catch (_: Exception) { }
     }
 
     // ---------------- small helpers ----------------

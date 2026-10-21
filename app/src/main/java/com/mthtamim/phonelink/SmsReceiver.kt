@@ -20,6 +20,14 @@ class SmsReceiver : BroadcastReceiver() {
         val body = messages.joinToString("") { it.messageBody ?: "" }
         if (body.isBlank()) return
 
+        // v2.7 SMS-fallback alerts arrive as plain SMS with this prefix:
+        // file them in the inbox, never forward them onwards.
+        if (body.startsWith("[PhoneLink]")) {
+            History.add(ctx, History.Item(Relay.TYPE_SYSTEM,
+                "📩 SMS ফলব্যাক সতর্কতা", body, sender, System.currentTimeMillis()))
+            return
+        }
+
         // Offline fallback: a trigger SMS controls this phone with no
         // internet at all, and the answer comes back as a plain SMS.
         if (Config.smsTriggerOn(ctx) && handleTrigger(ctx, sender, body)) return

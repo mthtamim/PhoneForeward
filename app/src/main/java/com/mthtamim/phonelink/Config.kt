@@ -126,6 +126,16 @@ object Config {
     fun inboxKeepDays(ctx: Context) = prefs(ctx).getInt("inbox_keep_days", 0)
     fun setInboxKeepDays(ctx: Context, d: Int) { prefs(ctx).edit().putInt("inbox_keep_days", d).apply() }
 
+    // ---------- v2.7 ----------
+    /** SMS fallback: urgent alerts also go out as a plain SMS when the relay is unreachable. */
+    fun smsFallbackOn(ctx: Context) = prefs(ctx).getBoolean("sms_fallback_on", false)
+    fun smsFallbackNumber(ctx: Context) = prefs(ctx).getString("sms_fallback_number", "") ?: ""
+    fun setSmsFallbackNumber(ctx: Context, v: String) {
+        prefs(ctx).edit().putString("sms_fallback_number", v).apply()
+    }
+    /** Bluetooth offline share: keep the RFCOMM listener running. */
+    fun btReceiveOn(ctx: Context) = prefs(ctx).getBoolean("bt_receive_on", false)
+
     // ---------- v2.2 ----------
 
     /** Alert words: any message containing one is treated as urgent. */

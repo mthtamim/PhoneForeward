@@ -149,6 +149,47 @@ object PhoneInfo {
             val temp = (bi?.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1)
             if (temp > 0) sb.append(String.format("\nব্যাটারি তাপমাত্রা: %.1f°C", temp / 10.0))
         } catch (_: Exception) { }
+        try {
+            val bi2 = ctx.registerReceiver(null,
+                android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+            val volt = bi2?.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, -1) ?: -1
+            if (volt > 0) sb.append(String.format("\nব্যাটারি ভোল্টেজ: %.2f V", volt / 1000.0))
+            val healthTxt = when (bi2?.getIntExtra(
+                android.os.BatteryManager.EXTRA_HEALTH, -1) ?: -1) {
+                android.os.BatteryManager.BATTERY_HEALTH_GOOD -> "ভালো"
+                android.os.BatteryManager.BATTERY_HEALTH_OVERHEAT -> "অতিরিক্ত গরম"
+                android.os.BatteryManager.BATTERY_HEALTH_DEAD -> "নষ্ট"
+                android.os.BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "অতিরিক্ত ভোল্টেজ"
+                android.os.BatteryManager.BATTERY_HEALTH_COLD -> "ঠান্ডা"
+                else -> ""
+            }
+            if (healthTxt.isNotEmpty()) sb.append("\nব্যাটারি হেলথ: ").append(healthTxt)
+        } catch (_: Exception) { }
+        try {
+            val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE)
+                as android.net.ConnectivityManager
+            val caps = cm.getNetworkCapabilities(cm.activeNetwork)
+            val net = when {
+                caps == null -> "নেই"
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) -> "Wi-Fi"
+                caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_CELLULAR) -> {
+                    val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE)
+                        as android.telephony.TelephonyManager
+                    @Suppress("DEPRECATION")
+                    val nt = try { tm.dataNetworkType } catch (e: Exception) { 0 }
+                    when (nt) {
+                        android.telephony.TelephonyManager.NETWORK_TYPE_NR -> "মোবাইল (5G)"
+                        android.telephony.TelephonyManager.NETWORK_TYPE_LTE -> "মোবাইল (4G)"
+                        android.telephony.TelephonyManager.NETWORK_TYPE_HSPAP,
+                        android.telephony.TelephonyManager.NETWORK_TYPE_UMTS -> "মোবাইল (3G)"
+                        0 -> "মোবাইল"
+                        else -> "মোবাইল (2G)"
+                    }
+                }
+                else -> "অন্যান্য"
+            }
+            sb.append("\nনেটওয়ার্ক: ").append(net)
+        } catch (_: Exception) { }
         sb.append("\n").append(SystemReceiver.batteryStatusText(ctx))
         return sb.toString()
     }

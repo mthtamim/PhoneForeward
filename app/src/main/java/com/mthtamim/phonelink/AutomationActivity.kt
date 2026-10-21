@@ -21,14 +21,35 @@ object AutoCatalog {
         "app_launched", "app_closed", "sms_received", "notif_received",
         "call_incoming", "call_missed", "geofence_in", "geofence_out",
         "steps_goal", "activity", "weather", "nfc_tag", "clipboard",
-        "screen_text", "peer_online", "peer_offline")
+        "screen_text", "peer_online", "peer_offline",
+        // v2.7 MacroDroid expansion
+        "battery_full", "battery_temp_above", "call_outgoing", "call_ended",
+        "sms_sent", "notif_cleared", "app_installed", "app_removed",
+        "screen_unlocked", "bt_connected", "bt_disconnected", "dnd_on", "dnd_off",
+        "airplane_on", "airplane_off", "storage_low", "timezone_changed",
+        "locale_changed", "peer_battery_below", "stopwatch", "date_at",
+        "music_started", "music_stopped", "vpn_on", "vpn_off",
+        "roaming_on", "roaming_off", "dark_on", "dark_off")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
-        "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable")
+        "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
+        // v2.7 MacroDroid expansion
+        "music_playing", "call_active", "vpn", "roaming", "dark_mode", "dnd",
+        "charging_type", "battery_temp_below", "battery_temp_above", "steps_today",
+        "proximity_near", "light_below", "light_above", "airplane",
+        "peer_battery_above", "bt_connected")
     val actions = listOf(
         "notify_peer", "local_notify", "speak_local", "speak_peer", "command_peer",
         "send_sms", "torch", "ringer", "open_app", "http", "write_file",
-        "set_var", "if_var", "wait", "mode_set", "lost_on", "lost_off", "tap_text")
+        "set_var", "if_var", "wait", "mode_set", "lost_on", "lost_off", "tap_text",
+        // v2.7 MacroDroid expansion
+        "media_control", "volume_set", "brightness_set", "screen_timeout_set",
+        "auto_rotate_set", "bt_toggle", "dnd_set", "vibrate", "play_sound",
+        "record_audio", "take_photo", "open_url", "share_text", "kill_app",
+        "answer_call", "end_call", "set_wallpaper", "clear_notif", "global_key",
+        "stopwatch_start", "stopwatch_stop", "rule_enable", "rule_disable",
+        "rule_run", "inc_var", "delete_file", "lock_screen", "wake_screen",
+        "send_intent", "toast_local", "stop")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {

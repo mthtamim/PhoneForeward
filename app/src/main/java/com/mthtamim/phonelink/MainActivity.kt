@@ -1306,6 +1306,15 @@ class MainActivity : LocalizedActivity() {
                 }
                 .show()
         }
+        findViewById<Button>(R.id.btnBtShare).setOnClickListener {
+            startActivity(Intent(this, BtActivity::class.java)) }
+        bindToggle(R.id.swSmsFallback, "sms_fallback_on", Config.smsFallbackOn(this))
+        findViewById<EditText>(R.id.etFallbackNumber).setText(Config.smsFallbackNumber(this))
+        findViewById<Button>(R.id.btnSaveFallback).setOnClickListener {
+            Config.setSmsFallbackNumber(this,
+                findViewById<EditText>(R.id.etFallbackNumber).text.toString().trim())
+            toast(getString(R.string.toast_saved))
+        }
         findViewById<Button>(R.id.btnCharts).setOnClickListener {
             startActivity(Intent(this, ChartsActivity::class.java)) }
         findViewById<Button>(R.id.btnExportConfig).setOnClickListener {
@@ -1418,6 +1427,17 @@ class MainActivity : LocalizedActivity() {
             labels.add(getString(R.string.menu_open_link)); actions.add {
                 try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.extra))) }
                 catch (_: Exception) { copyToClipboard(item.extra) }
+            }
+        }
+        if (item.extra.startsWith("tel:")) {
+            val num = item.extra.removePrefix("tel:")
+            labels.add(getString(R.string.menu_call_back)); actions.add {
+                try { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$num"))) }
+                catch (_: Exception) { }
+            }
+            labels.add(getString(R.string.menu_send_sms)); actions.add {
+                try { startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$num"))) }
+                catch (_: Exception) { }
             }
         }
         labels.add(getString(if (item.pinned) R.string.menu_unpin else R.string.menu_pin))
