@@ -29,7 +29,11 @@ object AutoCatalog {
         "airplane_on", "airplane_off", "storage_low", "timezone_changed",
         "locale_changed", "peer_battery_below", "stopwatch", "date_at",
         "music_started", "music_stopped", "vpn_on", "vpn_off",
-        "roaming_on", "roaming_off", "dark_on", "dark_off")
+        "roaming_on", "roaming_off", "dark_on", "dark_off",
+        // v2.8 final MacroDroid round
+        "volume_up", "volume_down", "qr_scanned", "webhook", "weather_forecast",
+        "calendar_start", "calendar_end", "magnet_above", "pressure_above",
+        "hotspot_on", "hotspot_off", "rule_toggled")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
         "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
@@ -37,7 +41,9 @@ object AutoCatalog {
         "music_playing", "call_active", "vpn", "roaming", "dark_mode", "dnd",
         "charging_type", "battery_temp_below", "battery_temp_above", "steps_today",
         "proximity_near", "light_below", "light_above", "airplane",
-        "peer_battery_above", "bt_connected")
+        "peer_battery_above", "bt_connected",
+        // v2.8 final MacroDroid round
+        "date_range", "day_of_month", "signal_above", "rule_enabled")
     val actions = listOf(
         "notify_peer", "local_notify", "speak_local", "speak_peer", "command_peer",
         "send_sms", "torch", "ringer", "open_app", "http", "write_file",
@@ -49,7 +55,11 @@ object AutoCatalog {
         "answer_call", "end_call", "set_wallpaper", "clear_notif", "global_key",
         "stopwatch_start", "stopwatch_stop", "rule_enable", "rule_disable",
         "rule_run", "inc_var", "delete_file", "lock_screen", "wake_screen",
-        "send_intent", "toast_local", "stop")
+        "send_intent", "toast_local", "stop",
+        // v2.8 final MacroDroid round
+        "gesture_tap", "gesture_swipe", "read_screen", "send_email",
+        "calendar_event", "set_alarm", "set_timer", "file_copy", "file_move",
+        "file_zip", "dialog_choice", "keep_awake", "brightness_auto", "flash_pattern")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {
@@ -72,6 +82,84 @@ class AutomationActivity : LocalizedActivity() {
 
     private lateinit var container: LinearLayout
 
+    private val scanLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        val code = result.data?.getStringExtra("code") ?: return@registerForActivityResult
+        if (code.isNotEmpty()) Automation.onEvent(this, "qr_scanned",
+            JSONObject().put("title", code).put("body", code))
+    }
+
+    private fun showLog() {
+        val lines = Automation.recentLog(this)
+        val tv = TextView(this).apply {
+            text = if (lines.isEmpty()) getString(R.string.auto_log_empty)
+                else lines.joinToString("\n")
+            setPadding(48, 24, 48, 24)
+            typeface = android.graphics.Typeface.MONOSPACE
+            textSize = 13f
+        }
+        val scroll = android.widget.ScrollView(this).apply { addView(tv) }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.auto_log))
+            .setView(scroll)
+            .setNeutralButton(getString(R.string.auto_log_clear)) { _, _ ->
+                Automation.clearLog(this)
+            }
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun showVars() {
+        val names = Automation.varNames(this)
+        if (names.isEmpty()) {
+            android.widget.Toast.makeText(this,
+                getString(R.string.auto_vars_empty), android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        val labels = names.map { "$it = ${Automation.getVar(this, it)}" }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.auto_vars))
+            .setItems(labels) { _, which ->
+                val name = names[which]
+                val input = android.widget.EditText(this).apply {
+                    setText(Automation.getVar(this@AutomationActivity, name))
+                }
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle(name)
+                    .setView(input)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        Automation.setVar(this, name, input.text.toString())
+                    }
+                    .setNegativeButton(getString(R.string.auto_var_delete)) { _, _ ->
+                        Automation.deleteVar(this, name)
+                    }
+                    .setNeutralButton(android.R.string.cancel, null)
+                    .show()
+            }
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun showImport() {
+        val input = android.widget.EditText(this).apply {
+            hint = getString(R.string.auto_import_hint)
+            minLines = 4
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.auto_import))
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val n = Automation.importJson(this, input.text.toString())
+                android.widget.Toast.makeText(this,
+                    if (n >= 0) getString(R.string.auto_imported, n)
+                    else getString(R.string.auto_import_failed),
+                    android.widget.Toast.LENGTH_SHORT).show()
+                render()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_automation)
@@ -80,6 +168,17 @@ class AutomationActivity : LocalizedActivity() {
             startActivity(Intent(this, RuleEditorActivity::class.java))
         }
         findViewById<Button>(R.id.btnAutoBack).setOnClickListener { finish() }
+        findViewById<Button>(R.id.btnAutoQr).setOnClickListener {
+            scanLauncher.launch(Intent(this, ScanActivity::class.java))
+        }
+        findViewById<Button>(R.id.btnAutoLog).setOnClickListener { showLog() }
+        findViewById<Button>(R.id.btnAutoVars).setOnClickListener { showVars() }
+        findViewById<Button>(R.id.btnAutoExport).setOnClickListener {
+            val send = Intent(Intent.ACTION_SEND).setType("application/json")
+                .putExtra(Intent.EXTRA_TEXT, Automation.exportJson(this))
+            startActivity(Intent.createChooser(send, getString(R.string.auto_export)))
+        }
+        findViewById<Button>(R.id.btnAutoImport).setOnClickListener { showImport() }
     }
 
     override fun onResume() {
@@ -90,6 +189,7 @@ class AutomationActivity : LocalizedActivity() {
     private fun render() {
         container.removeAllViews()
         val list = Automation.rules(this)
+            .sortedWith(compareBy({ it.optString("cat") }, { it.optString("name") }))
         if (list.isEmpty()) {
             container.addView(TextView(this).apply {
                 text = getString(R.string.auto_empty)
@@ -97,7 +197,20 @@ class AutomationActivity : LocalizedActivity() {
             })
             return
         }
+        var lastCat = "\u0000"
         for (rule in list) {
+            val cat = rule.optString("cat")
+            if (cat != lastCat) {
+                lastCat = cat
+                if (cat.isNotEmpty()) {
+                    container.addView(TextView(this).apply {
+                        text = "📁 $cat"
+                        textSize = 15f
+                        setTypeface(typeface, android.graphics.Typeface.BOLD)
+                        setPadding(4, 10, 4, 6)
+                    })
+                }
+            }
             val trig = rule.optJSONObject("trigger")
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL

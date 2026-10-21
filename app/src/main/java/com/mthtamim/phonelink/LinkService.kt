@@ -67,6 +67,7 @@ class LinkService : Service() {
         instance = this
         Lan.startServer(applicationContext)
         if (Config.btReceiveOn(applicationContext)) BtShare.startServer(applicationContext)
+        if (Config.automationOn(applicationContext)) WebhookServer.start(applicationContext)
     }
 
     // ------------- v2.7: SMS-sent observer (automation trigger) -------------

@@ -825,4 +825,82 @@
     <string name="aah_play_sound">Sound URI (blank = default notification sound)</string>
     <string name="aah_auto_rotate_set">on or off</string>
     <string name="aah_bt_toggle">on or off</string>
+    <string name="auto_qr">📷 QR</string>
+    <string name="auto_log">📜 Log</string>
+    <string name="auto_vars">🔢 Vars</string>
+    <string name="auto_export">📤 Export</string>
+    <string name="auto_import">📥 Import</string>
+    <string name="auto_log_empty">Nothing has run yet</string>
+    <string name="auto_log_clear">Clear</string>
+    <string name="auto_vars_empty">No variables yet — a rule creates them with Set variable</string>
+    <string name="auto_var_delete">Delete</string>
+    <string name="auto_import_hint">Paste the exported rules JSON here</string>
+    <string name="auto_imported">%1$d rule(s) imported</string>
+    <string name="auto_import_failed">Could not import — invalid JSON</string>
+    <string name="auto_cat_hint">Category (optional, groups the list)</string>
+    <string name="sec_smtp">📧 Email (SMTP)</string>
+    <string name="smtp_info">Used by the automation Send email action. The password is stored only on this phone.</string>
+    <string name="hint_smtp_host">SMTP server (e.g. smtp.gmail.com)</string>
+    <string name="hint_smtp_port">Port (587 or 465)</string>
+    <string name="hint_smtp_user">Username / email</string>
+    <string name="hint_smtp_pass">Password / app password</string>
+    <string name="hint_smtp_from">From address (blank = username)</string>
+    <string name="widget_rule_label">PhoneLink rule button</string>
+    <string name="widget_rule_unset">Pick a rule</string>
+    <string name="at_volume_up">🔊 Volume up pressed</string>
+    <string name="at_volume_down">🔉 Volume down pressed</string>
+    <string name="at_qr_scanned">📷 QR/barcode scanned</string>
+    <string name="at_webhook">🌐 Webhook called (LAN)</string>
+    <string name="at_weather_forecast">🌦️ Forecast matches</string>
+    <string name="at_calendar_start">📅 Calendar event starts</string>
+    <string name="at_calendar_end">📅 Calendar event ends</string>
+    <string name="at_magnet_above">🧲 Magnetic field above</string>
+    <string name="at_pressure_above">🎈 Air pressure above</string>
+    <string name="at_hotspot_on">📶 Hotspot turned on</string>
+    <string name="at_hotspot_off">📶 Hotspot turned off</string>
+    <string name="at_rule_toggled">🔀 A rule was enabled/disabled</string>
+    <string name="ath_qr_scanned">Text in the code (blank = any)</string>
+    <string name="ath_webhook">Hook name, e.g. door</string>
+    <string name="ath_weather_forecast">rain, snow, clear, temp_above:35 or temp_below:5</string>
+    <string name="ath_calendar_start">Keyword in the event (blank = any)</string>
+    <string name="ath_calendar_end">Keyword in the event (blank = any)</string>
+    <string name="ath_magnet_above">Microtesla (µT), e.g. 200 — a magnet near the phone is 200+</string>
+    <string name="ath_pressure_above">Hectopascals (hPa), e.g. 1013</string>
+    <string name="ath_rule_toggled">Rule name (blank = any)</string>
+    <string name="ac_date_range">📅 Today is within a date range</string>
+    <string name="ac_day_of_month">📅 Day of the month is</string>
+    <string name="ac_signal_above">📶 Signal strength at least</string>
+    <string name="ac_rule_enabled">🔀 Another rule is enabled</string>
+    <string name="ach_date_range">2026-11-01..2026-11-30</string>
+    <string name="ach_day_of_month">Days, e.g. 1,15,30</string>
+    <string name="ach_signal_above">Level 0–4, e.g. 2</string>
+    <string name="ach_rule_enabled">Rule name (add :off to require disabled)</string>
+    <string name="aa_gesture_tap">👆 Tap at a position</string>
+    <string name="aa_gesture_swipe">👆 Swipe</string>
+    <string name="aa_read_screen">📖 Read screen text into a variable</string>
+    <string name="aa_send_email">📧 Send an email</string>
+    <string name="aa_calendar_event">📅 Add a calendar event</string>
+    <string name="aa_set_alarm">⏰ Set an alarm</string>
+    <string name="aa_set_timer">⏲️ Start a timer</string>
+    <string name="aa_file_copy">📄 Copy a file</string>
+    <string name="aa_file_move">📄 Move a file</string>
+    <string name="aa_file_zip">🗜️ ZIP a file/folder</string>
+    <string name="aa_dialog_choice">❓ Ask with a choice dialog</string>
+    <string name="aa_keep_awake">💡 Keep the screen awake</string>
+    <string name="aa_brightness_auto">🔆 Auto-brightness on/off</string>
+    <string name="aa_flash_pattern">🔦 Flash a light pattern</string>
+    <string name="aah_gesture_tap">x,y in percent of the screen, e.g. 50,80</string>
+    <string name="aah_gesture_swipe">x1,y1,x2,y2 in percent (5th value = ms), e.g. 50,80,50,30</string>
+    <string name="aah_read_screen">Variable name to store the text in</string>
+    <string name="aah_send_email">to|subject|body — needs SMTP set up in Settings</string>
+    <string name="aah_calendar_event">title|delay minutes|duration minutes</string>
+    <string name="aah_set_alarm">HH:MM|label, e.g. 07:30|Wake up</string>
+    <string name="aah_set_timer">seconds|label</string>
+    <string name="aah_file_copy">source|destination (app folders/Downloads)</string>
+    <string name="aah_file_move">source|destination (app folders/Downloads)</string>
+    <string name="aah_file_zip">folder|destination.zip</string>
+    <string name="aah_dialog_choice">variable|question|option1|option2 — the choice is stored in the variable</string>
+    <string name="aah_keep_awake">on or off</string>
+    <string name="aah_brightness_auto">on or off</string>
+    <string name="aah_flash_pattern">sos, or a pattern: . short, - long, space gap</string>
 </resources>

@@ -1310,6 +1310,20 @@ class MainActivity : LocalizedActivity() {
             startActivity(Intent(this, BtActivity::class.java)) }
         bindToggle(R.id.swSmsFallback, "sms_fallback_on", Config.smsFallbackOn(this))
         findViewById<EditText>(R.id.etFallbackNumber).setText(Config.smsFallbackNumber(this))
+        findViewById<EditText>(R.id.etSmtpHost).setText(Config.smtpHost(this))
+        findViewById<EditText>(R.id.etSmtpPort).setText(Config.smtpPort(this).toString())
+        findViewById<EditText>(R.id.etSmtpUser).setText(Config.smtpUser(this))
+        findViewById<EditText>(R.id.etSmtpPass).setText(Config.smtpPass(this))
+        findViewById<EditText>(R.id.etSmtpFrom).setText(Config.smtpFrom(this))
+        findViewById<Button>(R.id.btnSaveSmtp).setOnClickListener {
+            Config.setSmtp(this,
+                findViewById<EditText>(R.id.etSmtpHost).text.toString().trim(),
+                findViewById<EditText>(R.id.etSmtpPort).text.toString().toIntOrNull() ?: 587,
+                findViewById<EditText>(R.id.etSmtpUser).text.toString().trim(),
+                findViewById<EditText>(R.id.etSmtpPass).text.toString(),
+                findViewById<EditText>(R.id.etSmtpFrom).text.toString().trim())
+            toast(getString(R.string.toast_saved))
+        }
         findViewById<Button>(R.id.btnSaveFallback).setOnClickListener {
             Config.setSmsFallbackNumber(this,
                 findViewById<EditText>(R.id.etFallbackNumber).text.toString().trim())

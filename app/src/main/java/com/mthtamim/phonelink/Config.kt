@@ -136,6 +136,18 @@ object Config {
     /** Bluetooth offline share: keep the RFCOMM listener running. */
     fun btReceiveOn(ctx: Context) = prefs(ctx).getBoolean("bt_receive_on", false)
 
+    // ---------- v2.8: SMTP (automation send_email) ----------
+    fun smtpHost(ctx: Context) = prefs(ctx).getString("smtp_host", "") ?: ""
+    fun smtpPort(ctx: Context) = prefs(ctx).getInt("smtp_port", 587)
+    fun smtpUser(ctx: Context) = prefs(ctx).getString("smtp_user", "") ?: ""
+    fun smtpPass(ctx: Context) = prefs(ctx).getString("smtp_pass", "") ?: ""
+    fun smtpFrom(ctx: Context) = prefs(ctx).getString("smtp_from", "") ?: ""
+    fun setSmtp(ctx: Context, host: String, port: Int, user: String, pass: String, from: String) {
+        prefs(ctx).edit().putString("smtp_host", host).putInt("smtp_port", port)
+            .putString("smtp_user", user).putString("smtp_pass", pass)
+            .putString("smtp_from", from).apply()
+    }
+
     // ---------- v2.2 ----------
 
     /** Alert words: any message containing one is treated as urgent. */

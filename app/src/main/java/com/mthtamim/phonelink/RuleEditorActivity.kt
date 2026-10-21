@@ -106,6 +106,8 @@ class RuleEditorActivity : LocalizedActivity() {
         val existing = Automation.rules(this).firstOrNull { it.optString("id") == ruleId }
         if (existing != null) {
             etName.setText(existing.optString("name"))
+            findViewById<android.widget.EditText>(R.id.etRuleCat)
+                .setText(existing.optString("cat"))
             val trig = existing.optJSONObject("trigger")
             if (trig != null) {
                 val idx = AutoCatalog.triggers.indexOf(trig.optString("type"))
@@ -141,6 +143,8 @@ class RuleEditorActivity : LocalizedActivity() {
         val rule = JSONObject()
             .put("id", ruleId.ifEmpty { "r" + System.currentTimeMillis() })
             .put("name", name)
+            .put("cat", findViewById<android.widget.EditText>(R.id.etRuleCat)
+                .text.toString().trim())
             .put("enabled", true)
             .put("trigger", JSONObject()
                 .put("type", AutoCatalog.triggers[spTrigger.selectedItemPosition])

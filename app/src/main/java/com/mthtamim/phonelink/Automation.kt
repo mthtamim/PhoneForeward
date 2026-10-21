@@ -73,8 +73,75 @@ object Automation {
 
     fun setEnabled(ctx: Context, id: String, on: Boolean) {
         val list = rules(ctx)
-        list.firstOrNull { it.optString("id") == id }?.put("enabled", on)
+        val target = list.firstOrNull { it.optString("id") == id }
+        target?.put("enabled", on)
         saveAll(ctx, list)
+        if (target != null) onEvent(ctx, "rule_toggled", JSONObject()
+            .put("title", target.optString("name"))
+            .put("body", if (on) "on" else "off"))
+    }
+
+    // ---------------- v2.8: run log + variable index ----------------
+    fun log(ctx: Context, msg: String) {
+        try {
+            val arr = try { JSONArray(prefs(ctx).getString("auto_log", "[]")) }
+                catch (e: Exception) { JSONArray() }
+            arr.put(JSONObject().put("t", System.currentTimeMillis()).put("m", msg))
+            while (arr.length() > 50) arr.remove(0)
+            prefs(ctx).edit().putString("auto_log", arr.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    fun recentLog(ctx: Context): List<String> {
+        val out = mutableListOf<String>()
+        try {
+            val arr = JSONArray(prefs(ctx).getString("auto_log", "[]") ?: "[]")
+            val fmt = SimpleDateFormat("dd MMM HH:mm", Locale.US)
+            for (i in arr.length() - 1 downTo 0) {
+                val o = arr.optJSONObject(i) ?: continue
+                out.add(fmt.format(Date(o.optLong("t"))) + " — " + o.optString("m"))
+            }
+        } catch (_: Exception) { }
+        return out
+    }
+
+    fun clearLog(ctx: Context) {
+        prefs(ctx).edit().remove("auto_log").apply()
+    }
+
+    fun exportJson(ctx: Context): String =
+        prefs(ctx).getString("rules", "[]") ?: "[]"
+
+    fun importJson(ctx: Context, text: String): Int {
+        val incoming = try { JSONArray(text) } catch (e: Exception) { return -1 }
+        val list = rules(ctx)
+        val ids = list.map { it.optString("id") }.toMutableSet()
+        var added = 0
+        for (i in 0 until incoming.length()) {
+            val r = incoming.optJSONObject(i) ?: continue
+            var id = r.optString("id")
+            if (id.isEmpty() || id in ids) {
+                id = "r" + System.currentTimeMillis() + "_" + i
+                r.put("id", id)
+            }
+            ids.add(id)
+            list.add(r); added++
+        }
+        if (added > 0) saveAll(ctx, list)
+        return added
+    }
+
+    fun varNames(ctx: Context): List<String> {
+        return try {
+            val arr = JSONArray(prefs(ctx).getString("var_names", "[]") ?: "[]")
+            (0 until arr.length()).map { arr.optString(it) }.filter { it.isNotEmpty() }
+        } catch (e: Exception) { emptyList() }
+    }
+
+    fun deleteVar(ctx: Context, name: String) {
+        val names = varNames(ctx).filter { it != name }
+        val arr = JSONArray(); names.forEach { arr.put(it) }
+        prefs(ctx).edit().remove("var_$name").putString("var_names", arr.toString()).apply()
     }
 
     // ---------------- variables ----------------
@@ -82,7 +149,13 @@ object Automation {
         prefs(ctx).getString("var_$name", "") ?: ""
 
     fun setVar(ctx: Context, name: String, value: String) {
-        prefs(ctx).edit().putString("var_$name", value).apply()
+        val names = varNames(ctx)
+        val e = prefs(ctx).edit().putString("var_$name", value)
+        if (name !in names) {
+            val arr = JSONArray(); (names + name).forEach { arr.put(it) }
+            e.putString("var_names", arr.toString())
+        }
+        e.apply()
     }
 
     // ---------------- event entry ----------------
@@ -100,6 +173,7 @@ object Automation {
                     if (!constraintsPass(ctx, rule)) continue
                     markFired(ctx, rule.optString("id"), now)
                     ruleNameHint = rule.optString("name")
+                    log(ctx, "▶ " + rule.optString("name") + " (" + event + ")")
                     runActions(ctx, rule, data, 0)
                 }
             } catch (e: Exception) { /* automation must never crash the host */ }
@@ -119,7 +193,8 @@ object Automation {
         if (param.isBlank()) return true
         return when (event) {
             "sms_received", "notif_received", "screen_text", "notif_cleared",
-            "sms_sent", "call_outgoing", "call_ended" -> {
+            "sms_sent", "call_outgoing", "call_ended", "qr_scanned",
+            "calendar_start", "calendar_end", "rule_toggled" -> {
                 val hay = (data.optString("title") + " " + data.optString("body") +
                     " " + data.optString("app")).lowercase()
                 hay.contains(param.lowercase())
@@ -128,6 +203,7 @@ object Automation {
                 data.optString("pkg") == param
             "bt_connected", "bt_disconnected" ->
                 data.optString("title").contains(param, ignoreCase = true)
+            "webhook" -> data.optString("title") == param
             "wifi_connected" -> data.optString("ssid").equals(param, true)
             "activity" -> data.optString("kind") == param
             else -> true
@@ -247,6 +323,33 @@ object Automation {
                 "peer_battery_above" ->
                     (Peers.list(ctx).firstOrNull()?.battery ?: -1) >=
                         (param.toIntOrNull() ?: 101)
+                // ---- v2.8 ----
+                "date_range" -> {
+                    val parts = param.split("..")
+                    if (parts.size != 2) true else {
+                        val today = dayKey()
+                        today >= parts[0].trim() && today <= parts[1].trim()
+                    }
+                }
+                "day_of_month" -> {
+                    val today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+                    param.split(",").map { it.trim() }.contains(today.toString())
+                }
+                "signal_above" -> {
+                    val tm = ctx.getSystemService(Context.TELEPHONY_SERVICE)
+                        as android.telephony.TelephonyManager
+                    val lvl = try { tm.signalStrength?.level ?: -1 }
+                        catch (e: Exception) { -1 }
+                    lvl >= (param.toIntOrNull() ?: 5)
+                }
+                "rule_enabled" -> {
+                    val wantOff = param.endsWith(":off")
+                    val name = param.removeSuffix(":off").trim()
+                    val target = rules(ctx).firstOrNull {
+                        it.optString("name").equals(name, true) }
+                    val on = target?.optBoolean("enabled", false) ?: false
+                    on != wantOff
+                }
                 "bt_connected" -> {
                     val ad = BtShare.adapter()
                     val on = try {
@@ -583,6 +686,129 @@ object Automation {
                 "send_intent" -> {
                     try { ctx.sendBroadcast(Intent(param.trim())) } catch (_: Exception) { }
                 }
+                // ---- v2.8 final round actions ----
+                "gesture_tap" -> {
+                    val parts = param.split(",").mapNotNull { it.trim().toFloatOrNull() }
+                    if (parts.size == 2) A11yService.tapAt(parts[0], parts[1])
+                }
+                "gesture_swipe" -> {
+                    val parts = param.split(",").mapNotNull { it.trim().toFloatOrNull() }
+                    if (parts.size >= 4) A11yService.swipe(parts[0], parts[1],
+                        parts[2], parts[3], (parts.getOrNull(4)?.toLong() ?: 300))
+                }
+                "read_screen" -> {
+                    val txt = A11yService.readScreenText()
+                    if (txt.isNotEmpty() && param.isNotBlank())
+                        setVar(ctx, param.trim(), txt.take(2000))
+                }
+                "send_email" -> {
+                    val parts = param.split("|", limit = 3)
+                    if (parts.size == 3) Thread {
+                        val ok = Smtp.send(ctx, parts[0].trim(), parts[1].trim(), parts[2].trim())
+                        if (!ok) localNotify(ctx,
+                            "ইমেইল পাঠানো যায়নি — SMTP সেটিংস (সার্ভার ও রিলে) দেখো।")
+                    }.start()
+                }
+                "calendar_event" -> {
+                    val parts = param.split("|")
+                    val title = parts.getOrNull(0)?.trim() ?: ""
+                    val delay = parts.getOrNull(1)?.trim()?.toLongOrNull() ?: 0
+                    val dur = parts.getOrNull(2)?.trim()?.toLongOrNull() ?: 60
+                    if (title.isNotEmpty()) insertCalendarEvent(ctx, title, delay, dur)
+                }
+                "set_alarm" -> {
+                    val parts = param.split("|")
+                    val hm = parts.getOrNull(0)?.trim()?.split(":")
+                    val h = hm?.getOrNull(0)?.toIntOrNull()
+                    val m = hm?.getOrNull(1)?.toIntOrNull()
+                    if (h != null && m != null) {
+                        try {
+                            ctx.startActivity(Intent(android.provider.AlarmClock.ACTION_SET_ALARM)
+                                .putExtra(android.provider.AlarmClock.EXTRA_HOUR, h)
+                                .putExtra(android.provider.AlarmClock.EXTRA_MINUTES, m)
+                                .putExtra(android.provider.AlarmClock.EXTRA_MESSAGE,
+                                    parts.getOrNull(1)?.trim() ?: "")
+                                .putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (_: Exception) { }
+                    }
+                }
+                "set_timer" -> {
+                    val secs = param.split("|").getOrNull(0)?.trim()?.toIntOrNull() ?: 0
+                    if (secs > 0) {
+                        try {
+                            ctx.startActivity(Intent(android.provider.AlarmClock.ACTION_SET_TIMER)
+                                .putExtra(android.provider.AlarmClock.EXTRA_LENGTH, secs)
+                                .putExtra(android.provider.AlarmClock.EXTRA_MESSAGE,
+                                    param.split("|").getOrNull(1)?.trim() ?: "")
+                                .putExtra(android.provider.AlarmClock.EXTRA_SKIP_UI, true)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        } catch (_: Exception) { }
+                    }
+                }
+                "file_copy", "file_move" -> {
+                    val parts = param.split("|")
+                    if (parts.size == 2) {
+                        val src = File(parts[0].trim()); val dst = File(parts[1].trim())
+                        if (allowedPath(ctx, src) && allowedPath(ctx, dst) && src.exists()) {
+                            try {
+                                dst.parentFile?.mkdirs()
+                                src.inputStream().use { input ->
+                                    dst.outputStream().use { input.copyTo(it) } }
+                                if (type == "file_move") src.delete()
+                            } catch (_: Exception) { }
+                        }
+                    }
+                }
+                "file_zip" -> {
+                    val parts = param.split("|")
+                    if (parts.size == 2) {
+                        val src = File(parts[0].trim()); val dst = File(parts[1].trim())
+                        if (allowedPath(ctx, src) && allowedPath(ctx, dst) && src.exists()) {
+                            Thread { zipPath(src, dst) }.start()
+                        }
+                    }
+                }
+                "dialog_choice" -> {
+                    val parts = param.split("|")
+                    if (parts.size >= 3) {
+                        try {
+                            val intent = Intent(ctx, PromptActivity::class.java)
+                                .putExtra("var", parts[0].trim())
+                                .putExtra("q", parts[1].trim())
+                                .putStringArrayListExtra("opts",
+                                    ArrayList(parts.drop(2).map { it.trim() }))
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            ctx.startActivity(intent)
+                        } catch (_: Exception) { }
+                    }
+                }
+                "keep_awake" -> setKeepAwake(ctx, param != "off")
+                "brightness_auto" -> {
+                    if (android.provider.Settings.System.canWrite(ctx)) {
+                        android.provider.Settings.System.putInt(ctx.contentResolver,
+                            android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
+                            if (param == "off")
+                                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
+                            else android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC)
+                    }
+                }
+                "flash_pattern" -> Thread {
+                    val pat = if (param.trim().lowercase() == "sos") "... --- ..." else param
+                    for (ch in pat.take(200)) {
+                        when (ch) {
+                            '.' -> { FlashHelper.setTorch(ctx, true)
+                                Thread.sleep(150); FlashHelper.setTorch(ctx, false)
+                                Thread.sleep(120) }
+                            '-' -> { FlashHelper.setTorch(ctx, true)
+                                Thread.sleep(450); FlashHelper.setTorch(ctx, false)
+                                Thread.sleep(120) }
+                            ' ' -> Thread.sleep(300)
+                            '/' -> Thread.sleep(700)
+                        }
+                    }
+                    FlashHelper.setTorch(ctx, false)
+                }.start()
                 "toast_local" -> android.os.Handler(android.os.Looper.getMainLooper())
                     .post {
                         android.widget.Toast.makeText(ctx, param,
@@ -648,20 +874,24 @@ object Automation {
                         "date_at" -> dateDue(ctx, rule, param)
                         "stopwatch" -> stopwatchDue(ctx, rule, param)
                         "peer_battery_below" -> peerBatteryCrossing(ctx, rule, param)
+                        "weather_forecast" -> forecastDue(ctx, rule, param)
                         else -> false
                     }
                     if (should && constraintsPass(ctx, rule)) {
-                        if (type == "time_at" || type == "sunrise" || type == "sunset") {
+                        if (type == "time_at" || type == "sunrise" || type == "sunset" ||
+                            type == "weather_forecast") {
                             prefs(ctx).edit().putString("day_${rule.optString("id")}", dayKey()).apply()
                         }
                         markFired(ctx, rule.optString("id"), now)
                         ruleNameHint = rule.optString("name")
+                        log(ctx, "▶ " + rule.optString("name") + " (" + type + ")")
                         runActions(ctx, rule, JSONObject(), 0)
                     }
                 }
                 pollWifi(ctx)
                 pollAppUsage(ctx, list)
                 pollStates(ctx)
+                pollCalendar(ctx)
             } catch (e: Exception) { }
         }.start()
     }
@@ -865,6 +1095,104 @@ object Automation {
     private var lastShakeAt = 0L
 
     @Synchronized
+    // ---------------- v2.8: forecast / calendar / hotspot ----------------
+    private fun forecastDue(ctx: Context, rule: JSONObject, param: String): Boolean {
+        val cacheAt = prefs(ctx).getLong("wxf_at", 0)
+        val now = System.currentTimeMillis()
+        if (now - cacheAt > 60 * 60_000) {
+            var done = false
+            val latch = java.util.concurrent.CountDownLatch(1)
+            LocationHelper.fetchCoords(ctx, { lat, lng ->
+                Thread {
+                    try {
+                        val url = URL("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lng&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto")
+                        val conn = url.openConnection() as HttpURLConnection
+                        conn.connectTimeout = 8000; conn.readTimeout = 8000
+                        val daily = JSONObject(conn.inputStream.bufferedReader().readText())
+                            .optJSONObject("daily")
+                        if (daily != null) {
+                            prefs(ctx).edit()
+                                .putInt("wxf_code", daily.optJSONArray("weather_code")?.optInt(0, -1) ?: -1)
+                                .putFloat("wxf_max", daily.optJSONArray("temperature_2m_max")?.optDouble(0, 0.0)?.toFloat() ?: 0f)
+                                .putFloat("wxf_min", daily.optJSONArray("temperature_2m_min")?.optDouble(0, 0.0)?.toFloat() ?: 0f)
+                                .putLong("wxf_at", System.currentTimeMillis()).apply()
+                        }
+                    } catch (e: Exception) { }
+                    latch.countDown()
+                }.start()
+            }, { latch.countDown() })
+            try { latch.await(10, java.util.concurrent.TimeUnit.SECONDS) } catch (e: Exception) { }
+            done = true
+            if (!done) return false
+        }
+        if (prefs(ctx).getLong("wxf_at", 0) == 0L) return false
+        val code = prefs(ctx).getInt("wxf_code", -1)
+        val tmax = prefs(ctx).getFloat("wxf_max", 0f)
+        val tmin = prefs(ctx).getFloat("wxf_min", 0f)
+        val p = param.trim().lowercase()
+        return when {
+            p == "rain" -> code in setOf(51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99)
+            p == "snow" -> code in setOf(71, 73, 75, 77, 85, 86)
+            p == "clear" -> code in setOf(0, 1)
+            p.startsWith("temp_above:") -> tmax >= (p.removePrefix("temp_above:").toFloatOrNull() ?: 999f)
+            p.startsWith("temp_below:") -> tmin <= (p.removePrefix("temp_below:").toFloatOrNull() ?: -999f)
+            else -> false
+        }
+    }
+
+    private fun pollCalendar(ctx: Context) {
+        try {
+            if (ctx.checkSelfPermission(android.Manifest.permission.READ_CALENDAR) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED) return
+            val hasRules = rules(ctx).any {
+                it.optBoolean("enabled", true) &&
+                    (it.optJSONObject("trigger")?.optString("type") == "calendar_start" ||
+                     it.optJSONObject("trigger")?.optString("type") == "calendar_end")
+            }
+            if (!hasRules) return
+            val now = System.currentTimeMillis()
+            val fired = (prefs(ctx).getString("cal_fired", "") ?: "")
+                .split(",").filter { it.isNotEmpty() }.toMutableSet()
+            var changed = false
+            val uri = android.provider.CalendarContract.Instances.CONTENT_URI.buildUpon()
+            android.content.ContentUris.appendId(uri, now - 15 * 60_000)
+            android.content.ContentUris.appendId(uri, now + 16 * 60_000)
+            val cur = ctx.contentResolver.query(uri.build(), arrayOf(
+                android.provider.CalendarContract.Instances.EVENT_ID,
+                android.provider.CalendarContract.Instances.TITLE,
+                android.provider.CalendarContract.Instances.BEGIN,
+                android.provider.CalendarContract.Instances.END,
+                android.provider.CalendarContract.Instances.EVENT_LOCATION,
+                android.provider.CalendarContract.Instances.CALENDAR_DISPLAY_NAME),
+                null, null, null)
+            cur?.use {
+                while (it.moveToNext()) {
+                    val eid = it.getLong(0)
+                    val title = it.getString(1) ?: ""
+                    val begin = it.getLong(2)
+                    val end = it.getLong(3)
+                    val loc = it.getString(4) ?: ""
+                    val cal = it.getString(5) ?: ""
+                    val data = JSONObject().put("title", title).put("body", loc).put("app", cal)
+                    val startKey = "s_${eid}_$begin"
+                    if (begin in (now - 90_000)..(now + 15 * 60_000) && startKey !in fired) {
+                        fired.add(startKey); changed = true
+                        onEvent(ctx, "calendar_start", data)
+                    }
+                    val endKey = "e_${eid}_$end"
+                    if (end in (now - 90_000)..(now + 15 * 60_000) && endKey !in fired) {
+                        fired.add(endKey); changed = true
+                        onEvent(ctx, "calendar_end", data)
+                    }
+                }
+            }
+            if (changed) {
+                val trimmed = fired.toList().takeLast(120).joinToString(",")
+                prefs(ctx).edit().putString("cal_fired", trimmed).apply()
+            }
+        } catch (_: Exception) { }
+    }
+
     // ---------------- v2.7: polled state triggers + crossings ----------------
     private fun batteryTempC(ctx: Context): Float {
         val bi = ctx.registerReceiver(null,
@@ -963,6 +1291,13 @@ object Automation {
                     as android.telephony.TelephonyManager).isNetworkRoaming
             } catch (e: Exception) { false }
             stateEdge(ctx, "poll_roam", roam, "roaming_on", "roaming_off")
+            val hs = try {
+                val wm = ctx.getSystemService(Context.WIFI_SERVICE)
+                    as android.net.wifi.WifiManager
+                val m = wm.javaClass.getMethod("isWifiApEnabled")
+                m.invoke(wm) as? Boolean ?: false
+            } catch (e: Exception) { false }
+            stateEdge(ctx, "poll_hotspot", hs, "hotspot_on", "hotspot_off")
         } catch (_: Exception) { }
     }
 
@@ -978,7 +1313,9 @@ object Automation {
         val needAccel = types.any { it == "shake" || it == "flip_down" || it == "flip_up" }
         val needProx = types.any { it == "proximity_near" || it == "proximity_far" }
         val needLight = types.any { it == "light_below" || it == "light_above" }
-        if (!needAccel && !needProx && !needLight) return
+        val needMagnet = types.any { it == "magnet_above" }
+        val needPressure = types.any { it == "pressure_above" }
+        if (!needAccel && !needProx && !needLight && !needMagnet && !needPressure) return
         val mgr = app.getSystemService(Context.SENSOR_SERVICE) as SensorManager
         sensorMgr = mgr
         val listener = object : SensorEventListener {
@@ -1015,6 +1352,14 @@ object Automation {
                             lastProxNear = false
                         }
                     }
+                    Sensor.TYPE_MAGNETIC_FIELD -> {
+                        val mag = kotlin.math.sqrt((e.values[0] * e.values[0] +
+                            e.values[1] * e.values[1] + e.values[2] * e.values[2]).toDouble())
+                        bandFire(app, "magnet_above", mag.toFloat(), "magband_")
+                    }
+                    Sensor.TYPE_PRESSURE -> {
+                        bandFire(app, "pressure_above", e.values[0], "presband_")
+                    }
                     Sensor.TYPE_LIGHT -> {
                         val lux = e.values[0]
                         val lastLux = prefs(app).getFloat("last_lux", -1f)
@@ -1049,6 +1394,31 @@ object Automation {
         }
         if (needLight) mgr.getDefaultSensor(Sensor.TYPE_LIGHT)?.let {
             mgr.registerListener(listener, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+        if (needMagnet) mgr.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)?.let {
+            mgr.registerListener(listener, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+        if (needPressure) mgr.getDefaultSensor(Sensor.TYPE_PRESSURE)?.let {
+            mgr.registerListener(listener, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+    /** Shared threshold-band firing for magnet/pressure triggers. */
+    private fun bandFire(app: Context, type: String, value: Float, keyPrefix: String) {
+        for (rule in rules(app)) {
+            if (!rule.optBoolean("enabled", true)) continue
+            val trig = rule.optJSONObject("trigger") ?: continue
+            if (trig.optString("type") != type) continue
+            val target = trig.optString("param").toFloatOrNull() ?: continue
+            val bandKey = keyPrefix + rule.optString("id")
+            val wasIn = prefs(app).getBoolean(bandKey, false)
+            val inBand = value > target
+            if (inBand && !wasIn) {
+                prefs(app).edit().putBoolean(bandKey, true).apply()
+                onEvent(app, type, JSONObject().put("body", value.toInt().toString()))
+            } else if (!inBand && wasIn) {
+                prefs(app).edit().putBoolean(bandKey, false).apply()
+            }
         }
     }
 
@@ -1127,6 +1497,85 @@ object Automation {
                 app.registerReceiver(r, f)
             }
             sysReceiver = r
+        } catch (_: Exception) { }
+    }
+
+    // ---------------- v2.8 helpers ----------------
+    private fun allowedPath(ctx: Context, f: File): Boolean {
+        return try {
+            val canon = f.canonicalPath
+            listOfNotNull(ctx.filesDir, ctx.getExternalFilesDir(null),
+                ctx.getExternalFilesDir(android.os.Environment.DIRECTORY_DOWNLOADS),
+                android.os.Environment.getExternalStoragePublicDirectory(
+                    android.os.Environment.DIRECTORY_DOWNLOADS))
+                .any { canon.startsWith(it.canonicalPath) }
+        } catch (_: Exception) { false }
+    }
+
+    private fun zipPath(src: File, dst: File) {
+        try {
+            dst.parentFile?.mkdirs()
+            java.util.zip.ZipOutputStream(dst.outputStream().buffered()).use { zos ->
+                fun add(f: File, base: String) {
+                    val name = if (base.isEmpty()) f.name else "$base/${f.name}"
+                    if (f.isDirectory) {
+                        f.listFiles()?.forEach { add(it, name) }
+                    } else {
+                        zos.putNextEntry(java.util.zip.ZipEntry(name))
+                        f.inputStream().use { it.copyTo(zos) }
+                        zos.closeEntry()
+                    }
+                }
+                add(src, "")
+            }
+        } catch (_: Exception) { }
+    }
+
+    private fun insertCalendarEvent(ctx: Context, title: String, delayMin: Long, durMin: Long) {
+        try {
+            if (ctx.checkSelfPermission(android.Manifest.permission.WRITE_CALENDAR) !=
+                android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                localNotify(ctx, "ক্যালেন্ডার ইভেন্টের জন্য ক্যালেন্ডার অনুমতি দাও।")
+                return
+            }
+            val calCur = ctx.contentResolver.query(
+                android.provider.CalendarContract.Calendars.CONTENT_URI,
+                arrayOf(android.provider.CalendarContract.Calendars._ID),
+                android.provider.CalendarContract.Calendars.VISIBLE + " = 1",
+                null, null)
+            var calId = -1L
+            calCur?.use { if (it.moveToFirst()) calId = it.getLong(0) }
+            if (calId < 0) return
+            val start = System.currentTimeMillis() + delayMin * 60_000
+            val values = android.content.ContentValues().apply {
+                put(android.provider.CalendarContract.Events.CALENDAR_ID, calId)
+                put(android.provider.CalendarContract.Events.TITLE, title)
+                put(android.provider.CalendarContract.Events.DTSTART, start)
+                put(android.provider.CalendarContract.Events.DTEND, start + durMin * 60_000)
+                put(android.provider.CalendarContract.Events.EVENT_TIMEZONE,
+                    java.util.TimeZone.getDefault().id)
+            }
+            ctx.contentResolver.insert(
+                android.provider.CalendarContract.Events.CONTENT_URI, values)
+        } catch (_: Exception) { }
+    }
+
+    @Volatile private var keepAwakeLock: android.os.PowerManager.WakeLock? = null
+    private fun setKeepAwake(ctx: Context, on: Boolean) {
+        try {
+            if (on) {
+                if (keepAwakeLock?.isHeld == true) return
+                val pm = ctx.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+                @Suppress("DEPRECATION")
+                val wl = pm.newWakeLock(
+                    android.os.PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+                        android.os.PowerManager.ON_AFTER_RELEASE, "phonelink:keepawake")
+                wl.acquire(10 * 3600_000L)
+                keepAwakeLock = wl
+            } else {
+                if (keepAwakeLock?.isHeld == true) keepAwakeLock?.release()
+                keepAwakeLock = null
+            }
         } catch (_: Exception) { }
     }
 

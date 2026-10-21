@@ -815,4 +815,82 @@
     <string name="aah_play_sound">শব্দের URI (খালি = ডিফল্ট নোটিফিকেশন শব্দ)</string>
     <string name="aah_auto_rotate_set">on বা off</string>
     <string name="aah_bt_toggle">on বা off</string>
+    <string name="auto_qr">📷 QR</string>
+    <string name="auto_log">📜 লগ</string>
+    <string name="auto_vars">🔢 ভেরিয়েবল</string>
+    <string name="auto_export">📤 এক্সপোর্ট</string>
+    <string name="auto_import">📥 ইমপোর্ট</string>
+    <string name="auto_log_empty">এখনো কোনো নিয়ম চলেনি</string>
+    <string name="auto_log_clear">পরিষ্কার</string>
+    <string name="auto_vars_empty">এখনো কোনো ভেরিয়েবল নেই — নিয়মে Set variable দিলে তৈরি হয়</string>
+    <string name="auto_var_delete">মোছো</string>
+    <string name="auto_import_hint">এক্সপোর্ট করা নিয়মের JSON এখানে বসাও</string>
+    <string name="auto_imported">%1$d টি নিয়ম ইমপোর্ট হয়েছে</string>
+    <string name="auto_import_failed">ইমপোর্ট হয়নি — JSON ঠিক নেই</string>
+    <string name="auto_cat_hint">ক্যাটেগরি (ঐচ্ছিক, তালিকায় গ্রুপ হয়)</string>
+    <string name="sec_smtp">📧 ইমেইল (SMTP)</string>
+    <string name="smtp_info">অটোমেশনের Send email অ্যাকশন এটা ব্যবহার করে। পাসওয়ার্ড শুধু এই ফোনেই থাকে।</string>
+    <string name="hint_smtp_host">SMTP সার্ভার (যেমন smtp.gmail.com)</string>
+    <string name="hint_smtp_port">পোর্ট (587 বা 465)</string>
+    <string name="hint_smtp_user">ইউজারনেম / ইমেইল</string>
+    <string name="hint_smtp_pass">পাসওয়ার্ড / অ্যাপ পাসওয়ার্ড</string>
+    <string name="hint_smtp_from">From ঠিকানা (খালি = ইউজারনেম)</string>
+    <string name="widget_rule_label">PhoneLink নিয়ম বোতাম</string>
+    <string name="widget_rule_unset">নিয়ম বেছে নাও</string>
+    <string name="at_volume_up">🔊 ভলিউম আপ চাপলে</string>
+    <string name="at_volume_down">🔉 ভলিউম ডাউন চাপলে</string>
+    <string name="at_qr_scanned">📷 QR/বারকোড স্ক্যান হলে</string>
+    <string name="at_webhook">🌐 ওয়েবহুক ডাকা হলে (LAN)</string>
+    <string name="at_weather_forecast">🌦️ পূর্বাভাস মিললে</string>
+    <string name="at_calendar_start">📅 ক্যালেন্ডার ইভেন্ট শুরু হলে</string>
+    <string name="at_calendar_end">📅 ক্যালেন্ডার ইভেন্ট শেষ হলে</string>
+    <string name="at_magnet_above">🧲 চৌম্বক ক্ষেত্র এর বেশি হলে</string>
+    <string name="at_pressure_above">🎈 বায়ুচাপ এর বেশি হলে</string>
+    <string name="at_hotspot_on">📶 হটস্পট চালু হলে</string>
+    <string name="at_hotspot_off">📶 হটস্পট বন্ধ হলে</string>
+    <string name="at_rule_toggled">🔀 কোনো নিয়ম চালু/বন্ধ হলে</string>
+    <string name="ath_qr_scanned">কোডের ভিতরের লেখা (খালি = যেকোনো)</string>
+    <string name="ath_webhook">হুকের নাম, যেমন door</string>
+    <string name="ath_weather_forecast">rain, snow, clear, temp_above:35 বা temp_below:5</string>
+    <string name="ath_calendar_start">ইভেন্টে থাকা শব্দ (খালি = যেকোনো)</string>
+    <string name="ath_calendar_end">ইভেন্টে থাকা শব্দ (খালি = যেকোনো)</string>
+    <string name="ath_magnet_above">মাইক্রোটেসলা (µT), যেমন 200 — ফোনের কাছে চুম্বক থাকলে 200+</string>
+    <string name="ath_pressure_above">হেক্টোপাসকেল (hPa), যেমন 1013</string>
+    <string name="ath_rule_toggled">নিয়মের নাম (খালি = যেকোনো)</string>
+    <string name="ac_date_range">📅 আজ তারিখের সীমার মধ্যে</string>
+    <string name="ac_day_of_month">📅 মাসের দিনটি হলো</string>
+    <string name="ac_signal_above">📶 সিগন্যালের শক্তি অন্তত</string>
+    <string name="ac_rule_enabled">🔀 অন্য নিয়মটি চালু আছে</string>
+    <string name="ach_date_range">2026-11-01..2026-11-30</string>
+    <string name="ach_day_of_month">দিনগুলো, যেমন 1,15,30</string>
+    <string name="ach_signal_above">স্তর 0–4, যেমন 2</string>
+    <string name="ach_rule_enabled">নিয়মের নাম (:off যোগ করলে বন্ধ থাকা বোঝাবে)</string>
+    <string name="aa_gesture_tap">👆 নির্দিষ্ট জায়গায় ট্যাপ</string>
+    <string name="aa_gesture_swipe">👆 সোয়াইপ করো</string>
+    <string name="aa_read_screen">📖 স্ক্রিনের লেখা ভেরিয়েবলে পড়ো</string>
+    <string name="aa_send_email">📧 ইমেইল পাঠাও</string>
+    <string name="aa_calendar_event">📅 ক্যালেন্ডার ইভেন্ট যোগ করো</string>
+    <string name="aa_set_alarm">⏰ অ্যালার্ম সেট করো</string>
+    <string name="aa_set_timer">⏲️ টাইমার চালু করো</string>
+    <string name="aa_file_copy">📄 ফাইল কপি করো</string>
+    <string name="aa_file_move">📄 ফাইল সরাও</string>
+    <string name="aa_file_zip">🗜️ ফাইল/ফোল্ডার ZIP করো</string>
+    <string name="aa_dialog_choice">❓ পছন্দের ডায়ালগে জিজ্ঞেস করো</string>
+    <string name="aa_keep_awake">💡 স্ক্রিন জাগিয়ে রাখো</string>
+    <string name="aa_brightness_auto">🔆 অটো-উজ্জ্বলতা চালু/বন্ধ</string>
+    <string name="aa_flash_pattern">🔦 আলোর প্যাটার্ন জ্বালাও</string>
+    <string name="aah_gesture_tap">x,y স্ক্রিনের শতাংশে, যেমন 50,80</string>
+    <string name="aah_gesture_swipe">x1,y1,x2,y2 শতাংশে (৫ম মান = ms), যেমন 50,80,50,30</string>
+    <string name="aah_read_screen">যে ভেরিয়েবলে লেখা রাখবে তার নাম</string>
+    <string name="aah_send_email">to|subject|body — সেটিংসে SMTP লাগবে</string>
+    <string name="aah_calendar_event">শিরোনাম|কত মিনিট পরে|কত মিনিটের</string>
+    <string name="aah_set_alarm">HH:MM|লেবেল, যেমন 07:30|ঘুম থেকে ওঠো</string>
+    <string name="aah_set_timer">সেকেন্ড|লেবেল</string>
+    <string name="aah_file_copy">উৎস|গন্তব্য (অ্যাপের ফোল্ডার/Downloads)</string>
+    <string name="aah_file_move">উৎস|গন্তব্য (অ্যাপের ফোল্ডার/Downloads)</string>
+    <string name="aah_file_zip">ফোল্ডার|গন্তব্য.zip</string>
+    <string name="aah_dialog_choice">ভেরিয়েবল|প্রশ্ন|অপশন1|অপশন2 — পছন্দটা ভেরিয়েবলে যাবে</string>
+    <string name="aah_keep_awake">on বা off</string>
+    <string name="aah_brightness_auto">on বা off</string>
+    <string name="aah_flash_pattern">sos, বা প্যাটার্ন: . ছোট, - বড়, ফাঁক = বিরতি</string>
 </resources>
