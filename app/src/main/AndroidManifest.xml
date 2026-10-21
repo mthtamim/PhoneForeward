@@ -163,6 +163,14 @@
             android:exported="false" />
 
         <activity
+            android:name=".ExpensesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".PanicActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".PromptActivity"
             android:excludeFromRecents="true"
             android:exported="false"
@@ -192,6 +200,18 @@
         <receiver
             android:name=".WidgetActionReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name=".InboxWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_inbox_desc">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_inbox_info" />
+        </receiver>
 
         <receiver
             android:name=".StatusWidgetProvider"

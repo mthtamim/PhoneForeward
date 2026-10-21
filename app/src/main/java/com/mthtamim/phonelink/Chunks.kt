@@ -154,7 +154,9 @@ object Chunks {
                             File(dir, "$i").inputStream().use { it.copyTo(os) }
                         }
                     }
-                    saveToDownloads(ctx, outName, out.readBytes())
+                    val joinedBytes = out.readBytes()
+                    saveToDownloads(ctx, outName, joinedBytes)
+                    ocrIfImage(ctx, outName, joinedBytes)
                     Relay.sendCommand(ctx, "CHUNK_DONE", ref.id)
                     History.add(ctx, History.Item(
                         type = Relay.TYPE_INFO, title = "📦 বড় ফাইল এসেছে",
@@ -188,6 +190,22 @@ object Chunks {
                 metaFile.writeText(meta.toString())
             } catch (e: Exception) { }
         }
+    }
+
+    /** v2.11: OCR for images that arrive through the chunk channel. */
+    private fun ocrIfImage(ctx: Context, name: String, bytes: ByteArray) {
+        val lower = name.lowercase()
+        if (!lower.endsWith(".jpg") && !lower.endsWith(".jpeg") &&
+            !lower.endsWith(".png") && !lower.endsWith(".webp")) return
+        try {
+            val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                ?: return
+            Ocr.scanBitmap(ctx, bmp) { text ->
+                History.add(ctx, History.Item(
+                    Relay.TYPE_INFO, "🔤 ছবির লেখা — $name", text,
+                    Config.deviceName(ctx), System.currentTimeMillis()))
+            }
+        } catch (_: Exception) { }
     }
 
     private fun saveToDownloads(ctx: Context, name: String, bytes: ByteArray) {

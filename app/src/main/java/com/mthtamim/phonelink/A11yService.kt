@@ -56,8 +56,36 @@ class A11yService : AccessibilityService() {
 
     override fun onInterrupt() {}
 
+    private val focusNotified = mutableMapOf<String, Long>()
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event ?: return
+        // v2.11 focus guard: bounce blocked apps to the home screen
+        // during the focus window, and tell the peer (throttled).
+        try {
+            val pkg = event.packageName?.toString() ?: ""
+            if (pkg.isNotEmpty() && pkg != packageName &&
+                Config.focusOn(applicationContext) &&
+                Config.focusPkgs(applicationContext).contains(pkg)) {
+                val (fs, fe) = Config.focusWindow(applicationContext)
+                val cal = java.util.Calendar.getInstance()
+                val mins = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+                    cal.get(java.util.Calendar.MINUTE)
+                val inWindow = if (fs <= fe) mins in fs..fe
+                    else mins >= fs || mins <= fe
+                if (inWindow) {
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                    val lastN = focusNotified[pkg] ?: 0L
+                    if (System.currentTimeMillis() - lastN > 10 * 60_000L) {
+                        focusNotified[pkg] = System.currentTimeMillis()
+                        Relay.send(applicationContext, Relay.TYPE_INFO,
+                            "🎯 ফোকাস গার্ড",
+                            "$pkg খোলার চেষ্টা আটকে দেওয়া হয়েছে।")
+                    }
+                    return
+                }
+            }
+        } catch (_: Exception) { }
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         // v2.9: split-screen edge (checked before the text throttle)

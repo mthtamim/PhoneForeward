@@ -19,7 +19,17 @@ class LockActivity : LocalizedActivity() {
         val etPin = findViewById<EditText>(R.id.etPin)
         findViewById<Button>(R.id.btnUnlock).setOnClickListener {
             val pin = etPin.text.toString()
-            if (pin.isNotEmpty() && Crypto.pinHash(pin) == Config.pinHash(this)) {
+            // v2.11 panic mode: the panic PIN opens the decoy screen
+            // and silently mutes the app until the real PIN is used.
+            if (pin.isNotEmpty() && Config.panicPinHash(this).isNotEmpty() &&
+                Crypto.pinHash(pin) == Config.panicPinHash(this)) {
+                Config.setPanicActive(this, true)
+                SessionState.unlocked = true
+                startActivity(android.content.Intent(this, PanicActivity::class.java))
+                finish()
+            } else if (pin.isNotEmpty() &&
+                Crypto.pinHash(pin) == Config.pinHash(this)) {
+                Config.setPanicActive(this, false)
                 proceed()
             } else {
                 toast(getString(R.string.lock_wrong_pin))

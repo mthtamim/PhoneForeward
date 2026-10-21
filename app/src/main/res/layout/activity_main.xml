@@ -490,6 +490,142 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="@string/cmd_note" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/rg_more"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdLs"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_ls" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdGetFile"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_getfile" />
+                </LinearLayout>                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdCallLog"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_calllog" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdContacts"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_contacts" />
+                </LinearLayout>                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdUsage"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_usage" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdStorage"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_storage" />
+                </LinearLayout>                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdNetTest"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_nettest" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdRestartSvc"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_restart" />
+                </LinearLayout>                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdListen"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_listen" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdCamPrev"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_camrev" />
+                </LinearLayout>                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdLiveView"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_liveview" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdUrl"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_url" />
+                </LinearLayout>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFocusGuard"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/cmd_focus" />
             </LinearLayout>
 
                     <LinearLayout
@@ -530,6 +666,35 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_voice" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPtt"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_ptt" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBroadcast"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/btn_broadcast" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVoiceCmd"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/btn_voicecmd" />
+                </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -780,6 +945,69 @@
                         android:layout_weight="1"
                         android:text="@string/theme_dark" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAccent"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_accent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckUpdate"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_update" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swWebInbox"
+                    style="@style/PL.SwitchRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/sw_web_inbox" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnWebPin"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_web_pin" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPanicPin"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_panic_pin" />
+
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/label_sos_numbers" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSosNumbers"
+                    style="@style/PL.Field"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_sos_numbers"
+                    android:inputType="phone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveSos"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_save" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
         
@@ -1817,6 +2045,22 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_export_pdf" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExpenses"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_expenses" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutoBackup"
+                    style="@style/PL.SwitchRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/sw_auto_backup" />
                 </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

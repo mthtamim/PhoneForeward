@@ -513,6 +513,45 @@ object Config {
     // ---------- v2.4: automation ----------
     fun automationOn(ctx: Context) = prefs(ctx).getBoolean("automation_on", true)
     fun rulesSyncOn(ctx: Context) = prefs(ctx).getBoolean("rules_sync_on", false)
+    // ---- v2.11 ----
+    fun sosNumbers(ctx: Context): List<String> =
+        (prefs(ctx).getString("sos_numbers", "") ?: "")
+            .split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    fun setSosNumbers(ctx: Context, v: String) { prefs(ctx).edit().putString("sos_numbers", v).apply() }
+    fun panicPinHash(ctx: Context): String = prefs(ctx).getString("panic_pin_hash", "") ?: ""
+    fun setPanicPinHash(ctx: Context, v: String) { prefs(ctx).edit().putString("panic_pin_hash", v).apply() }
+    fun panicActive(ctx: Context): Boolean = prefs(ctx).getBoolean("panic_active", false)
+    fun setPanicActive(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("panic_active", v).apply() }
+    fun autoBackupOn(ctx: Context): Boolean = prefs(ctx).getBoolean("auto_backup_on", false)
+    fun autoBackupLast(ctx: Context): Long = prefs(ctx).getLong("auto_backup_last", 0L)
+    fun setAutoBackupLast(ctx: Context, v: Long) { prefs(ctx).edit().putLong("auto_backup_last", v).apply() }
+    fun accent(ctx: Context): String = prefs(ctx).getString("accent", "emerald") ?: "emerald"
+    fun setAccent(ctx: Context, v: String) { prefs(ctx).edit().putString("accent", v).apply() }
+    fun webInboxOn(ctx: Context): Boolean = prefs(ctx).getBoolean("web_inbox_on", false)
+    fun webPin(ctx: Context): String = prefs(ctx).getString("web_pin", "") ?: ""
+    fun setWebPin(ctx: Context, v: String) { prefs(ctx).edit().putString("web_pin", v).apply() }
+    fun peerPin(ctx: Context, dev: String): String =
+        prefs(ctx).getString("peer_pin_$dev", "") ?: ""
+    fun setPeerPin(ctx: Context, dev: String, digest: String) {
+        prefs(ctx).edit().putString("peer_pin_$dev", digest).apply()
+    }
+    fun storedPeerPins(ctx: Context): List<String> =
+        prefs(ctx).all.keys.filter { it.startsWith("peer_pin_") }
+            .mapNotNull { prefs(ctx).getString(it, "") }.filter { it.isNotEmpty() }
+    fun focusOn(ctx: Context): Boolean = prefs(ctx).getBoolean("focus_on", false)
+    fun setFocusOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("focus_on", v).apply() }
+    fun focusPkgs(ctx: Context): Set<String> =
+        (prefs(ctx).getString("focus_pkgs", "") ?: "")
+            .split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    fun setFocusPkgs(ctx: Context, v: String) { prefs(ctx).edit().putString("focus_pkgs", v).apply() }
+    fun focusWindow(ctx: Context): Pair<Int, Int> =
+        (prefs(ctx).getInt("focus_start", 9 * 60) to prefs(ctx).getInt("focus_end", 17 * 60))
+    fun setFocusWindow(ctx: Context, start: Int, end: Int) {
+        prefs(ctx).edit().putInt("focus_start", start).putInt("focus_end", end).apply()
+    }
+    fun pttAutoplay(ctx: Context): Boolean = prefs(ctx).getBoolean("ptt_autoplay", true)
+    fun updateLastCheck(ctx: Context): Long = prefs(ctx).getLong("update_last_check", 0L)
+    fun setUpdateLastCheck(ctx: Context, v: Long) { prefs(ctx).edit().putLong("update_last_check", v).apply() }
     fun setRulesSyncOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("rules_sync_on", v).apply() }
     fun setAutomationOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("automation_on", v).apply() }
 

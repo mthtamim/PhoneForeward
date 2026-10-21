@@ -29,4 +29,30 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
+
+    <!-- v2.11 accent variants (primary family only) -->
+    <style name="Theme.PhoneLinkBlue" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#2563EB</item>
+        <item name="colorPrimaryContainer">#D7E3FC</item>
+        <item name="colorOnPrimaryContainer">#0B2A6B</item>
+        <item name="colorSecondary">#2563EB</item>
+    </style>
+    <style name="Theme.PhoneLinkPurple" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#7C3AED</item>
+        <item name="colorPrimaryContainer">#E9E0FD</item>
+        <item name="colorOnPrimaryContainer">#2E1065</item>
+        <item name="colorSecondary">#7C3AED</item>
+    </style>
+    <style name="Theme.PhoneLinkAmber" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#D97706</item>
+        <item name="colorPrimaryContainer">#FDEBC8</item>
+        <item name="colorOnPrimaryContainer">#5B3400</item>
+        <item name="colorSecondary">#D97706</item>
+    </style>
+    <style name="Theme.PhoneLinkRose" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#E11D48</item>
+        <item name="colorPrimaryContainer">#FBDCE4</item>
+        <item name="colorOnPrimaryContainer">#5F0A1E</item>
+        <item name="colorSecondary">#E11D48</item>
+    </style>
 </resources>

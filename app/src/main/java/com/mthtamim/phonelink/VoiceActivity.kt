@@ -91,7 +91,11 @@ class VoiceActivity : LocalizedActivity() {
             var ok = false
             try {
                 val bytes = file.readBytes()
-                ok = Relay.postFile(applicationContext, "voice.m4a", bytes, "audio/mp4")
+                // v2.11: walkie-talkie sends carry the ptt- marker so
+                // the receiving phone can auto-play them on arrival.
+                val ptt = intent.getBooleanExtra("ptt", false)
+                ok = Relay.postFile(applicationContext,
+                    if (ptt) "ptt-voice.m4a" else "voice.m4a", bytes, "audio/mp4")
             } catch (_: Exception) { }
             try { file.delete() } catch (_: Exception) { }
             Handler(Looper.getMainLooper()).post {

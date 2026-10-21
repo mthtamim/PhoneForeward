@@ -15,12 +15,15 @@ object History {
         val id: String = "",
         val code: String = "",
         val extra: String = "",
-        val pinned: Boolean = false
+        val pinned: Boolean = false,
+        val starred: Boolean = false,
+        val archived: Boolean = false
     ) {
         fun toJson(): JSONObject = JSONObject().apply {
             put("type", type); put("title", title); put("body", body)
             put("from", from); put("time", time); put("id", id)
             put("code", code); put("extra", extra); put("pinned", pinned)
+            put("starred", starred); put("archived", archived)
         }
         companion object {
             fun fromJson(o: JSONObject) = Item(
@@ -32,7 +35,9 @@ object History {
                 o.optString("id", ""),
                 o.optString("code", ""),
                 o.optString("extra", ""),
-                o.optBoolean("pinned", false)
+                o.optBoolean("pinned", false),
+                o.optBoolean("starred", false),
+                o.optBoolean("archived", false)
             )
         }
     }
@@ -95,6 +100,37 @@ object History {
             // Pinned items float to the top, keeping their relative order.
             writeAll(ctx, items.sortedByDescending { it.pinned })
         } catch (_: Exception) { }
+    }
+
+    // v2.11: star / archive flags (same matching rule as setPinned)
+    @Synchronized
+    fun setStarred(ctx: Context, target: Item, starred: Boolean) {
+        try {
+            writeAll(ctx, all(ctx).map {
+                if (it.time == target.time && it.title == target.title && it.id == target.id)
+                    it.copy(starred = starred) else it
+            })
+        } catch (_: Exception) { }
+    }
+
+    @Synchronized
+    fun setArchived(ctx: Context, target: Item, archived: Boolean) {
+        try {
+            writeAll(ctx, all(ctx).map {
+                if (it.time == target.time && it.title == target.title && it.id == target.id)
+                    it.copy(archived = archived) else it
+            })
+        } catch (_: Exception) { }
+    }
+
+    /** Items received today (for the launcher badge number). */
+    fun todayCount(ctx: Context): Int {
+        val start = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+        }.timeInMillis
+        return all(ctx).count { it.time >= start }
     }
 
     /** Removes every item carrying this relay id (delete-on-both-phones). */

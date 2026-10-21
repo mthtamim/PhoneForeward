@@ -183,7 +183,7 @@ class RuleEditorActivity : LocalizedActivity() {
             addRow("a", "", "")
         }
         findViewById<Button>(R.id.btnSaveRule).setOnClickListener { save() }
-        findViewById<Button>(R.id.btnEditorBack).setOnClickListener { finish() }
+        findViewById<android.widget.ImageButton>(R.id.btnEditorBack).setOnClickListener { finish() }
 
         ruleId = intent.getStringExtra("rule_id") ?: ""
         val existing = Automation.rules(this)

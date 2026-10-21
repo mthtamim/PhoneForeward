@@ -47,7 +47,7 @@ class ChartsActivity : LocalizedActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_charts)
-        findViewById<Button>(R.id.btnChartsBack).setOnClickListener { finish() }
+        findViewById<android.widget.ImageButton>(R.id.btnChartsBack).setOnClickListener { finish() }
         val container = findViewById<LinearLayout>(R.id.chartsContainer)
         val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.US)
         val labelFmt = SimpleDateFormat("dd MMM", Locale.US)

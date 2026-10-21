@@ -78,6 +78,15 @@ class MainActivity : LocalizedActivity() {
     private var inboxReceiver: BroadcastReceiver? = null
     private var inboxCat: String = "ALL"
 
+    // v2.11 voice commands (system speech recognizer)
+    private val speechLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        val texts = result.data?.getStringArrayListExtra(
+            android.speech.RecognizerIntent.EXTRA_RESULTS)
+        val heard = texts?.firstOrNull().orEmpty()
+        if (heard.isNotEmpty()) runVoiceCommand(heard)
+    }
+
     private val scanLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val code = result.data?.getStringExtra("code")?.trim().orEmpty()
@@ -370,6 +379,18 @@ class MainActivity : LocalizedActivity() {
                     }
                     buf.toByteArray()
                 } ?: throw IllegalStateException("unreadable")
+                // v2.11: OCR — text found in a sent photo rides along
+                // as its own inbox item on the other phone.
+                if (mime.startsWith("image/")) {
+                    try {
+                        val bmp = android.graphics.BitmapFactory.decodeByteArray(
+                            bytes, 0, bytes.size)
+                        if (bmp != null) Ocr.scanBitmap(applicationContext, bmp) { text ->
+                            Relay.send(applicationContext, Relay.TYPE_INFO,
+                                "🔤 ছবির লেখা — $name", text)
+                        }
+                    } catch (_: Exception) { }
+                }
                 ok = if (bytes.size > 4_500_000) {
                     Chunks.sendLarge(applicationContext, name, bytes)
                 } else {
@@ -640,6 +661,8 @@ class MainActivity : LocalizedActivity() {
                 R.id.chipNotif -> "NOTIF"
                 R.id.chipBattery -> "BATTERY"
                 R.id.chipOther -> "OTHER"
+                R.id.chipStar -> "STAR"
+                R.id.chipArchived -> "ARCHIVED"
                 else -> "ALL"
             }
             renderInbox()
@@ -834,6 +857,20 @@ class MainActivity : LocalizedActivity() {
                     Relay.send(this, Relay.TYPE_SYSTEM, "🆘 SOS — সাহায্য দরকার",
                         "${Config.deviceName(this)} থেকে জরুরি SOS পাঠানো হয়েছে।")
                     LocationHelper.fetchAndSend(this)
+                    // v2.11: external emergency numbers get a plain SMS too
+                    val sosNums = Config.sosNumbers(this)
+                    if (sosNums.isNotEmpty() && checkSelfPermission(
+                            android.Manifest.permission.SEND_SMS) ==
+                        android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        val name = Config.deviceName(this)
+                        LocationHelper.fetchCoords(this, { lat, lng ->
+                            sendSosSms(sosNums,
+                                "🆘 SOS: $name সাহায্য চাইছে। লোকেশন: " +
+                                    "https://maps.google.com/?q=$lat,$lng")
+                        }, {
+                            sendSosSms(sosNums, "🆘 SOS: $name সাহায্য চাইছে।")
+                        })
+                    }
                     toast(getString(R.string.toast_sos_sent))
                 }
                 .setNegativeButton(getString(R.string.btn_cancel), null)
@@ -846,6 +883,173 @@ class MainActivity : LocalizedActivity() {
                 toast(getString(R.string.toast_cmd_snap))
             }
         }
+        // ----- v2.11 remote additions -----
+        findViewById<Button>(R.id.btnCmdLs).setOnClickListener {
+            showTextPrompt(getString(R.string.cmd_ls), "/sdcard/Download") { path ->
+                Relay.sendCommand(this, "LS", path)
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnCmdGetFile).setOnClickListener {
+            askPin { digest ->
+                showTextPrompt(getString(R.string.cmd_getfile), "") { path ->
+                    Relay.sendCommand(this, "GETFILE", null,
+                        org.json.JSONObject().put("pin", digest).put("arg", path))
+                    toast(getString(R.string.toast_cmd_sent))
+                }
+            }
+        }
+        findViewById<Button>(R.id.btnCmdCallLog).setOnClickListener {
+            Relay.sendCommand(this, "CALLLOG"); toast(getString(R.string.toast_cmd_sent))
+        }
+        findViewById<Button>(R.id.btnCmdContacts).setOnClickListener {
+            askPin { digest ->
+                Relay.sendCommand(this, "CONTACTS", null,
+                    org.json.JSONObject().put("pin", digest))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnCmdUsage).setOnClickListener {
+            Relay.sendCommand(this, "USAGE"); toast(getString(R.string.toast_cmd_sent))
+        }
+        findViewById<Button>(R.id.btnCmdStorage).setOnClickListener {
+            Relay.sendCommand(this, "STORAGE"); toast(getString(R.string.toast_cmd_sent))
+        }
+        findViewById<Button>(R.id.btnCmdNetTest).setOnClickListener {
+            Relay.sendCommand(this, "NETTEST"); toast(getString(R.string.toast_cmd_sent))
+        }
+        findViewById<Button>(R.id.btnCmdRestartSvc).setOnClickListener {
+            Relay.sendCommand(this, "RESTART"); toast(getString(R.string.toast_cmd_sent))
+        }
+        findViewById<Button>(R.id.btnCmdListen).setOnClickListener {
+            askPin { digest ->
+                Relay.sendCommand(this, "LISTEN", null,
+                    org.json.JSONObject().put("pin", digest).put("minutes", 3))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnCmdListen).setOnLongClickListener {
+            Relay.sendCommand(this, "STOPLISTEN")
+            toast(getString(R.string.toast_cmd_sent)); true
+        }
+        findViewById<Button>(R.id.btnCmdCamPrev).setOnClickListener {
+            askPin { digest ->
+                Relay.sendCommand(this, "CAMPREV", null,
+                    org.json.JSONObject().put("pin", digest).put("count", 4))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnCmdLiveView).setOnClickListener {
+            askPin { digest ->
+                Relay.sendCommand(this, "LIVEVIEW", null,
+                    org.json.JSONObject().put("pin", digest))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnCmdLiveView).setOnLongClickListener {
+            Relay.sendCommand(this, "STOPLIVE")
+            toast(getString(R.string.toast_cmd_sent)); true
+        }
+        findViewById<Button>(R.id.btnCmdUrl).setOnClickListener {
+            showTextPrompt(getString(R.string.cmd_url), "https://") { url ->
+                Relay.sendCommand(this, "OPENURL", url)
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnFocusGuard).setOnClickListener { showFocusDialog() }
+        findViewById<Button>(R.id.btnBroadcast).setOnClickListener {
+            showTextPrompt(getString(R.string.btn_broadcast), "") { text ->
+                Relay.send(this, Relay.TYPE_INFO,
+                    "📢 " + getString(R.string.btn_broadcast) + " — " +
+                        Config.deviceName(this), text)
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnPtt).setOnClickListener {
+            startActivity(Intent(this, VoiceActivity::class.java).putExtra("ptt", true))
+        }
+        findViewById<Button>(R.id.btnVoiceCmd).setOnClickListener {
+            try {
+                val ri = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+                    .putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                        android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    .putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT,
+                        getString(R.string.voicecmd_prompt))
+                speechLauncher.launch(ri)
+            } catch (_: Exception) { toast(getString(R.string.voicecmd_unavailable)) }
+        }
+        findViewById<Button>(R.id.btnExpenses).setOnClickListener {
+            startActivity(Intent(this, ExpensesActivity::class.java))
+        }
+        bindToggle(R.id.swAutoBackup, "auto_backup_on", Config.autoBackupOn(this))
+        findViewById<Button>(R.id.btnAccent).setOnClickListener {
+            val names = arrayOf("emerald", "blue", "purple", "amber", "rose")
+            val labels = arrayOf(
+                getString(R.string.accent_emerald), getString(R.string.accent_blue),
+                getString(R.string.accent_purple), getString(R.string.accent_amber),
+                getString(R.string.accent_rose))
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_accent))
+                .setItems(labels) { _, w ->
+                    Config.setAccent(this, names[w]); recreate()
+                }
+                .show()
+        }
+        findViewById<Button>(R.id.btnCheckUpdate).setOnClickListener {
+            toast(getString(R.string.update_checking))
+            Update.check(this, true) { newer, url ->
+                if (newer != null) {
+                    AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.update_found, newer))
+                        .setMessage(getString(R.string.update_found_msg))
+                        .setPositiveButton(getString(R.string.btn_open)) { _, _ ->
+                            if (!url.isNullOrEmpty()) try {
+                                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            } catch (_: Exception) { }
+                        }
+                        .setNegativeButton(getString(R.string.btn_cancel), null)
+                        .show()
+                } else toast(getString(R.string.update_latest))
+            }
+        }
+        val swWeb = findViewById<CompoundButton>(R.id.swWebInbox)
+        swWeb.isChecked = Config.webInboxOn(this)
+        swWeb.setOnCheckedChangeListener { _, checked ->
+            Config.setToggle(this, "web_inbox_on", checked)
+            if (checked && Config.webPin(this).length < 4) {
+                toast(getString(R.string.web_pin_needed))
+            }
+            WebInbox.restart(this)
+        }
+        findViewById<Button>(R.id.btnWebPin).setOnClickListener {
+            showTextPrompt(getString(R.string.btn_web_pin),
+                Config.webPin(this)) { pin ->
+                if (pin.length >= 4) {
+                    Config.setWebPin(this, pin)
+                    WebInbox.restart(this)
+                    toast(getString(R.string.web_url, ownIp(), WebInbox.PORT, pin))
+                } else toast(getString(R.string.toast_pin_short))
+            }
+        }
+        findViewById<Button>(R.id.btnPanicPin).setOnClickListener {
+            showTextPrompt(getString(R.string.btn_panic_pin), "") { pin ->
+                if (pin.length >= 4) {
+                    Config.setPanicPinHash(this, Crypto.pinHash(pin))
+                    toast(getString(R.string.toast_saved))
+                } else toast(getString(R.string.toast_pin_short))
+            }
+        }
+        findViewById<com.google.android.material.textfield.TextInputEditText>(
+            R.id.etSosNumbers).setText(Config.sosNumbers(this).joinToString(", "))
+        findViewById<Button>(R.id.btnSaveSos).setOnClickListener {
+            val v = findViewById<com.google.android.material.textfield.TextInputEditText>(
+                R.id.etSosNumbers).text.toString()
+            Config.setSosNumbers(this, v)
+            toast(getString(R.string.toast_saved))
+        }
+        // v2.11: once-a-day silent update check
+        if (System.currentTimeMillis() - Config.updateLastCheck(this) >
+            24 * 3600_000L) Update.check(this, false)
         findViewById<Button>(R.id.btnCmdSummary).setOnClickListener {
             Relay.sendCommand(this, "SUMMARY"); toast(getString(R.string.toast_cmd_summary))
         }
@@ -1468,6 +1672,10 @@ class MainActivity : LocalizedActivity() {
         }
         labels.add(getString(if (item.pinned) R.string.menu_unpin else R.string.menu_pin))
         actions.add { History.setPinned(this, item, !item.pinned); refreshInbox() }
+        labels.add(getString(if (item.starred) R.string.menu_unstar else R.string.menu_star))
+        actions.add { History.setStarred(this, item, !item.starred); refreshInbox() }
+        labels.add(getString(if (item.archived) R.string.menu_unarchive else R.string.menu_archive))
+        actions.add { History.setArchived(this, item, !item.archived); refreshInbox() }
         if (item.type == Relay.TYPE_SMS && item.extra.startsWith("tel:")) {
             labels.add(getString(R.string.menu_reply_sms))
             actions.add { showReplyDialog(item.extra.removePrefix("tel:")) }
@@ -1679,6 +1887,10 @@ class MainActivity : LocalizedActivity() {
 
     /** Asks for the command PIN and hands back its digest. */
     private fun askPin(onOk: (String) -> Unit) {
+        // v2.11: a stored per-device PIN (Devices screen) is used
+        // silently when exactly one is on file.
+        val stored = Config.storedPeerPins(this)
+        if (stored.size == 1) { onOk(stored[0]); return }
         val input = EditText(this).apply {
             hint = getString(R.string.hint_cmd_pin)
             inputType = InputType.TYPE_CLASS_NUMBER or
@@ -2076,6 +2288,124 @@ class MainActivity : LocalizedActivity() {
             }
     }
 
+
+    /** v2.11: one-line text prompt used by the new remote buttons. */
+    private fun showTextPrompt(title: String, initial: String,
+                               onOk: (String) -> Unit) {
+        val input = EditText(this).apply {
+            setText(initial)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(title)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val v = input.text.toString().trim()
+                if (v.isNotEmpty()) onOk(v)
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun sendSosSms(numbers: List<String>, text: String) {
+        try {
+            val sm = android.telephony.SmsManager.getDefault()
+            for (n in numbers) {
+                try { sm.sendTextMessage(n, null, text, null, null) }
+                catch (_: Exception) { }
+            }
+        } catch (_: Exception) { }
+    }
+
+    private fun ownIp(): String {
+        try {
+            val ifs = java.net.NetworkInterface.getNetworkInterfaces()
+            while (ifs.hasMoreElements()) {
+                val addrs = ifs.nextElement().inetAddresses
+                while (addrs.hasMoreElements()) {
+                    val a = addrs.nextElement()
+                    if (!a.isLoopbackAddress && a is java.net.Inet4Address &&
+                        a.isSiteLocalAddress) return a.hostAddress ?: ""
+                }
+            }
+        } catch (_: Exception) { }
+        return "0.0.0.0"
+    }
+
+    /** v2.11: spoken shortcut commands (Bengali + English keywords). */
+    private fun runVoiceCommand(heard: String) {
+        val t = heard.lowercase()
+        fun has(vararg words: String) = words.any { t.contains(it) }
+        when {
+            has("ring", "রিং", "বাজাও") -> {
+                Relay.sendCommand(this, "RING")
+                toast(getString(R.string.voicecmd_did, heard, "RING"))
+            }
+            has("location", "লোকেশন", "অবস্থান", "কোথায়") -> {
+                Relay.sendCommand(this, "LOCATION")
+                toast(getString(R.string.voicecmd_did, heard, "LOCATION"))
+            }
+            has("flash", "ফ্ল্যাশ", "লাইট") -> {
+                Relay.sendCommand(this, "FLASH_ON")
+                toast(getString(R.string.voicecmd_did, heard, "FLASH_ON"))
+            }
+            has("screenshot", "স্ক্রিনশট", "ছবি তোল") -> {
+                askPin { d -> Relay.sendCommand(this, "SNAP", null,
+                    org.json.JSONObject().put("pin", d)) }
+                toast(getString(R.string.voicecmd_did, heard, "SNAP"))
+            }
+            has("lock", "লক") -> {
+                askPin { d -> Relay.sendCommand(this, "LOCK", null,
+                    org.json.JSONObject().put("pin", d)) }
+                toast(getString(R.string.voicecmd_did, heard, "LOCK"))
+            }
+            has("status", "স্ট্যাটাস", "ব্যাটারি") -> {
+                Relay.sendCommand(this, "STATUS")
+                toast(getString(R.string.voicecmd_did, heard, "STATUS"))
+            }
+            else -> toast(getString(R.string.voicecmd_unknown, heard))
+        }
+    }
+
+    /** v2.11 focus guard settings (enforced by A11yService). */
+    private fun showFocusDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 24, 48, 8)
+        }
+        val sw = android.widget.Switch(this).apply {
+            text = getString(R.string.cmd_focus)
+            isChecked = Config.focusOn(this@MainActivity)
+        }
+        val etPkgs = EditText(this).apply {
+            hint = getString(R.string.focus_pkgs_hint)
+            setText(Config.focusPkgs(this@MainActivity).joinToString(", "))
+        }
+        val (fs, fe) = Config.focusWindow(this)
+        val etWin = EditText(this).apply {
+            hint = "HH:MM-HH:MM"
+            setText("%02d:%02d-%02d:%02d".format(fs / 60, fs % 60, fe / 60, fe % 60))
+        }
+        layout.addView(sw); layout.addView(etPkgs); layout.addView(etWin)
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.cmd_focus))
+            .setView(layout)
+            .setPositiveButton(getString(R.string.btn_save)) { _, _ ->
+                Config.setFocusOn(this, sw.isChecked)
+                Config.setFocusPkgs(this, etPkgs.text.toString())
+                val m = Regex("(\\d{1,2}):(\\d{2})-(\\d{1,2}):(\\d{2})")
+                    .find(etWin.text.toString().trim())
+                if (m != null) {
+                    Config.setFocusWindow(this,
+                        m.groupValues[1].toInt() * 60 + m.groupValues[2].toInt(),
+                        m.groupValues[3].toInt() * 60 + m.groupValues[4].toInt())
+                }
+                toast(getString(R.string.toast_saved))
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
     private fun showDevicesDialog() {
         val peers = Peers.list(this)
         if (peers.isEmpty()) {
@@ -2098,7 +2428,42 @@ class MainActivity : LocalizedActivity() {
         BatteryHist.summary(this)?.let { labels.add(it) }
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.devices_title))
-            .setItems(labels.toTypedArray(), null)
+            .setItems(labels.toTypedArray()) { _, which ->
+                val peer = peers.getOrNull(which) ?: return@setItems
+                if (peer.dev.isEmpty()) return@setItems
+                val has = Config.peerPin(this, peer.dev).isNotEmpty()
+                val opts = if (has) arrayOf(
+                    getString(R.string.dev_pin_set), getString(R.string.dev_pin_clear))
+                    else arrayOf(getString(R.string.dev_pin_set))
+                AlertDialog.Builder(this)
+                    .setTitle(peer.name)
+                    .setItems(opts) { _, w ->
+                        if (w == 0) {
+                            val input = EditText(this).apply {
+                                hint = getString(R.string.hint_cmd_pin)
+                                inputType = InputType.TYPE_CLASS_NUMBER or
+                                    InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                            }
+                            AlertDialog.Builder(this)
+                                .setTitle(getString(R.string.dev_pin_set))
+                                .setView(input)
+                                .setPositiveButton(android.R.string.ok) { _, _ ->
+                                    val pin = input.text.toString().trim()
+                                    if (pin.length >= 4) {
+                                        Config.setPeerPin(this, peer.dev,
+                                            Config.digestForPin(pin))
+                                        toast(getString(R.string.toast_saved))
+                                    } else toast(getString(R.string.toast_pin_short))
+                                }
+                                .setNegativeButton(getString(R.string.btn_cancel), null)
+                                .show()
+                        } else {
+                            Config.setPeerPin(this, peer.dev, "")
+                            toast(getString(R.string.toast_saved))
+                        }
+                    }
+                    .show()
+            }
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }
@@ -2311,15 +2676,22 @@ class MainActivity : LocalizedActivity() {
     }
 
     private fun filteredInbox(): List<History.Item> {
+        // v2.11: archived items live behind their own chip; starred
+        // items behind the star chip; everything else hides archived.
+        val pool = when (inboxCat) {
+            "ARCHIVED" -> inboxItems.filter { it.archived }
+            "STAR" -> inboxItems.filter { it.starred && !it.archived }
+            else -> inboxItems.filter { !it.archived }
+        }
         val byCat = when (inboxCat) {
-            "SMS" -> inboxItems.filter { it.type == Relay.TYPE_SMS }
-            "CALL" -> inboxItems.filter { it.type == Relay.TYPE_CALL }
-            "NOTIF" -> inboxItems.filter { it.type == Relay.TYPE_NOTIF }
-            "BATTERY" -> inboxItems.filter { it.type == Relay.TYPE_BATTERY }
-            "OTHER" -> inboxItems.filter {
+            "SMS" -> pool.filter { it.type == Relay.TYPE_SMS }
+            "CALL" -> pool.filter { it.type == Relay.TYPE_CALL }
+            "NOTIF" -> pool.filter { it.type == Relay.TYPE_NOTIF }
+            "BATTERY" -> pool.filter { it.type == Relay.TYPE_BATTERY }
+            "OTHER" -> pool.filter {
                 it.type !in setOf(Relay.TYPE_SMS, Relay.TYPE_CALL, Relay.TYPE_NOTIF, Relay.TYPE_BATTERY)
             }
-            else -> inboxItems
+            else -> pool
         }
         val q = etSearch.text.toString().trim().lowercase()
         if (q.isEmpty()) return byCat
@@ -2330,6 +2702,12 @@ class MainActivity : LocalizedActivity() {
     }
 
     private fun renderInbox() {
+        // v2.11 panic mode: the inbox pretends to be empty.
+        if (Config.panicActive(this)) {
+            lvInbox.adapter = InboxAdapter(this, emptyList(),
+                getString(R.string.inbox_empty))
+            return
+        }
         lvInbox.adapter = InboxAdapter(this, filteredInbox(), getString(R.string.inbox_empty))
     }
 

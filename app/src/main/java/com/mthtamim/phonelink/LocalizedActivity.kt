@@ -35,4 +35,19 @@ open class LocalizedActivity : AppCompatActivity() {
         }
         super.attachBaseContext(wrapped)
     }
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        // v2.11: accent colour picked in General settings
+        try {
+            val prefs = getSharedPreferences("phonelink_cfg",
+                android.content.Context.MODE_PRIVATE)
+            when (prefs.getString("accent", "emerald")) {
+                "blue" -> setTheme(R.style.Theme_PhoneLinkBlue)
+                "purple" -> setTheme(R.style.Theme_PhoneLinkPurple)
+                "amber" -> setTheme(R.style.Theme_PhoneLinkAmber)
+                "rose" -> setTheme(R.style.Theme_PhoneLinkRose)
+            }
+        } catch (_: Exception) { }
+        super.onCreate(savedInstanceState)
+    }
 }

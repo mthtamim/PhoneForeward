@@ -35,6 +35,12 @@ class SmsReceiver : BroadcastReceiver() {
         if (!Config.isSender(ctx) || !Config.fwdSms(ctx)) return
         if (Config.containsBlockedWord(ctx, body)) return
 
+        // v2.11: phishing heuristic — flag it in the title and send
+        // an urgent copy so it is not lost among routine SMS.
+        if (Spam.isSuspicious(body)) {
+            Relay.send(ctx, Relay.TYPE_URGENT, "⚠️ সন্দেহজনক SMS",
+                "সম্ভাব্য ফিশিং বার্তা — লিংকে চাপ দিও না, কোড পাঠিও না।\n\n$body")
+        }
         val who = Contacts.labelForNumber(ctx, sender)
         val priority = Config.isPriorityNumber(ctx, sender)
         val alertHit = Config.containsAlertWord(ctx, body)

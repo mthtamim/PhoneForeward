@@ -225,7 +225,7 @@ class AutomationActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnAddRule).setOnClickListener {
             startActivity(Intent(this, RuleEditorActivity::class.java))
         }
-        findViewById<Button>(R.id.btnAutoBack).setOnClickListener { finish() }
+        findViewById<android.widget.ImageButton>(R.id.btnAutoBack).setOnClickListener { finish() }
         findViewById<Button>(R.id.btnAutoQr).setOnClickListener {
             scanLauncher.launch(Intent(this, ScanActivity::class.java))
         }
