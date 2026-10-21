@@ -1157,4 +1157,6 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="auto_rest_label">Rest before the same rule can run again</string>
     <string name="auto_rest_title">Rest time (seconds)</string>
     <string name="auto_rest_hint">0 = no rest, max 300</string>
+    <string name="shizuku_testing">Testing the Shizuku shell…</string>
+    <string name="shizuku_broken">Shizuku is connected, but shell commands fail: %1$s</string>
 </resources>

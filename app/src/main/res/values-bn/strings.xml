@@ -1147,4 +1147,6 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="auto_rest_label">একই নিয়ম আবার চলার আগে বিশ্রাম</string>
     <string name="auto_rest_title">বিশ্রামের সময় (সেকেন্ড)</string>
     <string name="auto_rest_hint">০ = বিশ্রাম নেই, সর্বোচ্চ ৩০০</string>
+    <string name="shizuku_testing">Shizuku Shell পরীক্ষা চলছে…</string>
+    <string name="shizuku_broken">Shizuku যুক্ত আছে, কিন্তু Shell কমান্ড চলছে না: %1$s</string>
 </resources>

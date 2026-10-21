@@ -26,25 +26,48 @@ object ShizukuHelper {
         } catch (_: Throwable) { }
     }
 
+    /** Why the last run() failed (v2.14) — surfaced to the user
+     *  instead of failing silently. Null when the last run worked. */
+    @Volatile var lastError: String? = null
+        private set
+
     /** Runs a shell command via Shizuku; returns trimmed stdout ("" on failure). */
     fun run(command: String): String {
-        if (!granted()) return ""
+        lastError = null
+        if (!granted()) {
+            lastError = "not granted"
+            return ""
+        }
         return try {
             val proc = newProcess(arrayOf("sh", "-c", command))
             val out = proc.inputStream.bufferedReader().readText()
             proc.waitFor()
             out.trim()
-        } catch (_: Throwable) { "" }
+        } catch (t: Throwable) {
+            val cause = (t as? java.lang.reflect.InvocationTargetException)
+                ?.targetException ?: t
+            lastError = cause.javaClass.simpleName + ": " +
+                (cause.message ?: "").take(120)
+            ""
+        }
     }
 
-    /** Shizuku.newProcess is library-restricted in API 13, which the
+    /** A harmless real command, proving the whole shell path works. */
+    fun selfTest(): Boolean = run("echo phonelink-ok") == "phonelink-ok"
+
+    /** Shizuku.newProcess is private in API 13.1.5 (verified in the
+     *  AAR: private static, (String[], String[], String)), which the
      *  Kotlin compiler refuses to call directly; reach it reflectively. */
     private fun newProcess(cmd: Array<String>): Process {
-        val m = Shizuku::class.java.getDeclaredMethod(
-            "newProcess",
-            Array<String>::class.java, Array<String>::class.java,
-            String::class.java)
+        val types = arrayOf<Class<*>>(Array<String>::class.java,
+            Array<String>::class.java, String::class.java)
+        val m = try {
+            Shizuku::class.java.getDeclaredMethod("newProcess", *types)
+        } catch (e: NoSuchMethodException) {
+            Shizuku::class.java.getMethod("newProcess", *types)
+        }
         m.isAccessible = true
-        return m.invoke(null, cmd, null, null) as Process
+        val args: Array<Any?> = arrayOf(cmd, null, null)
+        return m.invoke(null, *args) as Process
     }
 }

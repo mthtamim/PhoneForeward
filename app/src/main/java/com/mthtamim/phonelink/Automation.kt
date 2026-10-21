@@ -1114,11 +1114,14 @@ object Automation {
                     shAction(ctx, cmd)
                 }
                 "airplane_toggle" -> {
-                    val on = param != "off"
-                    shAction(ctx, "settings put global airplane_mode_on " +
-                        (if (on) "1" else "0") +
-                        "; am broadcast -a android.intent.action.AIRPLANE_MODE" +
-                        " --ez state " + on)
+                    val on = param.trim().lowercase() != "off"
+                    // v2.14: cmd connectivity is the way that still
+                    // works on Android 11+; the old settings+broadcast
+                    // trick is ignored by modern Android.
+                    shAction(ctx, "cmd connectivity airplane-mode " +
+                        (if (on) "enable" else "disable") +
+                        "; settings put global airplane_mode_on " +
+                        (if (on) "1" else "0"))
                 }
                 "mobile_data_toggle" ->
                     shAction(ctx, if (param == "off") "svc data disable"
@@ -1136,7 +1139,9 @@ object Automation {
                             return@Thread
                         }
                         ShizukuHelper.run("screencap -p " + shq(path))
-                        localNotify(ctx, "স্ক্রিনশট: $path")
+                        val err = ShizukuHelper.lastError
+                        if (err != null) localNotify(ctx, "স্ক্রিনশট ব্যর্থ: " + err)
+                        else localNotify(ctx, "স্ক্রিনশট: $path")
                     }.start()
                 }
                 "clear_app_data" -> {
@@ -1417,8 +1422,12 @@ object Automation {
                 }
                 "shell_cmd" -> Thread {
                     val out = ShizukuHelper.run(param)
-                    localNotify(ctx, if (out.isBlank())
-                        "Shell: কোনো আউটপুট নেই — Shizuku চলছে তো?" else out.take(300))
+                    val err = ShizukuHelper.lastError
+                    localNotify(ctx, when {
+                        err != null -> "Shell ব্যর্থ: " + err
+                        out.isBlank() -> "Shell: কোনো আউটপুট নেই"
+                        else -> out.take(300)
+                    })
                 }.start()
                 "screen_pin" -> try {
                     ctx.startActivity(Intent(ctx, PinActivity::class.java)
@@ -1523,6 +1532,9 @@ object Automation {
                 return@Thread
             }
             ShizukuHelper.run(cmd)
+            ShizukuHelper.lastError?.let {
+                localNotify(ctx, "Shell ব্যর্থ: " + it)
+            }
         }.start()
     }
 

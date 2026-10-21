@@ -1554,8 +1554,17 @@ class MainActivity : LocalizedActivity() {
             when {
                 !ShizukuHelper.available() ->
                     toast(getString(R.string.shizuku_absent))
-                ShizukuHelper.granted() ->
-                    toast(getString(R.string.shizuku_ready))
+                ShizukuHelper.granted() -> {
+                    toast(getString(R.string.shizuku_testing))
+                    thread {
+                        val ok = ShizukuHelper.selfTest()
+                        val err = ShizukuHelper.lastError ?: ""
+                        runOnUiThread {
+                            if (ok) toast(getString(R.string.shizuku_ready))
+                            else toast(getString(R.string.shizuku_broken, err))
+                        }
+                    }
+                }
                 else -> {
                     ShizukuHelper.request()
                     toast(getString(R.string.shizuku_ask))
