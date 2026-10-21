@@ -97,6 +97,13 @@ object History {
         } catch (_: Exception) { }
     }
 
+    /** Removes every item carrying this relay id (delete-on-both-phones). */
+    @Synchronized
+    fun removeById(ctx: Context, id: String) {
+        if (id.isEmpty()) return
+        try { writeAll(ctx, all(ctx).filterNot { it.id == id }) } catch (_: Exception) { }
+    }
+
     @Synchronized
     fun clear(ctx: Context) { try { file(ctx).delete() } catch (_: Exception) { } }
 

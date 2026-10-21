@@ -13,6 +13,7 @@ class SystemReceiver : BroadcastReceiver() {
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED -> {
                 // Restart the realtime link after a reboot, and tell the other phone.
+                SecLog.add(ctx, "ফোন বুট/রিস্টার্ট হয়েছে")
                 LinkService.start(ctx)
                 if (Config.fwdSystem(ctx)) {
                     Relay.send(ctx, Relay.TYPE_SYSTEM, "ফোন চালু হয়েছে",
@@ -36,9 +37,16 @@ class SystemReceiver : BroadcastReceiver() {
                 LinkService.start(ctx) // good moment to flush the offline queue
             }
             Intent.ACTION_POWER_DISCONNECTED -> {
-                if (Config.fwdBattery(ctx))
+                if (Config.guardOn(ctx)) {
+                    // Guard mode: an unplugged charger is treated as theft.
+                    RingHelper.start(ctx, maxAll = true)
+                    SecLog.add(ctx, "পাহারা মোড: চার্জার খুলে ফেলা হয়েছে")
+                    Relay.send(ctx, Relay.TYPE_SYSTEM, "🚨 পাহারা মোড",
+                        "চার্জার খুলে ফেলা হয়েছে — ফোন সরানো হয়ে থাকতে পারে।")
+                } else if (Config.fwdBattery(ctx)) {
                     Relay.send(ctx, Relay.TYPE_BATTERY, "চার্জার খোলা হয়েছে",
                         "ব্যাটারি ${batteryPercent(ctx)}%")
+                }
             }
             // Package add/remove lives in PackageReceiver — its intent
             // filter needs a package data scheme, this one must not have it.

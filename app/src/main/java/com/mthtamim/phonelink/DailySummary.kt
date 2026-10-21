@@ -69,9 +69,54 @@ object DailySummary {
             } catch (_: Exception) { }
         }
 
+        // ---- steps today (needs ACTIVITY_RECOGNITION on Android 10+) ----
+        stepsToday(ctx)?.let { lines.add("🚶 আজকের পদক্ষেপ: $it") }
+
         lines.add("✉️ মোট ফরোয়ার্ড (সব সময়): ${Stats.sent(ctx)} টা")
         lines.add("🔋 ${SystemReceiver.batteryStatusText(ctx)}")
         return lines.joinToString("\n")
+    }
+
+    /**
+     * Today's step count from the hardware step counter (which counts
+     * since boot). A per-day baseline is kept in state prefs.
+     */
+    private fun stepsToday(ctx: Context): Int? {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q &&
+            ctx.checkSelfPermission(android.Manifest.permission.ACTIVITY_RECOGNITION)
+            != PackageManager.PERMISSION_GRANTED) return null
+        return try {
+            val sm = ctx.getSystemService(Context.SENSOR_SERVICE)
+                as android.hardware.SensorManager
+            val sensor = sm.getDefaultSensor(android.hardware.Sensor.TYPE_STEP_COUNTER)
+                ?: return null
+            val latch = java.util.concurrent.CountDownLatch(1)
+            var current = -1f
+            val listener = object : android.hardware.SensorEventListener {
+                override fun onSensorChanged(e: android.hardware.SensorEvent?) {
+                    if (e != null && current < 0) {
+                        current = e.values[0]
+                        latch.countDown()
+                    }
+                }
+                override fun onAccuracyChanged(s: android.hardware.Sensor?, a: Int) { }
+            }
+            sm.registerListener(listener, sensor,
+                android.hardware.SensorManager.SENSOR_DELAY_FASTEST)
+            latch.await(600, java.util.concurrent.TimeUnit.MILLISECONDS)
+            sm.unregisterListener(listener)
+            if (current < 0) return null
+            val prefs = ctx.getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+            val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                .format(java.util.Date())
+            if (prefs.getString("step_day", "") != today) {
+                prefs.edit().putString("step_day", today)
+                    .putFloat("step_base", current).apply()
+                0
+            } else {
+                (current - prefs.getFloat("step_base", current)).toInt().coerceAtLeast(0)
+            }
+        } catch (_: Exception) { null }
     }
 
     fun usageAccess(ctx: Context): Boolean {

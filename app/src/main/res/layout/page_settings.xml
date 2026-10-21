@@ -716,6 +716,66 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- ===== Security card (v2.3) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/PL.Card"
+            app:contentPadding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_security" />
+
+                <TextView
+                    android:id="@+id/tvPinInfo"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSetPin"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_set_pin" />
+
+                <TextView
+                    android:id="@+id/tvAdminInfo"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAdmin"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_admin" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swGuard"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/guard_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swIntruder"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/intruder_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSecLog"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_seclog" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- ===== Data & statistics card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -790,6 +850,19 @@
                         android:layout_weight="1"
                         android:text="@string/btn_restore_inbox" />
                 </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutosave"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/autosave_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDataLimit"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_data_limit" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

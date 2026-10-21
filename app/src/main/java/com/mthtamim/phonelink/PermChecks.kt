@@ -33,6 +33,9 @@ object PermChecks {
         R.string.perm_line_contacts to has(ctx, Manifest.permission.READ_CONTACTS),
         R.string.perm_line_location to has(ctx, Manifest.permission.ACCESS_FINE_LOCATION),
         R.string.perm_line_camera to has(ctx, Manifest.permission.CAMERA),
+        R.string.perm_line_steps to
+            (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q ||
+                has(ctx, Manifest.permission.ACTIVITY_RECOGNITION)),
         R.string.perm_line_media to
             (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                 has(ctx, Manifest.permission.READ_MEDIA_IMAGES) ||
@@ -61,6 +64,9 @@ object PermChecks {
         } else {
             @Suppress("DEPRECATION")
             perms.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            perms.add(Manifest.permission.ACTIVITY_RECOGNITION)
         }
         return perms.filter { !has(ctx, it) }.toTypedArray()
     }

@@ -12,6 +12,16 @@ import org.json.JSONObject
 
 class NotifListener : NotificationListenerService() {
 
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        instance = this
+    }
+
+    override fun onListenerDisconnected() {
+        if (instance === this) instance = null
+        super.onListenerDisconnected()
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
         val ctx = applicationContext
@@ -58,6 +68,13 @@ class NotifListener : NotificationListenerService() {
         // Smart Control per-app rule.
         val appRule = AppRules.rule(ctx, pkg)
         if (!alertHit) {
+            // Study mode: everything except priority senders is digested.
+            if (Config.studyMode(ctx) && Config.digestMinutes(ctx) > 0 &&
+                appRule != AppRules.OFF &&
+                !(AppRules.allowlistMode(ctx) && appRule == AppRules.DEFAULT)) {
+                DigestStore.add(ctx, app, heading, bodyText)
+                return
+            }
             if (appRule == AppRules.OFF) return
             if (AppRules.allowlistMode(ctx) && appRule == AppRules.DEFAULT) return
             if (appRule == AppRules.DIGEST && Config.digestMinutes(ctx) > 0) {
@@ -103,6 +120,20 @@ class NotifListener : NotificationListenerService() {
     companion object {
         private val lock = Any()
         private val recent = HashMap<String, Long>()
+
+        @Volatile private var instance: NotifListener? = null
+
+        /** Dismisses one of this phone's notifications by its key. */
+        fun dismiss(key: String): Boolean {
+            val svc = instance ?: return false
+            return try { svc.cancelNotification(key); true } catch (_: Exception) { false }
+        }
+
+        /** Dismisses all of this phone's notifications. */
+        fun dismissAll(): Boolean {
+            val svc = instance ?: return false
+            return try { svc.cancelAllNotifications(); true } catch (_: Exception) { false }
+        }
 
         class ReplyTarget(
             val intent: PendingIntent,

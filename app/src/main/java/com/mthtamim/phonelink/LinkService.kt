@@ -61,6 +61,53 @@ class LinkService : Service() {
         createChannels()
         registerEventSources()
         registerMediaObserver()
+        registerGuardSensor()
+    }
+
+    // ------------- guard mode (movement alarm) -------------
+
+    private var guardListener: android.hardware.SensorEventListener? = null
+    private var lastAccel = 0f
+    @Volatile private var lastGuardTrigger = 0L
+
+    private fun registerGuardSensor() {
+        if (!Config.guardOn(applicationContext)) return
+        try {
+            val sm = getSystemService(Context.SENSOR_SERVICE)
+                as android.hardware.SensorManager
+            val sensor = sm.getDefaultSensor(android.hardware.Sensor.TYPE_ACCELEROMETER)
+                ?: return
+            val listener = object : android.hardware.SensorEventListener {
+                override fun onSensorChanged(e: android.hardware.SensorEvent?) {
+                    e ?: return
+                    val m = kotlin.math.sqrt(
+                        e.values[0] * e.values[0] + e.values[1] * e.values[1] +
+                            e.values[2] * e.values[2])
+                    val delta = kotlin.math.abs(m - lastAccel)
+                    lastAccel = m
+                    val now = System.currentTimeMillis()
+                    if (delta > 11f && now - lastGuardTrigger > 60_000L) {
+                        lastGuardTrigger = now
+                        guardTriggered()
+                    }
+                }
+                override fun onAccuracyChanged(s: android.hardware.Sensor?, a: Int) { }
+            }
+            sm.registerListener(listener, sensor,
+                android.hardware.SensorManager.SENSOR_DELAY_NORMAL)
+            guardListener = listener
+        } catch (_: Exception) { }
+    }
+
+    private fun guardTriggered() {
+        val ctx = applicationContext
+        SecLog.add(ctx, "পাহারা মোড: ফোন নাড়ানো হয়েছে")
+        RingHelper.start(ctx, maxAll = true)
+        if (Config.isSender(ctx)) {
+            Relay.send(ctx, Relay.TYPE_SYSTEM, "🚨 পাহারা মোড — ফোন নাড়ানো হয়েছে",
+                "পাহারা মোড চালু থাকা অবস্থায় ফোনটা সরানো হয়েছে।")
+            LocationHelper.fetchAndSend(ctx)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -89,6 +136,13 @@ class LinkService : Service() {
             mediaObserver?.let { contentResolver.unregisterContentObserver(it) }
         } catch (_: Exception) { }
         mediaObserver = null
+        try {
+            guardListener?.let {
+                (getSystemService(Context.SENSOR_SERVICE)
+                    as android.hardware.SensorManager).unregisterListener(it)
+            }
+        } catch (_: Exception) { }
+        guardListener = null
         try { tts?.shutdown() } catch (_: Exception) { }
         tts = null
         super.onDestroy()
@@ -356,6 +410,7 @@ class LinkService : Service() {
                 if (conn.responseCode !in 200..299) throw RuntimeException("HTTP ${conn.responseCode}")
                 backoff = 3000L
                 Relay.markRelayOk(applicationContext)
+                onNetRestored()
                 BufferedReader(InputStreamReader(conn.inputStream, Charsets.UTF_8)).use { reader ->
                     while (running) {
                         val line = reader.readLine() ?: break
@@ -366,10 +421,31 @@ class LinkService : Service() {
                 conn.disconnect()
             } catch (e: Exception) {
                 if (!running) break
+                try {
+                    val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+                    if (prefs.getLong("net_down_since", 0L) == 0L) {
+                        prefs.edit().putLong("net_down_since", System.currentTimeMillis()).apply()
+                    }
+                } catch (_: Exception) { }
                 try { Thread.sleep(backoff) } catch (_: InterruptedException) { break }
                 backoff = (backoff * 2).coerceAtMost(60_000L)
             }
         }
+    }
+
+    /** When the link returns after a long outage, tell the peer how long. */
+    private fun onNetRestored() {
+        try {
+            val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+            val downSince = prefs.getLong("net_down_since", 0L)
+            if (downSince == 0L) return
+            prefs.edit().remove("net_down_since").apply()
+            val mins = (System.currentTimeMillis() - downSince) / 60000
+            if (mins >= 10 && Config.isSender(applicationContext)) {
+                Relay.send(applicationContext, Relay.TYPE_SYSTEM, "🌐 নেট ফিরে এসেছে",
+                    "এই ফোন $mins মিনিট অফলাইনে ছিল।")
+            }
+        } catch (_: Exception) { }
     }
 
     private fun handleLine(line: String, cmd: Boolean) {
@@ -411,6 +487,9 @@ class LinkService : Service() {
                     put("extra", urlStr)
                     put("from", "")
                     put("time", eventTime * 1000)
+                    if (outer.optString("title", "") == "PhoneLink wallpaper") {
+                        put("wallpaper", 1)
+                    }
                 }
                 handleData(filePayload)
                 return
@@ -453,16 +532,24 @@ class LinkService : Service() {
 
     private fun handleData(payload: JSONObject) {
         val ctx = applicationContext
+        // Group safety: never process our own traffic (3+ phones share a
+        // code; device ids keep everyone from hearing themselves).
+        val dev = payload.optString("dev", "")
+        if (dev.isNotEmpty() && dev == Config.deviceId(ctx)) return
         val type = payload.optString("type", "INFO")
         val from = payload.optString("from", "")
         if (from.isNotEmpty()) {
             Config.setLastSenderSeen(ctx, System.currentTimeMillis())
             Config.setLastSenderName(ctx, from)
-            Peers.touch(ctx, from, payload.optInt("battery", -1))
+            Peers.touch(ctx, from, payload.optInt("battery", -1),
+                payload.optString("cfg", ""), payload.optString("status", ""))
         }
         if (type == Relay.TYPE_HEARTBEAT) {
             val battery = payload.optInt("battery", -1)
-            if (battery >= 0) Config.setLastSenderBattery(ctx, battery)
+            if (battery >= 0) {
+                Config.setLastSenderBattery(ctx, battery)
+                BatteryHist.add(ctx, battery)
+            }
             StatusWidgetProvider.refresh(ctx)
             return // silent: only updates "last seen" + widget
         }
@@ -493,6 +580,22 @@ class LinkService : Service() {
         History.add(ctx, item)
         Stats.incRecv(ctx, type)
         showInboxNotification(item, priority)
+        // Siren messages demand attention: full screen + loud ringing
+        // until the page is opened (opening it stops the ring).
+        if (type == Relay.TYPE_URGENT) {
+            showScreenMessage(item.title + "\n" + item.body)
+            RingHelper.start(ctx, maxAll = true)
+        }
+        // A file sent as a wallpaper is applied right away.
+        if (type == Relay.TYPE_FILE && payload.optInt("wallpaper", 0) == 1 &&
+            item.extra.startsWith("http")) {
+            thread { applyWallpaper(item.extra) }
+        }
+        // Auto-save incoming files to Downloads when enabled.
+        if (type == Relay.TYPE_FILE && Config.autosaveMedia(ctx) &&
+            item.extra.startsWith("http")) {
+            downloadToDevice(item.extra, item.title.removePrefix("📁 "))
+        }
         // A ringing call gets a full-screen alert with quick SMS replies,
         // and (when enabled) the caller's name is spoken aloud.
         if (ringing && type == Relay.TYPE_CALL && extraStr.startsWith("tel:")) {
@@ -506,6 +609,36 @@ class LinkService : Service() {
         // payload carries an id (v2). Old/plain messages simply skip it.
         if (item.id.isNotEmpty()) Relay.sendAck(ctx, item.id, item.title)
         sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
+    }
+
+    /** Downloads a received wallpaper image and applies it. */
+    private fun applyWallpaper(urlStr: String) {
+        val ctx = applicationContext
+        try {
+            val bytes = URL(urlStr).openStream().use { it.readBytes() }
+            val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+            if (bmp != null) {
+                android.app.WallpaperManager.getInstance(ctx).setBitmap(bmp)
+                Relay.send(ctx, Relay.TYPE_INFO, "🖼️ ওয়ালপেপার সেট হয়েছে", "")
+                return
+            }
+        } catch (_: Exception) { }
+        Relay.send(ctx, Relay.TYPE_INFO, "ওয়ালপেপার সেট করা যায়নি", "")
+    }
+
+    /** Saves a received file straight to Downloads (auto-save mode). */
+    private fun downloadToDevice(urlStr: String, name: String) {
+        try {
+            val dm = getSystemService(Context.DOWNLOAD_SERVICE)
+                as android.app.DownloadManager
+            val req = android.app.DownloadManager.Request(Uri.parse(urlStr))
+                .setTitle(name)
+                .setNotificationVisibility(
+                    android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalPublicDir(
+                    android.os.Environment.DIRECTORY_DOWNLOADS, name)
+            dm.enqueue(req)
+        } catch (_: Exception) { }
     }
 
     private var notifId = 100
@@ -663,8 +796,94 @@ class LinkService : Service() {
 
     // ---------------- sender side: remote commands ----------------
 
+    /**
+     * Sensitive commands (snapshot, lock, remote settings, modes) need the
+     * command PIN. The payload carries the PIN digest; this phone compares
+     * it with its own. Three failures lock gated commands for 30 minutes.
+     */
+    private fun pinOk(payload: JSONObject): Boolean {
+        val ctx = applicationContext
+        val stored = Config.cmdPinDigest(ctx)
+        if (stored == null) {
+            Relay.send(ctx, Relay.TYPE_INFO, "❌ কমান্ড বাতিল",
+                "এই ফোনে কমান্ড PIN সেট করা নেই — সংবেদনশীল কমান্ড চলবে না।")
+            return false
+        }
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        if (now < prefs.getLong("pin_lock_until", 0L)) {
+            Relay.send(ctx, Relay.TYPE_INFO, "❌ কমান্ড বাতিল",
+                "ভুল PIN-এর কারণে সংবেদনশীল কমান্ড সাময়িক বন্ধ আছে।")
+            return false
+        }
+        if (payload.optString("pin", "") == stored) {
+            prefs.edit().putInt("pin_fails", 0).apply()
+            return true
+        }
+        val fails = prefs.getInt("pin_fails", 0) + 1
+        val e = prefs.edit().putInt("pin_fails", fails)
+        if (fails >= 3) {
+            e.putLong("pin_lock_until", now + 30 * 60 * 1000L)
+            e.putInt("pin_fails", 0)
+        }
+        e.apply()
+        SecLog.add(ctx, "ভুল কমান্ড PIN দিয়ে চেষ্টা")
+        Relay.send(ctx, Relay.TYPE_INFO, "❌ কমান্ড বাতিল — PIN মেলেনি", "")
+        try {
+            val lc = localized(ctx)
+            val warn = History.Item(
+                type = Relay.TYPE_INFO,
+                title = lc.getString(R.string.pin_warn_title),
+                body = lc.getString(R.string.pin_warn_body),
+                from = "", time = now, id = "", code = "", extra = "")
+            History.add(ctx, warn)
+            showInboxNotification(warn, priority = true)
+        } catch (_: Exception) { }
+        return false
+    }
+
     private fun handleCommand(payload: JSONObject) {
         val ctx = applicationContext
+        // Never act on our own command-topic traffic (group safety).
+        val dev = payload.optString("dev", "")
+        if (dev.isNotEmpty() && dev == Config.deviceId(ctx)) return
+        // Reactions to our messages.
+        if (payload.optString("type") == "REACT") {
+            val emoji = payload.optString("emoji", "👍")
+            val title = payload.optString("title", "")
+            val item = History.Item(
+                type = Relay.TYPE_INFO,
+                title = "$emoji রিঅ্যাকশন",
+                body = "${payload.optString("from", "")} তোমার মেসেজে রিঅ্যাকশন দিয়েছে: $title",
+                from = payload.optString("from", ""),
+                time = System.currentTimeMillis(), id = "", code = "", extra = "")
+            History.add(ctx, item)
+            showInboxNotification(item)
+            sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
+            return
+        }
+        // Shared note updates.
+        if (payload.optString("type") == "NOTE") {
+            Config.setSharedNote(ctx, payload.optString("text", ""))
+            val item = History.Item(
+                type = Relay.TYPE_INFO, title = "📝 যৌথ নোট আপডেট হয়েছে",
+                body = payload.optString("text", "").take(200),
+                from = payload.optString("from", ""),
+                time = System.currentTimeMillis(), id = "", code = "", extra = "")
+            History.add(ctx, item)
+            showInboxNotification(item)
+            sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
+            return
+        }
+        // Photo-list replies for the gallery browser.
+        if (payload.optString("type") == "PHOTOS") {
+            getSharedPreferences("phonelink_state", Context.MODE_PRIVATE).edit()
+                .putString("last_photos", payload.optString("items", "[]"))
+                .putLong("last_photos_at", System.currentTimeMillis())
+                .apply()
+            sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
+            return
+        }
         // Delivery receipts ride the command topic too.
         if (payload.optString("type") == "ACK") {
             Relay.onAck(ctx, payload.optString("ack"), payload.optString("title"))
@@ -679,12 +898,7 @@ class LinkService : Service() {
             return
         }
         if (payload.optString("type") != "COMMAND") return
-        // Ignore commands this phone itself sent (same code on both roles).
-        // The receiver phone is the one sending commands, so a phone that is
-        // ONLY a sender still processes them; a both-role phone processes
-        // commands only when they come from a different device name is not a
-        // reliable test, so we process all — a command sent from this same
-        // phone in receiver mode is a deliberate action anyway.
+        // (Our own commands were already filtered by device id above.)
         when (payload.optString("command")) {
             "LOCATION" -> if (Config.allowLocation(ctx)) LocationHelper.fetchAndSend(ctx)
             "BATTERY" -> Relay.send(ctx, Relay.TYPE_BATTERY, "ব্যাটারি স্ট্যাটাস",
@@ -713,6 +927,7 @@ class LinkService : Service() {
             "INFO" -> Relay.send(ctx, Relay.TYPE_INFO, "ফোনের তথ্য", PhoneInfo.text(ctx))
             "SNAP" -> {
                 when {
+                    !pinOk(payload) -> { }
                     !Config.allowSnap(ctx) ->
                         Relay.send(ctx, Relay.TYPE_INFO, "স্ন্যাপশট বন্ধ আছে",
                             "ওই ফোনে Settings থেকে 'রিমোট ছবি' অনুমতি দেওয়া হয়নি।")
@@ -774,9 +989,303 @@ class LinkService : Service() {
                 val text = payload.optString("arg", "")
                 if (text.isNotEmpty()) showScreenMessage(text)
             }
+            "LOCK" -> if (pinOk(payload)) {
+                val ok = AdminReceiver.lockNow(ctx)
+                SecLog.add(ctx, if (ok) "রিমোট LOCK কমান্ডে ফোন লক হয়েছে"
+                    else "রিমোট LOCK চেষ্টা — admin চালু নেই")
+                if (!ok) Relay.send(ctx, Relay.TYPE_INFO, "লক করা যায়নি",
+                    "ওই ফোনে Device admin চালু করা নেই।")
+            }
+            "SET" -> if (pinOk(payload)) {
+                val key = payload.optString("key", "")
+                val value = payload.optInt("value", -1)
+                if (key in Config.remoteKeys() && (value == 0 || value == 1)) {
+                    Config.applyRemote(ctx, key, value == 1)
+                    SecLog.add(ctx, "রিমোট সেটিং: $key → $value")
+                    if (key == "sender_on" || key == "receiver_on") restart(ctx)
+                    Relay.send(ctx, Relay.TYPE_INFO, "🎛️ সেটিং বদল হয়েছে",
+                        "$key → ${if (value == 1) "চালু" else "বন্ধ"}")
+                }
+            }
+            "MODE" -> if (pinOk(payload)) {
+                val mode = payload.optString("mode", "off")
+                Config.applyMode(ctx, mode)
+                Relay.send(ctx, Relay.TYPE_INFO, "🎛️ মোড চালু হয়েছে", mode)
+            }
+            "PAUSE" -> {
+                val mins = payload.optInt("minutes", 60).coerceIn(5, 720)
+                Relay.setPauseMinutes(ctx, mins)
+                Relay.send(ctx, Relay.TYPE_INFO, "⏸️ ফরোয়ার্ড বিরতি",
+                    "$mins মিনিটের জন্য ফরোয়ার্ড বন্ধ রাখা হয়েছে।")
+            }
+            "SPEAK" -> {
+                val text = payload.optString("text", "")
+                if (text.isNotEmpty()) {
+                    speakText(text)
+                    Relay.send(ctx, Relay.TYPE_INFO, "🔊 বলা হয়েছে", text.take(80))
+                }
+            }
+            "MEDIA" -> mediaControl(payload.optString("action", ""))
+            "RINGER" -> ringerControl(payload.optString("mode", ""))
+            "ALARM" -> scheduleAlarm(payload.optInt("minutes", 0),
+                payload.optString("text", ""))
+            "SOS_FLASH" -> {
+                FlashHelper.blinkSos(ctx)
+                Relay.send(ctx, Relay.TYPE_INFO, "🔦 SOS ফ্ল্যাশ চলছে", "")
+            }
+            "LIST_RECENT" -> thread { sendRecentList(payload.optString("kind", "calls")) }
+            "LIST_PHOTOS" -> thread { sendPhotoList() }
+            "FETCH_PHOTO" -> thread { fetchPhoto(payload.optLong("mediaId", -1L)) }
+            "DISMISS" -> {
+                val key = payload.optString("key", "")
+                val ok = if (key.isEmpty()) NotifListener.dismissAll()
+                    else NotifListener.dismiss(key)
+                Relay.send(ctx, Relay.TYPE_INFO,
+                    if (ok) "🧹 নোটিফিকেশন সরানো হয়েছে" else "ডিসমিস করা যায়নি",
+                    if (ok) "" else "নোটিফিকেশন অ্যাক্সেস চালু নেই বা আইটেমটা আর নেই।")
+            }
+            "GET_CLIP" -> {
+                var text: String? = null
+                try {
+                    val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE)
+                        as android.content.ClipboardManager
+                    text = cm.primaryClip?.getItemAt(0)?.coerceToText(ctx)?.toString()
+                } catch (_: Exception) { }
+                if (!text.isNullOrEmpty()) {
+                    Relay.send(ctx, Relay.TYPE_CLIP, "📋 ক্লিপবোর্ড (ওই ফোনের)", text)
+                } else {
+                    Relay.send(ctx, Relay.TYPE_INFO, "ক্লিপবোর্ড পড়া যায়নি",
+                        "Android নিরাপত্তা: অ্যাপ সামনে খোলা না থাকলে ক্লিপবোর্ড পড়া যায় না। ওই ফোনে PhoneLink একবার খুলে আবার চেষ্টা করো।")
+                }
+            }
+            "OPEN" -> openLinkNotification(payload.optString("url", ""))
+            "DELETE_MSG" -> {
+                val id = payload.optString("msgId", "")
+                if (id.isNotEmpty()) {
+                    History.removeById(ctx, id)
+                    sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
+                    Relay.send(ctx, Relay.TYPE_INFO, "🗑️ মেসেজ মোছা হয়েছে", "")
+                }
+            }
             "PING" -> Relay.send(ctx, Relay.TYPE_INFO, "ফোন অনলাইন আছে",
                 "${Config.deviceName(ctx)} — ${SystemReceiver.batteryStatusText(ctx)}")
         }
+    }
+
+    // ---------------- v2.3 command helpers ----------------
+
+    private fun mediaControl(action: String) {
+        val ctx = applicationContext
+        try {
+            val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            fun key(code: Int) {
+                val now = android.os.SystemClock.uptimeMillis()
+                am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now,
+                    android.view.KeyEvent.ACTION_DOWN, code, 0))
+                am.dispatchMediaKeyEvent(android.view.KeyEvent(now, now,
+                    android.view.KeyEvent.ACTION_UP, code, 0))
+            }
+            when (action) {
+                "play" -> key(android.view.KeyEvent.KEYCODE_MEDIA_PLAY)
+                "pause" -> key(android.view.KeyEvent.KEYCODE_MEDIA_PAUSE)
+                "playpause" -> key(android.view.KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)
+                "next" -> key(android.view.KeyEvent.KEYCODE_MEDIA_NEXT)
+                "prev" -> key(android.view.KeyEvent.KEYCODE_MEDIA_PREVIOUS)
+                "volup" -> am.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_SHOW_UI)
+                "voldown" -> am.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_SHOW_UI)
+                else -> return
+            }
+            Relay.send(ctx, Relay.TYPE_INFO, "🎵 মিডিয়া কমান্ড চলেছে", action)
+        } catch (_: Exception) { }
+    }
+
+    private fun ringerControl(mode: String) {
+        val ctx = applicationContext
+        try {
+            val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val target = when (mode) {
+                "silent" -> AudioManager.RINGER_MODE_SILENT
+                "vibrate" -> AudioManager.RINGER_MODE_VIBRATE
+                "normal" -> AudioManager.RINGER_MODE_NORMAL
+                else -> return
+            }
+            if (target == AudioManager.RINGER_MODE_SILENT) {
+                val nm = getSystemService(NotificationManager::class.java)
+                if (!nm.isNotificationPolicyAccessGranted) {
+                    Relay.send(ctx, Relay.TYPE_INFO, "সাইলেন্ট করা যায়নি",
+                        "সাইলেন্ট মোডের জন্য ওই ফোনে Do Not Disturb access লাগবে (Settings → Sound → Do Not Disturb access)।")
+                    return
+                }
+            }
+            am.ringerMode = target
+            Relay.send(ctx, Relay.TYPE_INFO, "🔔 রিঙ্গার মোড বদল হয়েছে", mode)
+        } catch (_: Exception) { }
+    }
+
+    private fun scheduleAlarm(minutes: Int, text: String) {
+        val ctx = applicationContext
+        if (minutes <= 0) return
+        try {
+            val am = ctx.getSystemService(Context.ALARM_SERVICE)
+                as android.app.AlarmManager
+            val intent = Intent(ctx, AlarmReceiver::class.java)
+                .putExtra("text", text.ifEmpty { "⏰ রিমোট অ্যালার্ম" })
+            val pi = PendingIntent.getBroadcast(ctx, 778, intent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            val at = System.currentTimeMillis() + minutes * 60_000L
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                !am.canScheduleExactAlarms()) {
+                am.setAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, at, pi)
+            } else {
+                am.setExactAndAllowWhileIdle(android.app.AlarmManager.RTC_WAKEUP, at, pi)
+            }
+            val hhmm = java.text.SimpleDateFormat("hh:mm a", java.util.Locale.getDefault())
+                .format(java.util.Date(at))
+            Relay.send(ctx, Relay.TYPE_INFO, "⏰ অ্যালার্ম সেট হয়েছে", "$hhmm টায় বাজবে।")
+        } catch (e: Exception) {
+            Relay.send(ctx, Relay.TYPE_INFO, "অ্যালার্ম সেট করা যায়নি", "${e.message}")
+        }
+    }
+
+    private fun sendRecentList(kind: String) {
+        val ctx = applicationContext
+        val sb = StringBuilder()
+        try {
+            if (kind == "sms") {
+                val cursor = ctx.contentResolver.query(
+                    Uri.parse("content://sms/inbox"),
+                    arrayOf("address", "body", "date"), null, null, "date DESC")
+                cursor?.use { c ->
+                    var n = 0
+                    while (c.moveToNext() && n < 10) {
+                        n++
+                        val addr = c.getString(0) ?: ""
+                        val body = (c.getString(1) ?: "").replace("\n", " ").take(60)
+                        val date = c.getLong(2)
+                        val whenText = java.text.SimpleDateFormat("dd MMM hh:mm a",
+                            java.util.Locale.getDefault()).format(java.util.Date(date))
+                        sb.append("$n. ${Contacts.labelForNumber(ctx, addr)}\n   $body\n   $whenText\n")
+                    }
+                }
+                if (sb.isEmpty()) sb.append("কোনো SMS পাওয়া যায়নি।")
+                Relay.send(ctx, Relay.TYPE_SYSTEM, "💬 সাম্প্রতিক SMS", sb.toString().trim())
+            } else {
+                val cursor = ctx.contentResolver.query(
+                    android.provider.CallLog.Calls.CONTENT_URI,
+                    arrayOf(android.provider.CallLog.Calls.NUMBER,
+                        android.provider.CallLog.Calls.TYPE,
+                        android.provider.CallLog.Calls.DATE,
+                        android.provider.CallLog.Calls.DURATION),
+                    null, null, "${android.provider.CallLog.Calls.DATE} DESC")
+                cursor?.use { c ->
+                    var n = 0
+                    while (c.moveToNext() && n < 10) {
+                        n++
+                        val num = c.getString(0) ?: ""
+                        val type = c.getInt(1)
+                        val date = c.getLong(2)
+                        val dur = c.getLong(3)
+                        val arrow = when (type) {
+                            android.provider.CallLog.Calls.INCOMING_TYPE -> "📥"
+                            android.provider.CallLog.Calls.OUTGOING_TYPE -> "📤"
+                            android.provider.CallLog.Calls.MISSED_TYPE -> "🚫 মিসড"
+                            else -> "•"
+                        }
+                        val whenText = java.text.SimpleDateFormat("dd MMM hh:mm a",
+                            java.util.Locale.getDefault()).format(java.util.Date(date))
+                        sb.append("$n. $arrow ${Contacts.labelForNumber(ctx, num)} — ${dur}s\n   $whenText\n")
+                    }
+                }
+                if (sb.isEmpty()) sb.append("কোনো কল পাওয়া যায়নি।")
+                Relay.send(ctx, Relay.TYPE_SYSTEM, "📞 সাম্প্রতিক কল", sb.toString().trim())
+            }
+        } catch (e: Exception) {
+            Relay.send(ctx, Relay.TYPE_INFO, "তালিকা আনা যায়নি",
+                "permission নেই বা এই ফোনে পড়া যাচ্ছে না।")
+        }
+    }
+
+    private fun sendPhotoList() {
+        val ctx = applicationContext
+        try {
+            val items = org.json.JSONArray()
+            val cursor = ctx.contentResolver.query(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME,
+                    MediaStore.Images.Media.DATE_ADDED, MediaStore.Images.Media.SIZE),
+                null, null, "${MediaStore.Images.Media.DATE_ADDED} DESC")
+            cursor?.use { c ->
+                var n = 0
+                while (c.moveToNext() && n < 20) {
+                    n++
+                    items.put(JSONObject()
+                        .put("id", c.getLong(0))
+                        .put("name", c.getString(1) ?: "photo.jpg")
+                        .put("date", c.getLong(2) * 1000)
+                        .put("size", c.getLong(3)))
+                }
+            }
+            val payload = JSONObject().apply {
+                put("v", 2); put("type", "PHOTOS")
+                put("items", items.toString())
+                put("from", Config.deviceName(ctx)); put("dev", Config.deviceId(ctx))
+                put("time", System.currentTimeMillis())
+            }
+            Relay.post(ctx, Config.cmdTopic(ctx), payload)
+        } catch (_: Exception) { }
+    }
+
+    private fun fetchPhoto(mediaId: Long) {
+        val ctx = applicationContext
+        if (mediaId < 0) return
+        try {
+            val itemUri = ContentUris.withAppendedId(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, mediaId)
+            var name = "photo.jpg"
+            ctx.contentResolver.query(itemUri,
+                arrayOf(MediaStore.Images.Media.DISPLAY_NAME), null, null, null)?.use { c ->
+                if (c.moveToFirst()) name = c.getString(0) ?: name
+            }
+            val bytes = ctx.contentResolver.openInputStream(itemUri)?.use { input ->
+                val buf = java.io.ByteArrayOutputStream()
+                val chunk = ByteArray(64 * 1024)
+                var total = 0
+                var overflow = false
+                while (true) {
+                    val n = input.read(chunk)
+                    if (n < 0) break
+                    total += n
+                    if (total > 5 * 1024 * 1024) { overflow = true; break }
+                    buf.write(chunk, 0, n)
+                }
+                if (overflow) null else buf.toByteArray()
+            } ?: return
+            Relay.postFile(ctx, name, bytes, "image/jpeg")
+        } catch (_: Exception) { }
+    }
+
+    private fun openLinkNotification(urlRaw: String) {
+        val ctx = applicationContext
+        var url = urlRaw.trim()
+        if (url.isEmpty()) return
+        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "https://$url"
+        try {
+            val view = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            val pi = PendingIntent.getActivity(ctx, 779, view,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            synchronized(this) { notifId += 1 }
+            val notif = Notification.Builder(this, CHANNEL_INBOX)
+                .setContentTitle("🔗 লিংক এসেছে")
+                .setContentText(url)
+                .setSmallIcon(android.R.drawable.stat_notify_chat)
+                .setContentIntent(pi)
+                .setAutoCancel(true)
+                .build()
+            getSystemService(NotificationManager::class.java).notify(notifId, notif)
+            Relay.send(ctx, Relay.TYPE_INFO, "লিংক পাঠানো হয়েছে",
+                "ওই ফোনে নোটিফিকেশনে ট্যাপ করলেই লিংকটা খুলবে।")
+        } catch (_: Exception) { }
     }
 
     private fun heartbeatLoop() {
@@ -784,8 +1293,15 @@ class LinkService : Service() {
         try { Thread.sleep(8000) } catch (_: InterruptedException) { return }
         while (running) {
             try {
-                val extra = JSONObject().put("battery", SystemReceiver.batteryPercent(applicationContext))
-                Relay.send(applicationContext, Relay.TYPE_HEARTBEAT, "heartbeat", "", extra)
+                val hctx = applicationContext
+                val cfg = Config.remoteKeys().joinToString(",") { k ->
+                    "$k:${if (Config.remoteState(hctx, k)) 1 else 0}"
+                }
+                val extra = JSONObject()
+                    .put("battery", SystemReceiver.batteryPercent(hctx))
+                    .put("cfg", cfg)
+                    .put("status", Config.myStatus(hctx))
+                Relay.send(hctx, Relay.TYPE_HEARTBEAT, "heartbeat", "", extra)
                 Relay.flushQueue(applicationContext)
                 checkSimChanged()
                 flushDigestIfDue()
@@ -794,6 +1310,11 @@ class LinkService : Service() {
                 checkLowBatteryLocation()
                 checkRoutine()
                 checkUsageLimits()
+                checkSchedules()
+                checkDevOptions()
+                checkChargeFull()
+                checkDataUsage()
+                checkWeeklyReport()
             } catch (_: Exception) { }
             // Battery-friendly: the poorer the battery, the rarer the beat.
             val pct = SystemReceiver.batteryPercent(applicationContext)
@@ -803,6 +1324,109 @@ class LinkService : Service() {
                 else -> 25L
             }
             try { Thread.sleep(sleepMin * 60 * 1000L) } catch (_: InterruptedException) { break }
+        }
+    }
+
+    /** Sends any scheduled messages that are due. */
+    private fun checkSchedules() {
+        val ctx = applicationContext
+        val due = SchedStore.takeDue(ctx, System.currentTimeMillis())
+        for (e in due) {
+            Relay.send(ctx, Relay.TYPE_NOTIF, "⏰ ${e.text}", "")
+        }
+    }
+
+    /** Warns when Developer options / USB debugging get switched on. */
+    private fun checkDevOptions() {
+        val ctx = applicationContext
+        try {
+            val adb = android.provider.Settings.Global.getInt(
+                ctx.contentResolver, "adb_enabled", 0)
+            val dev = android.provider.Settings.Global.getInt(
+                ctx.contentResolver, "development_settings_enabled", 0)
+            val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+            val key = "dev_opt_seen"
+            val prev = prefs.getInt(key, -1)
+            val nowVal = adb * 2 + dev
+            if (prev == -1) {
+                prefs.edit().putInt(key, nowVal).apply()
+                return
+            }
+            if (nowVal > 0 && prev == 0) {
+                SecLog.add(ctx, "Developer options / USB debugging চালু হয়েছে")
+                if (Config.fwdSecurity(ctx)) {
+                    Relay.send(ctx, Relay.TYPE_SYSTEM, "⚠️ Developer options চালু",
+                        "এই ফোনে USB debugging / Developer options চালু করা হয়েছে।")
+                }
+            }
+            prefs.edit().putInt(key, nowVal).apply()
+        } catch (_: Exception) { }
+    }
+
+    /** One "charge full" note per charge cycle. */
+    private fun checkChargeFull() {
+        val ctx = applicationContext
+        val pct = SystemReceiver.batteryPercent(ctx)
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        if (pct >= 100) {
+            if (!prefs.getBoolean("full_alerted", false)) {
+                prefs.edit().putBoolean("full_alerted", true).apply()
+                if (Config.fwdBattery(ctx)) {
+                    Relay.send(ctx, Relay.TYPE_BATTERY, "🔋 চার্জ পূর্ণ", "ব্যাটারি 100% হয়েছে।")
+                }
+            }
+        } else if (pct in 0..94) {
+            if (prefs.getBoolean("full_alerted", false)) {
+                prefs.edit().putBoolean("full_alerted", false).apply()
+            }
+        }
+    }
+
+    /** Daily mobile-data usage alert (needs usage access). */
+    private fun checkDataUsage() {
+        val ctx = applicationContext
+        val limit = Config.dataLimitMb(ctx)
+        if (limit <= 0 || !DailySummary.usageAccess(ctx)) return
+        try {
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0)
+            cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+            val nsm = ctx.getSystemService(Context.NETWORK_STATS_SERVICE)
+                as android.app.usage.NetworkStatsManager
+            val bucket = nsm.querySummaryForDevice(
+                android.net.ConnectivityManager.TYPE_MOBILE, null,
+                cal.timeInMillis, System.currentTimeMillis())
+            val usedMb = (bucket.rxBytes + bucket.txBytes) / (1024 * 1024)
+            if (usedMb < limit) return
+            val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                .format(java.util.Date())
+            val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+            if (prefs.getString("data_alert_day", "") == today) return
+            prefs.edit().putString("data_alert_day", today).apply()
+            Relay.send(ctx, Relay.TYPE_SYSTEM, "📶 ডেটা সীমা ছাড়িয়েছে",
+                "আজ মোবাইল ডেটা ব্যবহার: $usedMb MB (সীমা $limit MB)")
+        } catch (_: Exception) { }
+    }
+
+    /** One weekly roundup on Sunday evening. */
+    private fun checkWeeklyReport() {
+        val ctx = applicationContext
+        val cal = java.util.Calendar.getInstance()
+        if (cal.get(java.util.Calendar.DAY_OF_WEEK) != java.util.Calendar.SUNDAY) return
+        val mins = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+            cal.get(java.util.Calendar.MINUTE)
+        if (mins < 21 * 60 + 30) return
+        val weekId = java.text.SimpleDateFormat("yyyy-ww", java.util.Locale.US)
+            .format(java.util.Date())
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        if (prefs.getString("last_weekly", "") == weekId) return
+        prefs.edit().putString("last_weekly", weekId).apply()
+        thread {
+            val sb = StringBuilder()
+            sb.append("মোট পাঠানো: ${Stats.sent(ctx)} • পাওয়া: ${Stats.recv(ctx)} • কমান্ড: ${Stats.cmds(ctx)}")
+            BatteryHist.summary(ctx)?.let { sb.append("\nসঙ্গীর ব্যাটারি এই সময়ে: ").append(it) }
+            sb.append("\n\n").append(DailySummary.build(ctx))
+            Relay.send(ctx, Relay.TYPE_SYSTEM, "📅 সাপ্তাহিক রিপোর্ট", sb.toString())
         }
     }
 

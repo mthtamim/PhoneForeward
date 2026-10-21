@@ -81,6 +81,7 @@ object Config {
     }
 
     fun isQuietNow(ctx: Context): Boolean {
+        if (quietUntil(ctx) > System.currentTimeMillis()) return true
         if (!quietOn(ctx)) return false
         val cal = java.util.Calendar.getInstance()
         val now = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
@@ -218,8 +219,132 @@ object Config {
         return out
     }
 
+    // ---------- v2.3 ----------
+
+    /** Stable per-device id so group chats (3+ phones) can ignore themselves. */
+    fun deviceId(ctx: Context): String {
+        var id = prefs(ctx).getString("device_id", "")
+        if (id.isNullOrEmpty()) {
+            id = java.util.UUID.randomUUID().toString().take(12)
+            prefs(ctx).edit().putString("device_id", id).apply()
+        }
+        return id
+    }
+
+    // ----- command PIN (stored only as a salted digest) -----
+    private fun pinDigestOf(pin: String): String {
+        val bytes = java.security.MessageDigest.getInstance("SHA-256")
+            .digest("phonelink-pin:$pin".toByteArray(Charsets.UTF_8))
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    fun cmdPinDigest(ctx: Context): String? = prefs(ctx).getString("cmd_pin_digest", null)
+    fun cmdPinIsSet(ctx: Context): Boolean = cmdPinDigest(ctx) != null
+    fun setCmdPin(ctx: Context, pin: String) {
+        prefs(ctx).edit().putString("cmd_pin_digest", pinDigestOf(pin)).apply()
+    }
+    fun clearCmdPin(ctx: Context) { prefs(ctx).edit().remove("cmd_pin_digest").apply() }
+    fun digestForPin(pin: String): String = pinDigestOf(pin)
+
+    // ----- quiet-until (timed silence, e.g. meeting mode) -----
+    fun quietUntil(ctx: Context): Long = prefs(ctx).getLong("quiet_until", 0L)
+    fun setQuietUntil(ctx: Context, t: Long) { prefs(ctx).edit().putLong("quiet_until", t).apply() }
+
+    // ----- modes -----
+    fun studyMode(ctx: Context): Boolean = prefs(ctx).getBoolean("study_mode", false)
+    fun modeName(ctx: Context): String = prefs(ctx).getString("mode_name", "off") ?: "off"
+
+    /** Applies a mode bundle locally. Used by the UI and the MODE command. */
+    fun applyMode(ctx: Context, mode: String) {
+        val e = prefs(ctx).edit()
+        when (mode) {
+            "sleep" -> {
+                e.putBoolean("quiet_on", true)
+                e.putInt("quiet_start", 23 * 60).putInt("quiet_end", 7 * 60)
+                e.putLong("quiet_until", 0L)
+                e.putBoolean("study_mode", false)
+                e.putBoolean("tts_codes", false)
+            }
+            "meeting" -> {
+                e.putLong("quiet_until", System.currentTimeMillis() + 60 * 60 * 1000L)
+                e.putBoolean("auto_reply_on", true)
+                e.putBoolean("study_mode", false)
+            }
+            "study" -> {
+                e.putBoolean("study_mode", true)
+                if (digestMinutes(ctx) == 0) e.putInt("digest_minutes", 30)
+                e.putLong("quiet_until", 0L)
+            }
+            else -> {
+                e.putBoolean("study_mode", false)
+                e.putLong("quiet_until", 0L)
+            }
+        }
+        e.putString("mode_name", mode).apply()
+    }
+
+    // ----- misc v2.3 toggles & data -----
+    fun guardOn(ctx: Context): Boolean = prefs(ctx).getBoolean("guard_on", false)
+    fun intruderOn(ctx: Context): Boolean = prefs(ctx).getBoolean("intruder_on", false)
+    fun autosaveMedia(ctx: Context): Boolean = prefs(ctx).getBoolean("autosave_media", false)
+    fun dataLimitMb(ctx: Context): Int = prefs(ctx).getInt("data_limit_mb", 0)
+    fun setDataLimitMb(ctx: Context, mb: Int) { prefs(ctx).edit().putInt("data_limit_mb", mb).apply() }
+
+    fun myStatus(ctx: Context): String = prefs(ctx).getString("my_status", "") ?: ""
+    fun setMyStatus(ctx: Context, s: String) { prefs(ctx).edit().putString("my_status", s.trim()).apply() }
+
+    fun sharedNote(ctx: Context): String = prefs(ctx).getString("shared_note", "") ?: ""
+    fun setSharedNote(ctx: Context, s: String) { prefs(ctx).edit().putString("shared_note", s).apply() }
+
+    fun templates(ctx: Context): List<Pair<String, String>> {
+        val out = mutableListOf<Pair<String, String>>()
+        try {
+            val arr = org.json.JSONArray(prefs(ctx).getString("templates", "[]"))
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                out.add(o.optString("name") to o.optString("body"))
+            }
+        } catch (_: Exception) { }
+        return out
+    }
+
+    fun saveTemplates(ctx: Context, list: List<Pair<String, String>>) {
+        val arr = org.json.JSONArray()
+        for ((n, b) in list.take(12)) arr.put(org.json.JSONObject().put("name", n).put("body", b))
+        prefs(ctx).edit().putString("templates", arr.toString()).apply()
+    }
+
     fun setToggle(ctx: Context, key: String, v: Boolean) {
         prefs(ctx).edit().putBoolean(key, v).apply()
+    }
+
+    // ----- remote control (SET command) key mapping -----
+    fun remoteKeys(): List<String> = listOf(
+        "sender_on", "receiver_on", "fwd_sms", "fwd_notif", "fwd_calls",
+        "fwd_battery", "fwd_security", "fwd_system", "fwd_presence",
+        "fwd_media", "guard_on")
+
+    fun remoteState(ctx: Context, key: String): Boolean = when (key) {
+        "sender_on" -> isSender(ctx)
+        "receiver_on" -> isReceiver(ctx)
+        "fwd_sms" -> fwdSms(ctx)
+        "fwd_notif" -> fwdNotif(ctx)
+        "fwd_calls" -> fwdCalls(ctx)
+        "fwd_battery" -> fwdBattery(ctx)
+        "fwd_security" -> fwdSecurity(ctx)
+        "fwd_system" -> fwdSystem(ctx)
+        "fwd_presence" -> fwdPresence(ctx)
+        "fwd_media" -> fwdMedia(ctx)
+        "guard_on" -> guardOn(ctx)
+        else -> false
+    }
+
+    fun applyRemote(ctx: Context, key: String, v: Boolean) {
+        when (key) {
+            "sender_on" -> setSender(ctx, v)
+            "receiver_on" -> setReceiver(ctx, v)
+            else -> setToggle(ctx, key, v)
+        }
     }
 
     /** Comma-separated package names that must never be forwarded. */

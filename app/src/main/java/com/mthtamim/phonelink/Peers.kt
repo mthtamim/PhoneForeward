@@ -4,18 +4,20 @@ import android.content.Context
 import org.json.JSONObject
 
 /**
- * Every phone that has talked on this pair code: name, last-seen time and
- * last known battery. Powers the device list, so several phones sharing
- * one code can all see who is around.
+ * Every phone that has talked on this pair code: name, last-seen time, last
+ * known battery, last known feature-config string and shared status text.
+ * Powers the device list and the remote-control panel, so several phones
+ * sharing one code can all see who is around.
  */
 object Peers {
-    data class Peer(val name: String, val seen: Long, val battery: Int)
+    data class Peer(val name: String, val seen: Long, val battery: Int,
+                    val cfg: String = "", val status: String = "")
 
     private fun prefs(ctx: Context) =
         ctx.getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
 
     @Synchronized
-    fun touch(ctx: Context, name: String, battery: Int) {
+    fun touch(ctx: Context, name: String, battery: Int, cfg: String = "", status: String = "") {
         if (name.isBlank()) return
         try {
             val all = JSONObject(prefs(ctx).getString("peers", "{}"))
@@ -24,6 +26,8 @@ object Peers {
             all.put(name, JSONObject().apply {
                 put("seen", System.currentTimeMillis())
                 put("battery", batt)
+                put("cfg", cfg.ifEmpty { prev?.optString("cfg") ?: "" })
+                put("status", status.ifEmpty { prev?.optString("status") ?: "" })
             })
             prefs(ctx).edit().putString("peers", all.toString()).apply()
         } catch (_: Exception) { }
@@ -37,7 +41,8 @@ object Peers {
             while (keys.hasNext()) {
                 val name = keys.next()
                 val o = all.getJSONObject(name)
-                out.add(Peer(name, o.optLong("seen"), o.optInt("battery", -1)))
+                out.add(Peer(name, o.optLong("seen"), o.optInt("battery", -1),
+                    o.optString("cfg"), o.optString("status")))
             }
         } catch (_: Exception) { }
         return out.sortedByDescending { it.seen }

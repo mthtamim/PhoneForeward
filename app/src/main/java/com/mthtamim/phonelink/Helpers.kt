@@ -103,6 +103,24 @@ object FlashHelper {
         strobeRunnable = null
         strobeOn = false
     }
+
+    /** Blinks the SOS pattern (··· −−− ···) twice on a background thread. */
+    fun blinkSos(ctx: Context) {
+        val appCtx = ctx.applicationContext
+        Thread {
+            val unit = 220L
+            fun dot() { setTorch(appCtx, true); Thread.sleep(unit); setTorch(appCtx, false); Thread.sleep(unit) }
+            fun dash() { setTorch(appCtx, true); Thread.sleep(unit * 3); setTorch(appCtx, false); Thread.sleep(unit) }
+            try {
+                repeat(2) {
+                    dot(); dot(); dot(); Thread.sleep(unit * 2)
+                    dash(); dash(); dash(); Thread.sleep(unit * 2)
+                    dot(); dot(); dot(); Thread.sleep(unit * 6)
+                }
+            } catch (_: Exception) { }
+            setTorch(appCtx, false)
+        }.start()
+    }
 }
 
 object PhoneInfo {
@@ -113,9 +131,23 @@ object PhoneInfo {
             .append(" (SDK ").append(Build.VERSION.SDK_INT).append(")")
         try {
             val stat = android.os.StatFs(android.os.Environment.getDataDirectory().path)
-            val total = stat.totalBytes / (1024 * 1024)
-            val free = stat.availableBytes / (1024 * 1024)
-            sb.append("\nস্টোরেজ: মোট ${total} MB, খালি ${free} MB")
+            val totalGb = stat.totalBytes / (1024.0 * 1024 * 1024)
+            val freeGb = stat.availableBytes / (1024.0 * 1024 * 1024)
+            sb.append(String.format("\nস্টোরেজ: মোট %.1f GB, খালি %.1f GB", totalGb, freeGb))
+        } catch (_: Exception) { }
+        try {
+            val am = ctx.getSystemService(android.content.Context.ACTIVITY_SERVICE)
+                as android.app.ActivityManager
+            val mi = android.app.ActivityManager.MemoryInfo()
+            am.getMemoryInfo(mi)
+            sb.append(String.format("\nRAM: মোট %.1f GB, খালি %.1f GB",
+                mi.totalMem / (1024.0 * 1024 * 1024), mi.availMem / (1024.0 * 1024 * 1024)))
+        } catch (_: Exception) { }
+        try {
+            val bi = ctx.registerReceiver(null,
+                android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED))
+            val temp = (bi?.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1)
+            if (temp > 0) sb.append(String.format("\nব্যাটারি তাপমাত্রা: %.1f°C", temp / 10.0))
         } catch (_: Exception) { }
         sb.append("\n").append(SystemReceiver.batteryStatusText(ctx))
         return sb.toString()

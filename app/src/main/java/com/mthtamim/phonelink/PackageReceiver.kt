@@ -15,10 +15,12 @@ class PackageReceiver : BroadcastReceiver() {
         when (intent.action) {
             Intent.ACTION_PACKAGE_ADDED -> {
                 if (pkg == ctx.packageName) return
+                SecLog.add(ctx, "অ্যাপ ইনস্টল: $pkg")
                 Relay.send(ctx, Relay.TYPE_APP, "নতুন অ্যাপ ইনস্টল",
                     "${Contacts.appLabel(ctx, pkg)} ($pkg)")
             }
             Intent.ACTION_PACKAGE_REMOVED -> {
+                SecLog.add(ctx, "অ্যাপ আনইনস্টল: $pkg")
                 Relay.send(ctx, Relay.TYPE_APP, "অ্যাপ আনইনস্টল", pkg)
             }
         }

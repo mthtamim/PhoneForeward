@@ -34,6 +34,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.chip.ChipGroup
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import kotlin.concurrent.thread
@@ -47,6 +48,10 @@ class MainActivity : LocalizedActivity() {
     private lateinit var tvQuietInfo: TextView
     private lateinit var tvDigestInfo: TextView
     private lateinit var tvRoutineInfo: TextView
+    private lateinit var tvSafety: TextView
+    private lateinit var tvPeerStatus: TextView
+    private lateinit var tvPinInfo: TextView
+    private lateinit var tvAdminInfo: TextView
     private lateinit var tvGeoInfo: TextView
     private lateinit var tvRetentionInfo: TextView
     private lateinit var tvStats: TextView
@@ -82,21 +87,115 @@ class MainActivity : LocalizedActivity() {
         if (uri != null) sendFile(uri)
     }
 
+    private val contactLauncher = registerForActivityResult(
+        ActivityResultContracts.PickContact()) { uri ->
+        if (uri != null) sendContactCard(uri)
+    }
+
+    private val wallpaperLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            toast(getString(R.string.file_uploading))
+            thread {
+                var ok = false
+                try {
+                    val bytes = contentResolver.openInputStream(uri)?.use { input ->
+                        val buf = java.io.ByteArrayOutputStream()
+                        val chunk = ByteArray(64 * 1024)
+                        var total = 0
+                        var overflow = false
+                        while (true) {
+                            val n = input.read(chunk)
+                            if (n < 0) break
+                            total += n
+                            if (total > 5 * 1024 * 1024) { overflow = true; break }
+                            buf.write(chunk, 0, n)
+                        }
+                        if (overflow) null else buf.toByteArray()
+                    }
+                    if (bytes != null) {
+                        ok = Relay.postFile(applicationContext, "wallpaper.jpg",
+                            bytes, "image/jpeg", wallpaper = true)
+                    }
+                } catch (_: Exception) { }
+                Handler(Looper.getMainLooper()).post {
+                    toast(getString(if (ok) R.string.toast_wallpaper_sent else R.string.file_failed))
+                }
+            }
+        }
+    }
+
+    private fun sendContactCard(contactUri: Uri) {
+        thread {
+            var name = ""
+            var number = ""
+            try {
+                contentResolver.query(contactUri,
+                    arrayOf(android.provider.ContactsContract.Contacts._ID,
+                        android.provider.ContactsContract.Contacts.DISPLAY_NAME),
+                    null, null, null)?.use { c ->
+                    if (c.moveToFirst()) {
+                        val id = c.getString(0)
+                        name = c.getString(1) ?: ""
+                        contentResolver.query(
+                            android.provider.ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            arrayOf(android.provider.ContactsContract.CommonDataKinds.Phone.NUMBER),
+                            android.provider.ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                            arrayOf(id), null)?.use { p ->
+                            if (p.moveToFirst()) number = p.getString(0) ?: ""
+                        }
+                    }
+                }
+            } catch (_: Exception) { }
+            Handler(Looper.getMainLooper()).post {
+                if (number.isNotEmpty()) {
+                    Relay.send(this, Relay.TYPE_NOTIF, "👤 $name", number)
+                    toast(getString(R.string.toast_contact_sent))
+                } else {
+                    toast(getString(R.string.toast_contact_failed))
+                }
+            }
+        }
+    }
+
+    private var pendingBackupUri: Uri? = null
+
     private val backupLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()) { result ->
         val uri = result.data?.data
         if (result.resultCode == RESULT_OK && uri != null) {
-            thread {
-                var ok = false
-                try {
-                    contentResolver.openOutputStream(uri)?.use {
-                        it.write(History.exportJson(applicationContext).toByteArray(Charsets.UTF_8))
-                    }
-                    ok = true
-                } catch (_: Exception) { }
-                Handler(Looper.getMainLooper()).post {
-                    toast(getString(if (ok) R.string.toast_backup_done else R.string.toast_backup_failed))
+            pendingBackupUri = uri
+            val input = EditText(this).apply {
+                hint = getString(R.string.hint_backup_password)
+                inputType = InputType.TYPE_CLASS_TEXT or
+                    InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.backup_password_title))
+                .setView(input)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    writeBackup(input.text.toString())
                 }
+                .setNegativeButton(getString(R.string.btn_cancel), null)
+                .show()
+        }
+    }
+
+    private fun writeBackup(password: String) {
+        val uri = pendingBackupUri ?: return
+        pendingBackupUri = null
+        thread {
+            var ok = false
+            try {
+                var text = History.exportJson(applicationContext)
+                if (password.isNotEmpty()) text = BackupCrypto.encrypt(text, password)
+                contentResolver.openOutputStream(uri)?.use {
+                    it.write(text.toByteArray(Charsets.UTF_8))
+                }
+                ok = true
+            } catch (_: Exception) { }
+            Handler(Looper.getMainLooper()).post {
+                toast(getString(if (ok) R.string.toast_backup_done else R.string.toast_backup_failed))
             }
         }
     }
@@ -106,19 +205,52 @@ class MainActivity : LocalizedActivity() {
         val uri = result.data?.data
         if (result.resultCode == RESULT_OK && uri != null) {
             thread {
-                var count = -1
+                var text = ""
                 try {
-                    val text = contentResolver.openInputStream(uri)?.bufferedReader()
+                    text = contentResolver.openInputStream(uri)?.bufferedReader()
                         ?.readText().orEmpty()
-                    count = History.importJson(applicationContext, text)
                 } catch (_: Exception) { }
                 Handler(Looper.getMainLooper()).post {
-                    if (count >= 0) {
-                        refreshInbox()
-                        toast(getString(R.string.toast_restore_done, count))
-                    } else {
-                        toast(getString(R.string.toast_backup_failed))
+                    when {
+                        text.isEmpty() -> toast(getString(R.string.toast_backup_failed))
+                        BackupCrypto.isEncrypted(text) -> {
+                            val input = EditText(this).apply {
+                                hint = getString(R.string.hint_backup_password)
+                                inputType = InputType.TYPE_CLASS_TEXT or
+                                    InputType.TYPE_TEXT_VARIATION_PASSWORD
+                            }
+                            AlertDialog.Builder(this)
+                                .setTitle(getString(R.string.backup_password_title))
+                                .setView(input)
+                                .setPositiveButton(android.R.string.ok) { _, _ ->
+                                    val plain = BackupCrypto.decrypt(
+                                        text, input.text.toString())
+                                    if (plain == null) {
+                                        toast(getString(R.string.toast_wrong_password))
+                                    } else {
+                                        finishRestore(plain)
+                                    }
+                                }
+                                .setNegativeButton(getString(R.string.btn_cancel), null)
+                                .show()
+                        }
+                        else -> finishRestore(text)
                     }
+                }
+            }
+        }
+    }
+
+    private fun finishRestore(text: String) {
+        thread {
+            val count = try { History.importJson(applicationContext, text) }
+                catch (_: Exception) { -1 }
+            Handler(Looper.getMainLooper()).post {
+                if (count >= 0) {
+                    refreshInbox()
+                    toast(getString(R.string.toast_restore_done, count))
+                } else {
+                    toast(getString(R.string.toast_backup_failed))
                 }
             }
         }
@@ -200,6 +332,10 @@ class MainActivity : LocalizedActivity() {
         tvQuietInfo = findViewById(R.id.tvQuietInfo)
         tvDigestInfo = findViewById(R.id.tvDigestInfo)
         tvRoutineInfo = findViewById(R.id.tvRoutineInfo)
+        tvSafety = findViewById(R.id.tvSafety)
+        tvPeerStatus = findViewById(R.id.tvPeerStatus)
+        tvPinInfo = findViewById(R.id.tvPinInfo)
+        tvAdminInfo = findViewById(R.id.tvAdminInfo)
         tvGeoInfo = findViewById(R.id.tvGeoInfo)
         tvRetentionInfo = findViewById(R.id.tvRetentionInfo)
         tvStats = findViewById(R.id.tvStats)
@@ -382,6 +518,12 @@ class MainActivity : LocalizedActivity() {
             val item = filteredInbox().getOrNull(position) ?: return@setOnItemClickListener
             when {
                 item.code.isNotEmpty() -> copyToClipboard(item.code)
+                item.type == Relay.TYPE_CALL && item.extra.startsWith("tel:") -> {
+                    try {
+                        startActivity(Intent(Intent.ACTION_DIAL,
+                            Uri.parse("tel:" + item.extra.removePrefix("tel:"))))
+                    } catch (_: Exception) { copyToClipboard(item.body) }
+                }
                 item.type == Relay.TYPE_FILE && item.extra.isNotEmpty() -> {
                     try {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.extra)))
@@ -602,10 +744,106 @@ class MainActivity : LocalizedActivity() {
                 .show()
         }
         findViewById<Button>(R.id.btnCmdSnap).setOnClickListener {
-            Relay.sendCommand(this, "SNAP"); toast(getString(R.string.toast_cmd_snap))
+            askPin { digest ->
+                Relay.sendCommand(this, "SNAP", null,
+                    org.json.JSONObject().put("pin", digest))
+                toast(getString(R.string.toast_cmd_snap))
+            }
         }
         findViewById<Button>(R.id.btnCmdSummary).setOnClickListener {
             Relay.sendCommand(this, "SUMMARY"); toast(getString(R.string.toast_cmd_summary))
+        }
+
+        // ----- v2.3 wiring -----
+        findViewById<Button>(R.id.btnCmdLock).setOnClickListener {
+            askPin { digest ->
+                Relay.sendCommand(this, "LOCK", null,
+                    org.json.JSONObject().put("pin", digest))
+                toast(getString(R.string.toast_cmd_lock))
+            }
+        }
+        findViewById<Button>(R.id.btnCmdRemote).setOnClickListener { showRemotePanel() }
+        findViewById<Button>(R.id.btnMode).setOnClickListener { showModeDialog() }
+        findViewById<Button>(R.id.btnCmdSpeak).setOnClickListener { showSpeakDialog() }
+        findViewById<Button>(R.id.btnCmdAlarm).setOnClickListener { showAlarmDialog() }
+        findViewById<Button>(R.id.btnCmdRinger).setOnClickListener { showRingerDialog() }
+        findViewById<Button>(R.id.btnCmdGallery).setOnClickListener {
+            startActivity(Intent(this, GalleryActivity::class.java))
+        }
+        findViewById<Button>(R.id.btnCmdRecentCalls).setOnClickListener {
+            Relay.sendCommand(this, "LIST_RECENT", null,
+                org.json.JSONObject().put("kind", "calls"))
+            toast(getString(R.string.toast_list_sent))
+        }
+        findViewById<Button>(R.id.btnCmdRecentSms).setOnClickListener {
+            Relay.sendCommand(this, "LIST_RECENT", null,
+                org.json.JSONObject().put("kind", "sms"))
+            toast(getString(R.string.toast_list_sent))
+        }
+        findViewById<Button>(R.id.btnCmdNote).setOnClickListener { showNoteDialog() }
+        findViewById<Button>(R.id.btnMediaPlay).setOnClickListener {
+            Relay.sendCommand(this, "MEDIA", null, org.json.JSONObject().put("action", "playpause"))
+        }
+        findViewById<Button>(R.id.btnMediaNext).setOnClickListener {
+            Relay.sendCommand(this, "MEDIA", null, org.json.JSONObject().put("action", "next"))
+        }
+        findViewById<Button>(R.id.btnMediaVolUp).setOnClickListener {
+            Relay.sendCommand(this, "MEDIA", null, org.json.JSONObject().put("action", "volup"))
+        }
+        findViewById<Button>(R.id.btnMediaVolDown).setOnClickListener {
+            Relay.sendCommand(this, "MEDIA", null, org.json.JSONObject().put("action", "voldown"))
+        }
+        findViewById<Button>(R.id.btnSiren).setOnClickListener { showSirenDialog() }
+        findViewById<Button>(R.id.btnSchedule).setOnClickListener { showScheduleDialog() }
+        findViewById<Button>(R.id.btnTemplates).setOnClickListener { showTemplatesDialog() }
+        findViewById<Button>(R.id.btnContactCard).setOnClickListener {
+            contactLauncher.launch(null)
+        }
+        findViewById<Button>(R.id.btnWallpaper).setOnClickListener {
+            wallpaperLauncher.launch(arrayOf("image/*"))
+        }
+        findViewById<EditText>(R.id.etMyStatus).setText(Config.myStatus(this))
+        findViewById<Button>(R.id.btnSaveStatus).setOnClickListener {
+            Config.setMyStatus(this, findViewById<EditText>(R.id.etMyStatus).text.toString())
+            toast(getString(R.string.toast_status_saved))
+        }
+
+        // ----- security card -----
+        bindToggle(R.id.swGuard, "guard_on", Config.guardOn(this))
+        bindToggle(R.id.swIntruder, "intruder_on", Config.intruderOn(this))
+        bindToggle(R.id.swAutosave, "autosave_media", Config.autosaveMedia(this))
+        findViewById<Button>(R.id.btnSetPin).setOnClickListener { showSetPinDialog() }
+        findViewById<Button>(R.id.btnAdmin).setOnClickListener {
+            if (AdminReceiver.isActive(this)) {
+                try {
+                    startActivity(Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS))
+                } catch (_: Exception) { }
+                toast(getString(R.string.admin_deactivate_hint))
+            } else {
+                val comp = android.content.ComponentName(this, AdminReceiver::class.java)
+                val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
+                    .putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, comp)
+                    .putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                        getString(R.string.admin_explanation))
+                try { startActivity(intent) } catch (_: Exception) {
+                    toast(getString(R.string.toast_admin_failed))
+                }
+            }
+        }
+        findViewById<Button>(R.id.btnSecLog).setOnClickListener { showSecLogDialog() }
+        findViewById<Button>(R.id.btnDataLimit).setOnClickListener {
+            val options = intArrayOf(0, 500, 1024, 2048, 5120)
+            val labels = options.map {
+                if (it == 0) getString(R.string.digest_off)
+                else getString(R.string.data_limit_mb, it)
+            }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.data_limit_title))
+                .setItems(labels) { _, which ->
+                    Config.setDataLimitMb(this, options[which])
+                    toast(getString(R.string.toast_filters_saved))
+                }
+                .show()
         }
 
         // ----- appearance: language & theme -----
@@ -736,6 +974,29 @@ class MainActivity : LocalizedActivity() {
         if (item.type == Relay.TYPE_NOTIF && item.extra.startsWith("notif:")) {
             labels.add(getString(R.string.menu_reply_notif))
             actions.add { showNotifReplyDialog(item.extra.removePrefix("notif:")) }
+            labels.add(getString(R.string.menu_dismiss_remote))
+            actions.add {
+                Relay.sendCommand(this, "DISMISS", null, org.json.JSONObject()
+                    .put("key", item.extra.removePrefix("notif:")))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+        }
+        if (item.id.isNotEmpty()) {
+            labels.add(getString(R.string.menu_react))
+            actions.add { showReactDialog(item) }
+            labels.add(getString(R.string.menu_delete_both))
+            actions.add {
+                History.removeById(this, item.id)
+                Relay.sendCommand(this, "DELETE_MSG", null,
+                    org.json.JSONObject().put("msgId", item.id))
+                refreshInbox()
+            }
+        }
+        if (item.body.isNotEmpty()) {
+            labels.add(getString(R.string.menu_quote_reply))
+            actions.add { showQuoteDialog(item) }
+            labels.add(getString(R.string.menu_translate))
+            actions.add { translateItem(item) }
         }
         labels.add(getString(R.string.menu_delete))
         actions.add { History.delete(this, item); refreshInbox(); toast(getString(R.string.toast_item_deleted)) }
@@ -760,6 +1021,44 @@ class MainActivity : LocalizedActivity() {
                         .put("number", number).put("text", text)
                     Relay.sendCommand(this, "REPLY_SMS", null, extra)
                     toast(getString(R.string.toast_reply_sent))
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showReactDialog(item: History.Item) {
+        val emojis = arrayOf("👍", "❤️", "😮", "😂", "🙏", "🔥")
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.react_title))
+            .setItems(emojis) { _, which ->
+                val payload = org.json.JSONObject()
+                    .put("v", 2).put("type", "REACT")
+                    .put("emoji", emojis[which])
+                    .put("title", item.title.take(60))
+                    .put("from", Config.deviceName(this))
+                    .put("dev", Config.deviceId(this))
+                    .put("time", System.currentTimeMillis())
+                thread { Relay.post(this, Config.cmdTopic(this), payload) }
+                toast(getString(R.string.toast_cmd_sent))
+            }
+            .show()
+    }
+
+    private fun showQuoteDialog(item: History.Item) {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_reply_text)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.quote_title))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    val quote = "💬 «${item.title.take(50)}»"
+                    Relay.send(this, Relay.TYPE_NOTIF, quote, text)
+                    toast(getString(R.string.toast_cmd_sent))
                 }
             }
             .setNegativeButton(getString(R.string.btn_cancel), null)
@@ -837,6 +1136,407 @@ class MainActivity : LocalizedActivity() {
         } catch (_: Exception) { }
     }
 
+    // ---------------- v2.3 dialogs ----------------
+
+    /** Asks for the command PIN and hands back its digest. */
+    private fun askPin(onOk: (String) -> Unit) {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_cmd_pin)
+            inputType = InputType.TYPE_CLASS_NUMBER or
+                InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.cmd_pin_title))
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val pin = input.text.toString().trim()
+                if (pin.length >= 4) onOk(Config.digestForPin(pin))
+                else toast(getString(R.string.toast_pin_short))
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun remoteKeyLabel(key: String): String = getString(when (key) {
+        "sender_on" -> R.string.rc_sender
+        "receiver_on" -> R.string.rc_receiver
+        "fwd_sms" -> R.string.label_sms
+        "fwd_notif" -> R.string.label_notif
+        "fwd_calls" -> R.string.label_calls
+        "fwd_battery" -> R.string.label_battery
+        "fwd_security" -> R.string.label_security
+        "fwd_system" -> R.string.label_system
+        "fwd_presence" -> R.string.fwd_presence
+        "fwd_media" -> R.string.fwd_media
+        "guard_on" -> R.string.guard_label
+        else -> R.string.rc_sender
+    })
+
+    private fun showRemotePanel() {
+        val peer = Peers.list(this).firstOrNull()
+        val keys = Config.remoteKeys()
+        val cfgMap = (peer?.cfg ?: "").split(",").mapNotNull { part ->
+            val kv = part.split(":")
+            if (kv.size == 2) kv[0] to (kv[1] == "1") else null
+        }.toMap()
+        val labels = keys.map { remoteKeyLabel(it) }.toTypedArray()
+        val states = BooleanArray(keys.size) { cfgMap[keys[it]] ?: false }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.remote_title, peer?.name ?: ""))
+            .setMultiChoiceItems(labels, states) { _, which, checked ->
+                val key = keys[which]
+                askPin { digest ->
+                    val extra = org.json.JSONObject()
+                        .put("key", key).put("value", if (checked) 1 else 0)
+                        .put("pin", digest)
+                    Relay.sendCommand(this, "SET", null, extra)
+                    toast(getString(R.string.toast_cmd_sent))
+                }
+            }
+            .setPositiveButton(getString(R.string.btn_close), null)
+            .setNeutralButton(getString(R.string.btn_remote_modes)) { _, _ ->
+                showRemoteModes()
+            }
+            .setNegativeButton(getString(R.string.btn_remote_pause)) { _, _ ->
+                Relay.sendCommand(this, "PAUSE", null,
+                    org.json.JSONObject().put("minutes", 60))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+            .show()
+    }
+
+    private fun showRemoteModes() {
+        val modes = arrayOf("sleep", "meeting", "study", "off")
+        val labels = arrayOf(
+            getString(R.string.mode_sleep), getString(R.string.mode_meeting),
+            getString(R.string.mode_study), getString(R.string.mode_off))
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.remote_modes_title))
+            .setItems(labels) { _, which ->
+                askPin { digest ->
+                    val extra = org.json.JSONObject()
+                        .put("mode", modes[which]).put("pin", digest)
+                    Relay.sendCommand(this, "MODE", null, extra)
+                    toast(getString(R.string.toast_cmd_sent))
+                }
+            }
+            .show()
+    }
+
+    private fun showModeDialog() {
+        val modes = arrayOf("sleep", "meeting", "study", "off")
+        val labels = arrayOf(
+            getString(R.string.mode_sleep), getString(R.string.mode_meeting),
+            getString(R.string.mode_study), getString(R.string.mode_off))
+        val current = modes.indexOf(Config.modeName(this)).coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.mode_title))
+            .setSingleChoiceItems(labels, current) { dialog, which ->
+                Config.applyMode(this, modes[which])
+                toast(getString(R.string.toast_mode_set, labels[which]))
+                dialog.dismiss()
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun textCommandDialog(titleRes: Int, hintRes: Int, command: String) {
+        val input = EditText(this).apply {
+            hint = getString(hintRes)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(titleRes))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    Relay.sendCommand(this, command, null,
+                        org.json.JSONObject().put("text", text))
+                    toast(getString(R.string.toast_cmd_sent))
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showSpeakDialog() =
+        textCommandDialog(R.string.speak_title, R.string.hint_speak_text, "SPEAK")
+
+    private fun showNoteDialog() {
+        val input = EditText(this).apply {
+            setText(Config.sharedNote(this@MainActivity))
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            minLines = 3
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.note_title))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_save)) { _, _ ->
+                val text = input.text.toString()
+                Config.setSharedNote(this, text)
+                val payload = org.json.JSONObject()
+                    .put("v", 2).put("type", "NOTE").put("text", text)
+                    .put("from", Config.deviceName(this))
+                    .put("dev", Config.deviceId(this))
+                    .put("time", System.currentTimeMillis())
+                thread { Relay.post(this, Config.cmdTopic(this), payload) }
+                toast(getString(R.string.toast_note_saved))
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showSirenDialog() {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_siren_text)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.siren_title))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                val text = input.text.toString().trim()
+                    .ifEmpty { getString(R.string.siren_default) }
+                Relay.send(this, Relay.TYPE_URGENT, "🚨 ${getString(R.string.siren_title)}", text)
+                toast(getString(R.string.toast_cmd_sent))
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showAlarmDialog() {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_alarm_minutes)
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.alarm_title))
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val mins = input.text.toString().trim().toIntOrNull() ?: 0
+                if (mins > 0) {
+                    Relay.sendCommand(this, "ALARM", null,
+                        org.json.JSONObject().put("minutes", mins)
+                            .put("text", getString(R.string.alarm_remote_text)))
+                    toast(getString(R.string.toast_cmd_sent))
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showRingerDialog() {
+        val modes = arrayOf("normal", "vibrate", "silent")
+        val labels = arrayOf(
+            getString(R.string.ringer_normal), getString(R.string.ringer_vibrate),
+            getString(R.string.ringer_silent))
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.ringer_title))
+            .setItems(labels) { _, which ->
+                Relay.sendCommand(this, "RINGER", null,
+                    org.json.JSONObject().put("mode", modes[which]))
+                toast(getString(R.string.toast_cmd_sent))
+            }
+            .show()
+    }
+
+    private fun showScheduleDialog() {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_schedule_text)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.schedule_title))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_schedule_set)) { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isEmpty()) return@setPositiveButton
+                val now = Calendar.getInstance()
+                TimePickerDialog(this, { _, h, m ->
+                    val target = Calendar.getInstance().apply {
+                        set(Calendar.HOUR_OF_DAY, h); set(Calendar.MINUTE, m)
+                        set(Calendar.SECOND, 0)
+                        if (timeInMillis <= System.currentTimeMillis()) {
+                            add(Calendar.DAY_OF_YEAR, 1)
+                        }
+                    }
+                    SchedStore.add(this, target.timeInMillis, text)
+                    toast(getString(R.string.toast_schedule_set))
+                }, now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE), true).show()
+            }
+            .setNeutralButton(getString(R.string.btn_schedule_list)) { _, _ ->
+                showScheduleList()
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showScheduleList() {
+        val items = SchedStore.list(this)
+        if (items.isEmpty()) {
+            toast(getString(R.string.schedule_empty))
+            return
+        }
+        val fmt = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+        val labels = items.map { "${it.text}\n${fmt.format(Date(it.time))}" }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.schedule_title))
+            .setItems(labels) { _, which ->
+                SchedStore.remove(this, items[which].id)
+                toast(getString(R.string.toast_schedule_removed))
+            }
+            .setNegativeButton(getString(R.string.btn_close), null)
+            .show()
+    }
+
+    private fun showTemplatesDialog() {
+        val templates = Config.templates(this)
+        val labels = mutableListOf<String>()
+        templates.forEach { (name, _) -> labels.add(name) }
+        labels.add(getString(R.string.template_add))
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.templates_title))
+            .setItems(labels.toTypedArray()) { _, which ->
+                if (which < templates.size) {
+                    val (name, body) = templates[which]
+                    AlertDialog.Builder(this)
+                        .setTitle(name)
+                        .setMessage(body)
+                        .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                            Relay.send(this, Relay.TYPE_NOTIF, "💬 $name", body)
+                            toast(getString(R.string.toast_cmd_sent))
+                        }
+                        .setNeutralButton(getString(R.string.menu_delete)) { _, _ ->
+                            Config.saveTemplates(this,
+                                templates.filterIndexed { i, _ -> i != which })
+                        }
+                        .setNegativeButton(getString(R.string.btn_cancel), null)
+                        .show()
+                } else {
+                    val nameInput = EditText(this).apply {
+                        hint = getString(R.string.hint_template_name)
+                    }
+                    val bodyInput = EditText(this).apply {
+                        hint = getString(R.string.hint_template_body)
+                        inputType = InputType.TYPE_CLASS_TEXT or
+                            InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                    }
+                    val layout = LinearLayout(this).apply {
+                        orientation = LinearLayout.VERTICAL
+                        setPadding(48, 8, 48, 8)
+                        addView(nameInput); addView(bodyInput)
+                    }
+                    AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.template_add))
+                        .setView(layout)
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            val n = nameInput.text.toString().trim()
+                            val b = bodyInput.text.toString().trim()
+                            if (n.isNotEmpty() && b.isNotEmpty()) {
+                                Config.saveTemplates(this, templates + (n to b))
+                                toast(getString(R.string.toast_profile_saved))
+                            }
+                        }
+                        .setNegativeButton(getString(R.string.btn_cancel), null)
+                        .show()
+                }
+            }
+            .show()
+    }
+
+    private fun showSetPinDialog() {
+        if (Config.cmdPinIsSet(this)) {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.cmd_pin_title))
+                .setMessage(getString(R.string.pin_is_set))
+                .setPositiveButton(getString(R.string.pin_change)) { _, _ -> pinEntryDialog() }
+                .setNeutralButton(getString(R.string.pin_remove)) { _, _ ->
+                    Config.clearCmdPin(this)
+                    SecLog.add(this, "কমান্ড PIN সরানো হয়েছে")
+                    refreshStatus()
+                    toast(getString(R.string.toast_pin_removed))
+                }
+                .setNegativeButton(getString(R.string.btn_cancel), null)
+                .show()
+        } else {
+            pinEntryDialog()
+        }
+    }
+
+    private fun pinEntryDialog() {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_new_pin)
+            inputType = InputType.TYPE_CLASS_NUMBER or
+                InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.pin_set_title))
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val pin = input.text.toString().trim()
+                if (pin.length >= 4) {
+                    Config.setCmdPin(this, pin)
+                    SecLog.add(this, "কমান্ড PIN সেট/বদল হয়েছে")
+                    refreshStatus()
+                    toast(getString(R.string.toast_pin_set))
+                } else {
+                    toast(getString(R.string.toast_pin_short))
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showSecLogDialog() {
+        val entries = SecLog.all(this)
+        if (entries.isEmpty()) {
+            toast(getString(R.string.seclog_empty))
+            return
+        }
+        val fmt = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+        val labels = entries.map { (t, s) -> "${fmt.format(Date(t))} — $s" }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.seclog_title))
+            .setItems(labels, null)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    /** On-device translation of an inbox item (ML Kit, model downloads once). */
+    private fun translateItem(item: History.Item) {
+        val text = (item.title + "\n" + item.body).trim().take(900)
+        val hasBn = text.any { it.code in 0x0980..0x09FF }
+        val src = if (hasBn) com.google.mlkit.nl.translate.TranslateLanguage.BENGALI
+            else com.google.mlkit.nl.translate.TranslateLanguage.ENGLISH
+        val dst = if (hasBn) com.google.mlkit.nl.translate.TranslateLanguage.ENGLISH
+            else com.google.mlkit.nl.translate.TranslateLanguage.BENGALI
+        toast(getString(R.string.toast_translating))
+        val options = com.google.mlkit.nl.translate.TranslatorOptions.Builder()
+            .setSourceLanguage(src).setTargetLanguage(dst).build()
+        val client = com.google.mlkit.nl.translate.Translation.getClient(options)
+        client.downloadModelIfNeeded()
+            .addOnSuccessListener {
+                client.translate(text)
+                    .addOnSuccessListener { out ->
+                        AlertDialog.Builder(this)
+                            .setTitle(getString(R.string.translate_title))
+                            .setMessage(out)
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show()
+                        client.close()
+                    }
+                    .addOnFailureListener {
+                        toast(getString(R.string.toast_translate_failed))
+                        client.close()
+                    }
+            }
+            .addOnFailureListener {
+                toast(getString(R.string.toast_translate_failed))
+                client.close()
+            }
+    }
+
     private fun showDevicesDialog() {
         val peers = Peers.list(this)
         if (peers.isEmpty()) {
@@ -853,11 +1553,13 @@ class MainActivity : LocalizedActivity() {
                 else -> getString(R.string.time_days_ago, mins / 1440)
             }
             val batt = if (p.battery >= 0) " • 🔋 ${p.battery}%" else ""
-            "${p.name}$batt — $whenText"
-        }.toTypedArray()
+            val status = if (p.status.isNotEmpty()) "\n💬 ${p.status}" else ""
+            "${p.name}$batt — $whenText$status"
+        }.toMutableList()
+        BatteryHist.summary(this)?.let { labels.add(it) }
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.devices_title))
-            .setItems(labels, null)
+            .setItems(labels.toTypedArray(), null)
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }
@@ -933,6 +1635,19 @@ class MainActivity : LocalizedActivity() {
     private fun refreshPairCode() {
         val code = Config.pairCode(this)
         tvPairCode.text = code.chunked(5).joinToString(" ")
+        tvSafety.text = getString(R.string.safety_number, safetyNumber())
+    }
+
+    /** 4-digit check number derived from the pair code — same on both
+     *  phones when (and only when) both use the same code. */
+    private fun safetyNumber(): String {
+        return try {
+            val topic = Config.dataTopic(this)
+            val digest = java.security.MessageDigest.getInstance("SHA-256")
+                .digest(topic.toByteArray(Charsets.UTF_8))
+            val n = ((digest[0].toInt() and 0xFF) shl 8 or (digest[1].toInt() and 0xFF)) % 10000
+            String.format(Locale.US, "%04d", n)
+        } catch (_: Exception) { "----" }
     }
 
     private fun setPerm(tv: TextView, granted: Boolean) {
@@ -1016,6 +1731,18 @@ class MainActivity : LocalizedActivity() {
         tvRetentionInfo.text = if (kd == 0) getString(R.string.retention_forever)
             else getString(R.string.retention_days, kd)
         tvStats.text = buildStatsText()
+
+        // Peer status + security states
+        val peer = Peers.list(this).firstOrNull()
+        tvPeerStatus.text = when {
+            peer == null -> ""
+            peer.status.isNotEmpty() -> getString(R.string.peer_status, peer.name, peer.status)
+            else -> getString(R.string.peer_seen, peer.name)
+        }
+        tvPinInfo.text = getString(
+            if (Config.cmdPinIsSet(this)) R.string.pin_state_set else R.string.pin_state_unset)
+        tvAdminInfo.text = getString(
+            if (AdminReceiver.isActive(this)) R.string.admin_state_on else R.string.admin_state_off)
 
         val q = Relay.queueSize(this)
         if (q > 0) {

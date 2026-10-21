@@ -58,7 +58,13 @@ class SnapService : LifecycleService() {
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                     .build()
                 provider.unbindAll()
-                provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, capture)
+                val selector = if (SessionState.snapFront) {
+                    SessionState.snapFront = false
+                    CameraSelector.DEFAULT_FRONT_CAMERA
+                } else {
+                    CameraSelector.DEFAULT_BACK_CAMERA
+                }
+                provider.bindToLifecycle(this, selector, capture)
                 // Give the sensor a moment to settle before exposing.
                 Handler(Looper.getMainLooper()).postDelayed({
                     val file = File(cacheDir, "snap_${System.currentTimeMillis()}.jpg")

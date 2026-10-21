@@ -34,6 +34,7 @@ object Relay {
     const val TYPE_INFO = "INFO"
     const val TYPE_CLIP = "CLIP"
     const val TYPE_FILE = "FILE"
+    const val TYPE_URGENT = "URGENT"
 
     fun newId(): String = System.currentTimeMillis().toString() + "-" +
         (1..6).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Random.nextInt(32)] }.joinToString("")
@@ -47,11 +48,16 @@ object Relay {
             put("title", title)
             put("body", body)
             put("from", Config.deviceName(appCtx))
+            put("dev", Config.deviceId(appCtx))
             put("time", System.currentTimeMillis())
             extra?.let { e -> e.keys().forEach { k -> put(k, e.get(k)) } }
         }
         if (type != TYPE_HEARTBEAT) Stats.incSent(appCtx, type)
         executor.execute {
+            if (isPaused(appCtx) && type != TYPE_HEARTBEAT && type != TYPE_INFO) {
+                enqueue(appCtx, payload)
+                return@execute
+            }
             if (post(appCtx, Config.dataTopic(appCtx), payload)) {
                 if (type != TYPE_HEARTBEAT) addPendingAck(appCtx, payload)
             } else {
@@ -70,6 +76,7 @@ object Relay {
             if (!arg.isNullOrEmpty()) put("arg", arg)
             extra?.let { e -> e.keys().forEach { k -> put(k, e.get(k)) } }
             put("from", Config.deviceName(appCtx))
+            put("dev", Config.deviceId(appCtx))
             put("time", System.currentTimeMillis())
         }
         Stats.incCmd(appCtx)
@@ -85,6 +92,7 @@ object Relay {
             put("ack", id)
             put("title", title)
             put("from", Config.deviceName(appCtx))
+            put("dev", Config.deviceId(appCtx))
             put("time", System.currentTimeMillis())
         }
         executor.execute { post(appCtx, Config.cmdTopic(appCtx), payload) }
@@ -134,6 +142,22 @@ object Relay {
     }
 
     fun lastLatencyMs(ctx: Context): Long = state(ctx).getLong("last_latency_ms", 0L)
+
+    // ---------------- privacy pause (remote or local) ----------------
+
+    fun setPauseMinutes(ctx: Context, minutes: Int) {
+        state(ctx).edit()
+            .putLong("pause_until", System.currentTimeMillis() + minutes * 60_000L)
+            .apply()
+    }
+
+    fun isPaused(ctx: Context): Boolean =
+        state(ctx).getLong("pause_until", 0L) > System.currentTimeMillis()
+
+    fun pauseLeftMin(ctx: Context): Long {
+        val left = state(ctx).getLong("pause_until", 0L) - System.currentTimeMillis()
+        return if (left > 0) left / 60_000L + 1 else 0L
+    }
 
     /**
      * Optional permanent archive: mirrors every forwarded message to a
@@ -203,8 +227,10 @@ object Relay {
     /**
      * Uploads a file as an ntfy attachment on the data topic. Subscribers
      * receive a message event whose attachment object carries the URL.
+     * With wallpaper=true the receiver sets the image as its wallpaper.
      */
-    fun postFile(ctx: Context, fileName: String, bytes: ByteArray, mime: String): Boolean {
+    fun postFile(ctx: Context, fileName: String, bytes: ByteArray, mime: String,
+                 wallpaper: Boolean = false): Boolean {
         var conn: HttpURLConnection? = null
         return try {
             val base = baseUrl(ctx)
@@ -215,7 +241,7 @@ object Relay {
             conn.readTimeout = 30000
             conn.doOutput = true
             conn.setRequestProperty("Filename", encodeHeader(fileName))
-            conn.setRequestProperty("Title", "PhoneLink file")
+            conn.setRequestProperty("Title", if (wallpaper) "PhoneLink wallpaper" else "PhoneLink file")
             if (mime.isNotEmpty()) conn.setRequestProperty("Content-Type", mime)
             conn.outputStream.use { it.write(bytes) }
             val code = conn.responseCode
