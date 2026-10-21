@@ -646,13 +646,18 @@
 
         <!-- ===== Remote info card ===== -->
         <com.google.android.material.card.MaterialCardView
-            style="@style/PL.Card"
-            app:contentPadding="16dp">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:padding="16dp">
 
                 <TextView
                     style="@style/PL.CardTitle"
