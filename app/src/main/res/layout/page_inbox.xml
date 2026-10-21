@@ -10,6 +10,57 @@
         style="@style/PL.CardTitle"
         android:text="@string/sec_inbox" />
 
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/cgCats"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:selectionRequired="true"
+        app:singleSelection="true">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipAll"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="@string/cat_all" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipSms"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cat_sms" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipCalls"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cat_calls" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipNotif"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cat_notif" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipBattery"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cat_battery" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipOther"
+            style="@style/Widget.Material3.Chip.Filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cat_other" />
+    </com.google.android.material.chip.ChipGroup>
+
     <com.google.android.material.textfield.TextInputLayout
         style="@style/PL.Field"
         android:layout_marginTop="0dp"
@@ -47,6 +98,16 @@
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
             android:text="@string/btn_refresh" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExportInbox"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            android:text="@string/btn_export_inbox" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnClearInbox"

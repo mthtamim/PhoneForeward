@@ -6,29 +6,42 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.provider.OpenableColumns
 import android.text.Editable
+import android.text.InputType
 import android.text.TextWatcher
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.chip.ChipGroup
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.concurrent.thread
 
 class MainActivity : LocalizedActivity() {
 
     private lateinit var tvMode: TextView
+    private lateinit var tvRelay: TextView
+    private lateinit var tvDelivery: TextView
+    private lateinit var tvQueueInfo: TextView
     private lateinit var tvPermNotif: TextView
     private lateinit var tvPermSms: TextView
     private lateinit var tvPermLoc: TextView
@@ -48,9 +61,81 @@ class MainActivity : LocalizedActivity() {
 
     private var inboxItems: List<History.Item> = emptyList()
     private var inboxReceiver: BroadcastReceiver? = null
+    private var inboxCat: String = "ALL"
+
+    private val scanLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val code = result.data?.getStringExtra("code")?.trim().orEmpty()
+            applyPairCode(code)
+        }
+    }
+
+    private val fileLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) sendFile(uri)
+    }
+
+    private fun applyPairCode(code: String) {
+        if (code.length < 8) { toast(getString(R.string.toast_code_short)); return }
+        Config.setPairCode(this, code)
+        refreshPairCode()
+        LinkService.restart(this)
+        toast(getString(R.string.toast_code_set))
+    }
+
+    private fun sendFile(uri: Uri) {
+        toast(getString(R.string.file_uploading))
+        thread {
+            var ok = false
+            var name = "file"
+            try {
+                contentResolver.query(uri, null, null, null, null)?.use { c ->
+                    val idx = c.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (idx >= 0 && c.moveToFirst()) name = c.getString(idx) ?: "file"
+                }
+                val mime = contentResolver.getType(uri) ?: ""
+                val bytes = contentResolver.openInputStream(uri)?.use { input ->
+                    val buf = java.io.ByteArrayOutputStream()
+                    val chunk = ByteArray(64 * 1024)
+                    var total = 0
+                    while (true) {
+                        val n = input.read(chunk)
+                        if (n < 0) break
+                        total += n
+                        if (total > 5 * 1024 * 1024) throw IllegalStateException("too big")
+                        buf.write(chunk, 0, n)
+                    }
+                    buf.toByteArray()
+                } ?: throw IllegalStateException("unreadable")
+                ok = Relay.postFile(applicationContext, name, bytes, mime)
+            } catch (_: Exception) { ok = false }
+            Handler(Looper.getMainLooper()).post {
+                toast(getString(if (ok) R.string.file_sent else R.string.file_failed))
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Share-to-PhoneLink: another app shared text/a link with us.
+        if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            val shared = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim().orEmpty()
+            if (shared.isNotEmpty()) {
+                Relay.send(applicationContext, Relay.TYPE_CLIP,
+                    getString(R.string.share_title), shared)
+                toast(getString(R.string.toast_shared_sent))
+            }
+            finish()
+            return
+        }
+
+        // App lock gate.
+        if (Config.appLockOn(this) && !SessionState.unlocked) {
+            startActivity(Intent(this, LockActivity::class.java))
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_main)
 
         pageHome = findViewById(R.id.pageHome)
@@ -59,6 +144,9 @@ class MainActivity : LocalizedActivity() {
         bottomNav = findViewById(R.id.bottomNav)
 
         tvMode = findViewById(R.id.tvMode)
+        tvRelay = findViewById(R.id.tvRelay)
+        tvDelivery = findViewById(R.id.tvDelivery)
+        tvQueueInfo = findViewById(R.id.tvQueueInfo)
         tvPermNotif = findViewById(R.id.tvPermNotif)
         tvPermSms = findViewById(R.id.tvPermSms)
         tvPermLoc = findViewById(R.id.tvPermLoc)
@@ -76,9 +164,11 @@ class MainActivity : LocalizedActivity() {
         val etExcluded = findViewById<EditText>(R.id.etExcluded)
         val etBlocked = findViewById<EditText>(R.id.etBlocked)
         val etServer = findViewById<EditText>(R.id.etServer)
+        val etBackupServer = findViewById<EditText>(R.id.etBackupServer)
 
         etDeviceName.setText(Config.deviceName(this))
         etServer.setText(Config.serverUrl(this))
+        etBackupServer.setText(Config.backupServerUrl(this))
         etExcluded.setText(getSharedPreferences("phonelink_cfg", Context.MODE_PRIVATE)
             .getString("excluded_apps", ""))
         etBlocked.setText(getSharedPreferences("phonelink_cfg", Context.MODE_PRIVATE)
@@ -114,6 +204,12 @@ class MainActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnSaveName).setOnClickListener {
             Config.setDeviceName(this, etDeviceName.text.toString().ifBlank { Build.MODEL ?: "Phone" })
             toast(getString(R.string.toast_name_saved))
+        }
+        findViewById<Button>(R.id.btnShowQr).setOnClickListener {
+            startActivity(Intent(this, QrActivity::class.java))
+        }
+        findViewById<Button>(R.id.btnScanQr).setOnClickListener {
+            scanLauncher.launch(Intent(this, ScanActivity::class.java))
         }
 
         // ----- modes & service -----
@@ -170,6 +266,9 @@ class MainActivity : LocalizedActivity() {
             if (url.isEmpty()) url = "https://ntfy.sh"
             if (!url.startsWith("http")) url = "https://$url"
             Config.setServerUrl(this, url)
+            var backup = etBackupServer.text.toString().trim()
+            if (backup.isNotEmpty() && !backup.startsWith("http")) backup = "https://$backup"
+            Config.setBackupServerUrl(this, backup)
             LinkService.restart(this)
             toast(getString(R.string.toast_server_saved))
         }
@@ -180,6 +279,27 @@ class MainActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnCmdLocation).setOnClickListener { Relay.sendCommand(this, "LOCATION"); toast(getString(R.string.toast_cmd_location)) }
         findViewById<Button>(R.id.btnCmdRing).setOnClickListener { Relay.sendCommand(this, "RING"); toast(getString(R.string.toast_cmd_ring)) }
         findViewById<Button>(R.id.btnCmdStopRing).setOnClickListener { Relay.sendCommand(this, "STOP_RING"); toast(getString(R.string.toast_cmd_stop_ring)) }
+        findViewById<Button>(R.id.btnCmdFlashOn).setOnClickListener { Relay.sendCommand(this, "FLASH_ON"); toast(getString(R.string.toast_cmd_flash_on)) }
+        findViewById<Button>(R.id.btnCmdFlashOff).setOnClickListener { Relay.sendCommand(this, "FLASH_OFF"); toast(getString(R.string.toast_cmd_flash_off)) }
+        findViewById<Button>(R.id.btnCmdLost).setOnClickListener { Relay.sendCommand(this, "LOST"); toast(getString(R.string.toast_cmd_lost)) }
+        findViewById<Button>(R.id.btnCmdInfo).setOnClickListener { Relay.sendCommand(this, "INFO"); toast(getString(R.string.toast_cmd_info)) }
+        findViewById<Button>(R.id.btnCmdScreen).setOnClickListener { showScreenDialog() }
+
+        // ----- quick send -----
+        findViewById<Button>(R.id.btnSendClipboard).setOnClickListener {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val text = cm.primaryClip?.takeIf { it.itemCount > 0 }
+                ?.getItemAt(0)?.coerceToText(this)?.toString()?.trim().orEmpty()
+            if (text.isEmpty()) {
+                toast(getString(R.string.toast_clip_empty))
+            } else {
+                Relay.send(this, Relay.TYPE_CLIP, getString(R.string.clip_title), text)
+                toast(getString(R.string.toast_clip_sent))
+            }
+        }
+        findViewById<Button>(R.id.btnSendFile).setOnClickListener {
+            fileLauncher.launch(arrayOf("*/*"))
+        }
 
         // ----- inbox -----
         findViewById<Button>(R.id.btnRefreshInbox).setOnClickListener { refreshInbox() }
@@ -193,9 +313,92 @@ class MainActivity : LocalizedActivity() {
         })
         lvInbox.setOnItemClickListener { _, _, position, _ ->
             val item = filteredInbox().getOrNull(position) ?: return@setOnItemClickListener
-            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            cm.setPrimaryClip(ClipData.newPlainText("PhoneLink", "${item.title}\n${item.body}"))
-            toast(getString(R.string.toast_copied))
+            when {
+                item.code.isNotEmpty() -> copyToClipboard(item.code)
+                item.type == Relay.TYPE_FILE && item.extra.isNotEmpty() -> {
+                    try {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.extra)))
+                    } catch (_: Exception) { copyToClipboard(item.extra) }
+                }
+                else -> copyToClipboard("${item.title}\n${item.body}")
+            }
+        }
+        lvInbox.setOnItemLongClickListener { _, _, position, _ ->
+            val item = filteredInbox().getOrNull(position) ?: return@setOnItemLongClickListener false
+            showItemMenu(item)
+            true
+        }
+        findViewById<ChipGroup>(R.id.cgCats).setOnCheckedStateChangeListener { _, ids ->
+            inboxCat = when (ids.firstOrNull()) {
+                R.id.chipSms -> "SMS"
+                R.id.chipCalls -> "CALL"
+                R.id.chipNotif -> "NOTIF"
+                R.id.chipBattery -> "BATTERY"
+                R.id.chipOther -> "OTHER"
+                else -> "ALL"
+            }
+            renderInbox()
+        }
+        findViewById<Button>(R.id.btnExportInbox).setOnClickListener {
+            val items = filteredInbox()
+            if (items.isEmpty()) { toast(getString(R.string.inbox_empty)); return@setOnClickListener }
+            val fmt = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+            val text = items.joinToString("\n\n") {
+                "[${it.type}] ${it.title}\n${it.body}\n— ${it.from} • ${fmt.format(Date(it.time))}"
+            }
+            val share = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            startActivity(Intent.createChooser(share, getString(R.string.btn_export_inbox)))
+        }
+
+        // ----- v2 toggles: network / security / flash / encryption -----
+        bindToggle(R.id.swNetwork, "fwd_network", Config.fwdNetwork(this))
+        bindToggle(R.id.swSecurity, "fwd_security", Config.fwdSecurity(this))
+        bindToggle(R.id.swFlashCmd, "allow_flash", Config.allowFlash(this))
+        bindToggle(R.id.swEncryption, "e2ee_on", Config.encryptionOn(this))
+
+        // ----- app lock -----
+        val swAppLock = findViewById<CompoundButton>(R.id.swAppLock)
+        swAppLock.isChecked = Config.appLockOn(this)
+        swAppLock.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                if (Config.pinHash(this).isEmpty()) {
+                    showSetPinDialog { ok -> if (!ok) swAppLock.isChecked = false }
+                } else {
+                    Config.setAppLockOn(this, true)
+                }
+            } else {
+                Config.setAppLockOn(this, false)
+            }
+        }
+        findViewById<Button>(R.id.btnChangePin).setOnClickListener {
+            showSetPinDialog { }
+        }
+
+        // ----- offline queue management -----
+        findViewById<Button>(R.id.btnFlushQueue).setOnClickListener {
+            thread {
+                Relay.flushQueue(applicationContext)
+                runOnUiThread { refreshStatus(); toast(getString(R.string.toast_queue_flushed)) }
+            }
+        }
+        findViewById<Button>(R.id.btnClearQueue).setOnClickListener {
+            Relay.clearQueue(this); refreshStatus(); toast(getString(R.string.toast_queue_cleared))
+        }
+        findViewById<Button>(R.id.btnViewQueue).setOnClickListener {
+            val items = Relay.queueItems(this)
+            if (items.isEmpty()) { toast(getString(R.string.queue_info, 0)); return@setOnClickListener }
+            val fmt = SimpleDateFormat("hh:mm a", Locale.getDefault())
+            val labels = items.map {
+                "${it.optString("type")} — ${it.optString("title")} (${fmt.format(Date(it.optLong("time")))})"
+            }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.sec_queue))
+                .setItems(labels, null)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
         }
 
         // ----- appearance: language & theme -----
@@ -292,6 +495,87 @@ class MainActivity : LocalizedActivity() {
         sw.setOnCheckedChangeListener { _, checked -> Config.setToggle(this, key, checked) }
     }
 
+    private fun copyToClipboard(text: String) {
+        val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        cm.setPrimaryClip(ClipData.newPlainText("PhoneLink", text))
+        toast(getString(R.string.toast_copied))
+    }
+
+    private fun showItemMenu(item: History.Item) {
+        val labels = mutableListOf<String>()
+        val actions = mutableListOf<() -> Unit>()
+        labels.add(getString(R.string.menu_copy)); actions.add { copyToClipboard("${item.title}\n${item.body}") }
+        if (item.code.isNotEmpty()) {
+            labels.add(getString(R.string.menu_copy_code)); actions.add { copyToClipboard(item.code) }
+        }
+        if (item.type == Relay.TYPE_FILE && item.extra.isNotEmpty()) {
+            labels.add(getString(R.string.menu_open_link)); actions.add {
+                try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(item.extra))) }
+                catch (_: Exception) { copyToClipboard(item.extra) }
+            }
+        }
+        labels.add(getString(if (item.pinned) R.string.menu_unpin else R.string.menu_pin))
+        actions.add { History.setPinned(this, item, !item.pinned); refreshInbox() }
+        labels.add(getString(R.string.menu_delete))
+        actions.add { History.delete(this, item); refreshInbox(); toast(getString(R.string.toast_item_deleted)) }
+        AlertDialog.Builder(this)
+            .setTitle(item.title.take(60))
+            .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
+            .show()
+    }
+
+    private fun showScreenDialog() {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_screen_text)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.cmd_screen))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    Relay.sendCommand(this, "SCREEN", text)
+                    toast(getString(R.string.toast_cmd_screen))
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showSetPinDialog(onDone: (Boolean) -> Unit) {
+        val pin1 = EditText(this).apply {
+            hint = getString(R.string.hint_pin)
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        }
+        val pin2 = EditText(this).apply {
+            hint = getString(R.string.hint_pin_again)
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 16, 48, 0)
+            addView(pin1); addView(pin2)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.lock_set_title))
+            .setView(box)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val a = pin1.text.toString(); val b = pin2.text.toString()
+                if (a.length >= 4 && a == b) {
+                    Config.setPinHash(this, Crypto.pinHash(a))
+                    Config.setAppLockOn(this, true)
+                    toast(getString(R.string.toast_pin_set))
+                    onDone(true)
+                } else {
+                    toast(getString(R.string.toast_pin_mismatch))
+                    onDone(false)
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel)) { _, _ -> onDone(false) }
+            .show()
+    }
+
     private fun refreshPairCode() {
         val code = Config.pairCode(this)
         tvPairCode.text = code.chunked(5).joinToString(" ")
@@ -323,6 +607,41 @@ class MainActivity : LocalizedActivity() {
         tvPermSummary.text = if (missing == 0) getString(R.string.perm_summary_ok)
         else getString(R.string.perm_summary_missing, missing)
 
+        // Relay connection state
+        val okAt = Relay.lastRelayOk(this)
+        if (okAt == 0L) {
+            tvRelay.text = getString(R.string.relay_never)
+            tvRelay.setTextColor(ContextCompat.getColor(this, R.color.status_bad))
+        } else {
+            val ageMin = (System.currentTimeMillis() - okAt) / 60000
+            if (ageMin < 3) {
+                tvRelay.text = getString(R.string.relay_connected)
+                tvRelay.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
+            } else {
+                val whenText = when {
+                    ageMin < 60 -> getString(R.string.time_mins_ago, ageMin)
+                    ageMin < 1440 -> getString(R.string.time_hours_ago, ageMin / 60)
+                    else -> getString(R.string.time_days_ago, ageMin / 1440)
+                }
+                tvRelay.text = getString(R.string.relay_last, whenText)
+                tvRelay.setTextColor(ContextCompat.getColor(this,
+                    if (ageMin < 30) R.color.status_ok else R.color.status_bad))
+            }
+        }
+
+        // Delivery state
+        val pending = Relay.pendingAckCount(this)
+        val ackAt = Relay.lastAckTime(this)
+        tvDelivery.text = when {
+            pending > 0 -> getString(R.string.delivery_pending, pending)
+            ackAt > 0 -> getString(R.string.delivery_last,
+                Relay.lastAckTitle(this),
+                SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(ackAt)))
+            else -> getString(R.string.delivery_none)
+        }
+
+        tvQueueInfo.text = getString(R.string.queue_info, Relay.queueSize(this))
+
         val q = Relay.queueSize(this)
         if (q > 0) {
             tvQueue.text = getString(R.string.queue_offline, q)
@@ -351,9 +670,19 @@ class MainActivity : LocalizedActivity() {
     }
 
     private fun filteredInbox(): List<History.Item> {
+        val byCat = when (inboxCat) {
+            "SMS" -> inboxItems.filter { it.type == Relay.TYPE_SMS }
+            "CALL" -> inboxItems.filter { it.type == Relay.TYPE_CALL }
+            "NOTIF" -> inboxItems.filter { it.type == Relay.TYPE_NOTIF }
+            "BATTERY" -> inboxItems.filter { it.type == Relay.TYPE_BATTERY }
+            "OTHER" -> inboxItems.filter {
+                it.type !in setOf(Relay.TYPE_SMS, Relay.TYPE_CALL, Relay.TYPE_NOTIF, Relay.TYPE_BATTERY)
+            }
+            else -> inboxItems
+        }
         val q = etSearch.text.toString().trim().lowercase()
-        if (q.isEmpty()) return inboxItems
-        return inboxItems.filter {
+        if (q.isEmpty()) return byCat
+        return byCat.filter {
             it.title.lowercase().contains(q) || it.body.lowercase().contains(q) ||
                 it.type.lowercase().contains(q) || it.from.lowercase().contains(q)
         }
@@ -367,7 +696,8 @@ class MainActivity : LocalizedActivity() {
                 Relay.TYPE_BATTERY -> "🔋"; Relay.TYPE_APP -> "📦"; Relay.TYPE_LOCATION -> "📍"
                 Relay.TYPE_SYSTEM -> "⚙️"; Relay.TYPE_TEST -> "🧪"; else -> "•"
             }
-            "$icon [${item.type}] ${item.title}\n${item.body}\n— ${item.from} • ${fmt.format(Date(item.time))}"
+            val pin = if (item.pinned) "📌 " else ""
+            "$pin$icon [${item.type}] ${item.title}\n${item.body}\n— ${item.from} • ${fmt.format(Date(item.time))}"
         }
         val display = if (rows.isEmpty()) listOf(getString(R.string.inbox_empty)) else rows
         lvInbox.adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, display)

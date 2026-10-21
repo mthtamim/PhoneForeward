@@ -39,6 +39,14 @@ object Config {
         prefs(ctx).edit().putString("server_url", url.trim().trimEnd('/')).apply()
     }
 
+    /** Optional second relay, used automatically when the primary is unreachable. */
+    fun backupServerUrl(ctx: Context): String =
+        (prefs(ctx).getString("backup_server_url", "") ?: "").trimEnd('/')
+
+    fun setBackupServerUrl(ctx: Context, url: String) {
+        prefs(ctx).edit().putString("backup_server_url", url.trim().trimEnd('/')).apply()
+    }
+
     // ---------- modes ----------
     fun isSender(ctx: Context): Boolean = prefs(ctx).getBoolean("mode_sender", true)
     fun isReceiver(ctx: Context): Boolean = prefs(ctx).getBoolean("mode_receiver", false)
@@ -52,8 +60,11 @@ object Config {
     fun fwdBattery(ctx: Context) = prefs(ctx).getBoolean("fwd_battery", true)
     fun fwdApps(ctx: Context) = prefs(ctx).getBoolean("fwd_apps", true)
     fun fwdSystem(ctx: Context) = prefs(ctx).getBoolean("fwd_system", true)
+    fun fwdNetwork(ctx: Context) = prefs(ctx).getBoolean("fwd_network", true)
+    fun fwdSecurity(ctx: Context) = prefs(ctx).getBoolean("fwd_security", true)
     fun allowLocation(ctx: Context) = prefs(ctx).getBoolean("allow_location", true)
     fun allowRing(ctx: Context) = prefs(ctx).getBoolean("allow_ring", true)
+    fun allowFlash(ctx: Context) = prefs(ctx).getBoolean("allow_flash", true)
 
     fun setToggle(ctx: Context, key: String, v: Boolean) {
         prefs(ctx).edit().putBoolean(key, v).apply()
@@ -105,6 +116,20 @@ object Config {
     fun setLastSenderName(ctx: Context, n: String) {
         prefs(ctx).edit().putString("last_sender_name", n).apply()
     }
+    fun lastSenderBattery(ctx: Context): Int = prefs(ctx).getInt("last_sender_battery", -1)
+    fun setLastSenderBattery(ctx: Context, pct: Int) {
+        prefs(ctx).edit().putInt("last_sender_battery", pct).apply()
+    }
+
+    // ---------- security ----------
+    /** End-to-end encryption of relay payloads (key derived from the pair code). */
+    fun encryptionOn(ctx: Context): Boolean = prefs(ctx).getBoolean("e2ee_on", true)
+    fun setEncryptionOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("e2ee_on", v).apply() }
+
+    fun appLockOn(ctx: Context): Boolean = prefs(ctx).getBoolean("app_lock_on", false)
+    fun setAppLockOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("app_lock_on", v).apply() }
+    fun pinHash(ctx: Context): String = prefs(ctx).getString("app_pin_hash", "") ?: ""
+    fun setPinHash(ctx: Context, h: String) { prefs(ctx).edit().putString("app_pin_hash", h).apply() }
 
     // ---------- appearance / onboarding ----------
     /** UI language: "bn", "en" or "system". */

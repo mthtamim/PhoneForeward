@@ -20,6 +20,12 @@ class SmsReceiver : BroadcastReceiver() {
         if (Config.containsBlockedWord(ctx, body)) return
 
         val who = Contacts.labelForNumber(ctx, sender)
-        Relay.send(ctx, Relay.TYPE_SMS, "SMS — $who", body)
+        val code = Otp.find(body)
+        if (code.isNotEmpty()) {
+            val extra = org.json.JSONObject().put("code", code)
+            Relay.send(ctx, Relay.TYPE_SMS, "🔑 SMS — $who", body, extra)
+        } else {
+            Relay.send(ctx, Relay.TYPE_SMS, "SMS — $who", body)
+        }
     }
 }

@@ -43,7 +43,14 @@ class NotifListener : NotificationListenerService() {
 
         val app = Contacts.appLabel(ctx, pkg)
         val heading = if (title.isNotEmpty()) "$app: $title" else app
-        Relay.send(ctx, Relay.TYPE_NOTIF, heading, text.ifEmpty { title })
+        val bodyText = text.ifEmpty { title }
+        val code = Otp.find("$title $bodyText")
+        if (code.isNotEmpty()) {
+            val extra = org.json.JSONObject().put("code", code)
+            Relay.send(ctx, Relay.TYPE_NOTIF, "🔑 $heading", bodyText, extra)
+        } else {
+            Relay.send(ctx, Relay.TYPE_NOTIF, heading, bodyText)
+        }
     }
 
     companion object {

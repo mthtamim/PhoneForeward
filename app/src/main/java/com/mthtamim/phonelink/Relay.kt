@@ -1,16 +1,23 @@
 package com.mthtamim.phonelink
 
 import android.content.Context
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
+import kotlin.random.Random
 
 /**
  * Sends one event from the sender phone to the receiver phone through the
  * ntfy relay (default https://ntfy.sh, self-hostable). If the network is
  * down, the event is queued on disk and flushed later by LinkService.
+ *
+ * v2: every payload carries an id; the receiver ACKs data messages so the
+ * sender can show delivery ✓✓. Payloads are end-to-end encrypted with a
+ * key derived from the pair code when encryption is on (the default).
+ * A backup relay is used automatically when the primary is unreachable.
  */
 object Relay {
     private val executor = Executors.newSingleThreadExecutor()
@@ -25,56 +32,148 @@ object Relay {
     const val TYPE_HEARTBEAT = "HEARTBEAT"
     const val TYPE_TEST = "TEST"
     const val TYPE_INFO = "INFO"
+    const val TYPE_CLIP = "CLIP"
+    const val TYPE_FILE = "FILE"
 
-    fun send(ctx: Context, type: String, title: String, body: String) {
+    fun newId(): String = System.currentTimeMillis().toString() + "-" +
+        (1..6).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Random.nextInt(32)] }.joinToString("")
+
+    fun send(ctx: Context, type: String, title: String, body: String, extra: JSONObject? = null) {
         val appCtx = ctx.applicationContext
         val payload = JSONObject().apply {
-            put("v", 1)
+            put("v", 2)
+            put("id", newId())
             put("type", type)
             put("title", title)
             put("body", body)
             put("from", Config.deviceName(appCtx))
             put("time", System.currentTimeMillis())
+            extra?.let { e -> e.keys().forEach { k -> put(k, e.get(k)) } }
         }
         executor.execute {
-            if (!post(appCtx, Config.dataTopic(appCtx), payload)) {
+            if (post(appCtx, Config.dataTopic(appCtx), payload)) {
+                if (type != TYPE_HEARTBEAT) addPendingAck(appCtx, payload)
+            } else {
                 enqueue(appCtx, payload)
             }
         }
     }
 
-    fun sendCommand(ctx: Context, command: String) {
+    fun sendCommand(ctx: Context, command: String, arg: String? = null) {
         val appCtx = ctx.applicationContext
         val payload = JSONObject().apply {
-            put("v", 1)
+            put("v", 2)
+            put("id", newId())
             put("type", "COMMAND")
             put("command", command)
+            if (!arg.isNullOrEmpty()) put("arg", arg)
             put("from", Config.deviceName(appCtx))
             put("time", System.currentTimeMillis())
         }
         executor.execute { post(appCtx, Config.cmdTopic(appCtx), payload) }
     }
 
+    /** Receiver → sender delivery receipt, carried on the command topic. */
+    fun sendAck(ctx: Context, id: String, title: String) {
+        val appCtx = ctx.applicationContext
+        val payload = JSONObject().apply {
+            put("v", 2)
+            put("type", "ACK")
+            put("ack", id)
+            put("title", title)
+            put("from", Config.deviceName(appCtx))
+            put("time", System.currentTimeMillis())
+        }
+        executor.execute { post(appCtx, Config.cmdTopic(appCtx), payload) }
+    }
+
+    // ---------------- server selection / failover ----------------
+
+    private fun state(ctx: Context) = ctx.getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+
+    /** The relay currently in use (learned by failover; defaults to primary). */
+    fun baseUrl(ctx: Context): String {
+        val active = state(ctx).getString("active_server", "") ?: ""
+        val primary = Config.serverUrl(ctx)
+        val backup = Config.backupServerUrl(ctx)
+        return if (active == backup && backup.isNotEmpty()) backup else primary
+    }
+
+    private fun markOk(ctx: Context, url: String) {
+        state(ctx).edit()
+            .putString("active_server", url)
+            .putLong("last_relay_ok", System.currentTimeMillis())
+            .apply()
+    }
+
+    fun lastRelayOk(ctx: Context): Long = state(ctx).getLong("last_relay_ok", 0L)
+
+    /** Stream connections call this on a successful connect. */
+    fun markRelayOk(ctx: Context) { markOk(ctx, baseUrl(ctx)) }
+
     /** Returns true when the relay accepted the message. */
     fun post(ctx: Context, topic: String, payload: JSONObject): Boolean {
+        val primary = baseUrl(ctx)
+        if (postTo(ctx, primary, topic, payload)) { markOk(ctx, primary); return true }
+        val backup = Config.backupServerUrl(ctx)
+        val main = Config.serverUrl(ctx)
+        val other = if (primary == main) backup else main
+        if (other.isNotEmpty() && other != primary && postTo(ctx, other, topic, payload)) {
+            markOk(ctx, other); return true
+        }
+        return false
+    }
+
+    private fun postTo(ctx: Context, base: String, topic: String, payload: JSONObject): Boolean {
         var conn: HttpURLConnection? = null
         return try {
-            val url = URL(Config.serverUrl(ctx) + "/" + topic)
+            val url = URL(base + "/" + topic)
             conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
             conn.connectTimeout = 12000
             conn.readTimeout = 12000
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "text/plain; charset=utf-8")
+            val encrypted = Config.encryptionOn(ctx)
             // ntfy shows Title as the notification heading on the receiver.
-            val shortTitle = payload.optString("title").ifEmpty { "PhoneLink" }
+            // When encrypted, the header stays generic so nothing leaks.
+            val shortTitle = if (encrypted) "PhoneLink"
+                else payload.optString("title").ifEmpty { "PhoneLink" }
             conn.setRequestProperty("Title", encodeHeader(shortTitle))
             conn.setRequestProperty("Tags", "iphone,mobile_phone")
             conn.setRequestProperty("Priority", "high")
-            val wire = payload.toString()
+            val wire = if (encrypted) Crypto.encrypt(ctx, payload.toString()).toString()
+                else payload.toString()
             conn.outputStream.use { it.write(wire.toByteArray(Charsets.UTF_8)) }
             val code = conn.responseCode
             code in 200..299
+        } catch (e: Exception) {
+            false
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
+    /**
+     * Uploads a file as an ntfy attachment on the data topic. Subscribers
+     * receive a message event whose attachment object carries the URL.
+     */
+    fun postFile(ctx: Context, fileName: String, bytes: ByteArray, mime: String): Boolean {
+        var conn: HttpURLConnection? = null
+        return try {
+            val base = baseUrl(ctx)
+            val url = URL(base + "/" + Config.dataTopic(ctx))
+            conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "PUT"
+            conn.connectTimeout = 15000
+            conn.readTimeout = 30000
+            conn.doOutput = true
+            conn.setRequestProperty("Filename", encodeHeader(fileName))
+            conn.setRequestProperty("Title", "PhoneLink file")
+            if (mime.isNotEmpty()) conn.setRequestProperty("Content-Type", mime)
+            conn.outputStream.use { it.write(bytes) }
+            val code = conn.responseCode
+            if (code in 200..299) { markOk(ctx, base); true } else false
         } catch (e: Exception) {
             false
         } finally {
@@ -86,6 +185,44 @@ object Relay {
         // HTTP headers must be latin-1 safe; ntfy also accepts the JSON body,
         // and the receiver reads title/body from the JSON, not the header.
         s.map { if (it.code in 32..126) it else '?' }.joinToString("").take(120)
+
+    // ---------------- delivery tracking ----------------
+
+    private fun addPendingAck(ctx: Context, payload: JSONObject) {
+        try {
+            val arr = JSONArray(state(ctx).getString("pending_acks", "[]"))
+            arr.put(JSONObject().apply {
+                put("id", payload.getString("id"))
+                put("title", payload.optString("title"))
+                put("time", payload.optLong("time"))
+            })
+            while (arr.length() > 100) arr.remove(0)
+            state(ctx).edit().putString("pending_acks", arr.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    /** Called on the sender phone when the receiver's ACK arrives. */
+    fun onAck(ctx: Context, id: String, title: String) {
+        try {
+            val arr = JSONArray(state(ctx).getString("pending_acks", "[]"))
+            val kept = JSONArray()
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                if (o.optString("id") != id) kept.put(o)
+            }
+            state(ctx).edit()
+                .putString("pending_acks", kept.toString())
+                .putLong("last_ack_time", System.currentTimeMillis())
+                .putString("last_ack_title", title)
+                .apply()
+        } catch (_: Exception) { }
+    }
+
+    fun pendingAckCount(ctx: Context): Int =
+        try { JSONArray(state(ctx).getString("pending_acks", "[]")).length() } catch (e: Exception) { 0 }
+
+    fun lastAckTime(ctx: Context): Long = state(ctx).getLong("last_ack_time", 0L)
+    fun lastAckTitle(ctx: Context): String = state(ctx).getString("last_ack_title", "") ?: ""
 
     // ---------------- offline queue ----------------
     private fun queueFile(ctx: Context): File = File(ctx.filesDir, "pending_queue.jsonl")
@@ -112,7 +249,12 @@ object Relay {
         var sentAll = true
         for (line in lines) {
             if (!sentAll) { remaining.add(line); continue }
-            val ok = try { post(ctx, Config.dataTopic(ctx), JSONObject(line)) } catch (e: Exception) { false }
+            val ok = try {
+                val payload = JSONObject(line)
+                val posted = post(ctx, Config.dataTopic(ctx), payload)
+                if (posted && payload.optString("type") != TYPE_HEARTBEAT) addPendingAck(ctx, payload)
+                posted
+            } catch (e: Exception) { false }
             if (!ok) { sentAll = false; remaining.add(line) }
         }
         if (remaining.isEmpty()) f.delete()
@@ -124,4 +266,15 @@ object Relay {
         if (!f.exists()) return 0
         return f.readLines().count { it.isNotBlank() }
     }
+
+    fun queueItems(ctx: Context): List<JSONObject> {
+        val f = queueFile(ctx)
+        if (!f.exists()) return emptyList()
+        return f.readLines().filter { it.isNotBlank() }.mapNotNull {
+            try { JSONObject(it) } catch (e: Exception) { null }
+        }
+    }
+
+    @Synchronized
+    fun clearQueue(ctx: Context) { try { queueFile(ctx).delete() } catch (_: Exception) { } }
 }
