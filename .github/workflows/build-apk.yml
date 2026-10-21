@@ -1,0 +1,57 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Install Android SDK 34
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0"
+
+      - name: Build debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk PhoneLink.apk
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhoneLink-apk
+          path: PhoneLink.apk
+          retention-days: 90
+
+      - name: Publish APK to Release v1.0
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0
+          name: PhoneLink v1.0
+          body: |
+            PhoneLink — দুই ফোনের মধ্যে রিয়েল-টাইমে SMS, নোটিফিকেশন, কল, ব্যাটারি ফরোয়ার্ডিং + রিমোট কমান্ড (লোকেশন / রিং / ব্যাটারি)।
+            APK ডাউনলোড করে দুটি ফোনেই ইনস্টল করো। সেটআপের জন্য README দেখো।
+          files: PhoneLink.apk
