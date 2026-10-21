@@ -6,6 +6,10 @@
     <string name="nav_home">হোম</string>
     <string name="nav_inbox">ইনবক্স</string>
     <string name="nav_settings">সেটিংস</string>
+    <string name="nav_config">কনফিগারেশন</string>
+    <string name="box_remote">রিমোট</string>
+    <string name="box_auto">অটোমেশন</string>
+    <string name="sec_h_config">🔧 কনফিগারেশন</string>
 
     <string name="sec_status">স্ট্যাটাস</string>
     <string name="label_mode">মোড</string>
@@ -641,7 +645,7 @@
     <string name="peer_mode_normal">স্বাভাবিক</string>
     <string name="sec_h_quick">⚡ দ্রুত কাজ</string>
     <string name="sec_h_remote">🎛️ ভূমিকা ও রিমোট নিয়ন্ত্রণ</string>
-    <string name="sec_h_status">📊 অবস্থা ও জোড়া</string>
+    <string name="sec_h_status">📊 অবস্থা</string>
     <string name="sec_smart_extra">স্মার্ট বাড়তি</string>
     <string name="simple_checkin">✅ আমি ঠিক আছি</string>
     <string name="simple_full_app">পুরো অ্যাপ (চেপে ধরো)</string>

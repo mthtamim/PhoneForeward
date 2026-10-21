@@ -9,7 +9,7 @@
         android:icon="@drawable/ic_inbox"
         android:title="@string/nav_inbox" />
     <item
-        android:id="@+id/navSettings"
-        android:icon="@drawable/ic_settings"
-        android:title="@string/nav_settings" />
+        android:id="@+id/navConfig"
+        android:icon="@drawable/ic_config"
+        android:title="@string/nav_config" />
 </menu>

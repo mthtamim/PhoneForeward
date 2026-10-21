@@ -12,7 +12,19 @@
         app:subtitle="@string/app_tagline"
         app:subtitleTextAppearance="@style/TextAppearance.Material3.BodySmall"
         app:title="@string/app_name"
-        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
+        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge">
+
+        <ImageButton
+            android:id="@+id/btnSettingsTop"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="end"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/nav_settings"
+            android:src="@drawable/ic_settings"
+            android:tint="?attr/colorOnSurface" />
+    </com.google.android.material.appbar.MaterialToolbar>
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -29,9 +41,52 @@
             android:visibility="gone" />
 
         <include
-            android:id="@+id/pageSettings"
-            layout="@layout/page_settings"
+            android:id="@+id/pageConfig"
+            layout="@layout/page_config"
             android:visibility="gone" />
+
+        <!-- ===== Settings overlay (v2.6.0): opened from the toolbar gear ===== -->
+        <LinearLayout
+            android:id="@+id/settingsRoot"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?android:attr/colorBackground"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <ImageButton
+                    android:id="@+id/btnSettingsBack"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_back_chip"
+                    android:contentDescription="@string/btn_back"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_arrow_back"
+                    android:tint="?attr/colorOnSurface" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:text="@string/nav_settings"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <include
+                android:id="@+id/pageSettings"
+                layout="@layout/page_settings"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+        </LinearLayout>
 
         <!-- ===== Sub-screen overlay (v2.4.1) ===== -->
         <FrameLayout
@@ -52,14 +107,15 @@
                     android:orientation="horizontal"
                     android:padding="8dp">
 
-                    <com.google.android.material.button.MaterialButton
+                    <ImageButton
                         android:id="@+id/btnSubBack"
-                        style="@style/Widget.Material3.Button.TextButton"
-                        app:backgroundTint="@color/md_surfaceVariant"
-                        app:cornerRadius="12dp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/btn_back" />
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_back_chip"
+                        android:contentDescription="@string/btn_back"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_arrow_back"
+                        android:tint="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/tvSubTitle"

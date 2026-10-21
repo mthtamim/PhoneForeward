@@ -7,6 +7,10 @@
     <string name="nav_home">Home</string>
     <string name="nav_inbox">Inbox</string>
     <string name="nav_settings">Settings</string>
+    <string name="nav_config">Configuration</string>
+    <string name="box_remote">Remote</string>
+    <string name="box_auto">Automation</string>
+    <string name="sec_h_config">🔧 Configuration</string>
 
     <!-- Status / home -->
     <string name="sec_status">Status</string>
@@ -651,7 +655,7 @@
     <string name="peer_mode_normal">Normal</string>
     <string name="sec_h_quick">⚡ Quick actions</string>
     <string name="sec_h_remote">🎛️ Role &amp; remote control</string>
-    <string name="sec_h_status">📊 Status &amp; pairing</string>
+    <string name="sec_h_status">📊 Status</string>
     <string name="sec_smart_extra">Smart extras</string>
     <string name="simple_checkin">✅ আমি ঠিক আছি</string>
     <string name="simple_full_app">Full app (long-press)</string>

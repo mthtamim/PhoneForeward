@@ -70,6 +70,8 @@ class MainActivity : LocalizedActivity() {
     private lateinit var pageHome: View
     private lateinit var pageInbox: View
     private lateinit var pageSettings: View
+    private lateinit var pageConfig: View
+    private var settingsOpen = false
     private lateinit var bottomNav: BottomNavigationView
 
     private var inboxItems: List<History.Item> = emptyList()
@@ -416,6 +418,7 @@ class MainActivity : LocalizedActivity() {
         pageHome = findViewById(R.id.pageHome)
         pageInbox = findViewById(R.id.pageInbox)
         pageSettings = findViewById(R.id.pageSettings)
+        pageConfig = findViewById(R.id.pageConfig)
         bottomNav = findViewById(R.id.bottomNav)
 
         tvMode = findViewById(R.id.tvMode)
@@ -1076,6 +1079,7 @@ class MainActivity : LocalizedActivity() {
     private fun openSubScreen(groupId: Int, titleRes: Int) {
         findViewById<View>(R.id.subRoot).visibility = View.VISIBLE
         findViewById<View>(R.id.bottomNav).visibility = View.GONE
+        findViewById<View>(R.id.toolbar).visibility = View.GONE
         findViewById<TextView>(R.id.tvSubTitle).setText(titleRes)
         for (id in subGroups) {
             findViewById<View>(id).visibility =
@@ -1089,6 +1093,23 @@ class MainActivity : LocalizedActivity() {
 
     private fun closeSubScreen() {
         findViewById<View>(R.id.subRoot).visibility = View.GONE
+        if (!settingsOpen) {
+            findViewById<View>(R.id.bottomNav).visibility = View.VISIBLE
+            findViewById<View>(R.id.toolbar).visibility = View.VISIBLE
+        }
+    }
+
+    private fun openSettings() {
+        settingsOpen = true
+        findViewById<View>(R.id.settingsRoot).visibility = View.VISIBLE
+        findViewById<View>(R.id.toolbar).visibility = View.GONE
+        findViewById<View>(R.id.bottomNav).visibility = View.GONE
+    }
+
+    private fun closeSettings() {
+        settingsOpen = false
+        findViewById<View>(R.id.settingsRoot).visibility = View.GONE
+        findViewById<View>(R.id.toolbar).visibility = View.VISIBLE
         findViewById<View>(R.id.bottomNav).visibility = View.VISIBLE
     }
 
@@ -1151,7 +1172,9 @@ class MainActivity : LocalizedActivity() {
 
     private fun wireV24() {
         // --- sub-screen navigation (v2.4.1) ---
-        findViewById<Button>(R.id.btnSubBack).setOnClickListener { closeSubScreen() }
+        findViewById<View>(R.id.btnSubBack).setOnClickListener { closeSubScreen() }
+        findViewById<View>(R.id.btnSettingsTop).setOnClickListener { openSettings() }
+        findViewById<View>(R.id.btnSettingsBack).setOnClickListener { closeSettings() }
         findViewById<Button>(R.id.menuGeneral).setOnClickListener {
             openSubScreen(R.id.panelGeneral, R.string.cat_general) }
         findViewById<Button>(R.id.menuForward).setOnClickListener {
@@ -1170,11 +1193,11 @@ class MainActivity : LocalizedActivity() {
             openSubScreen(R.id.panelFamily, R.string.cat_family) }
         findViewById<Button>(R.id.menuAutomation).setOnClickListener {
             startActivity(Intent(this, AutomationActivity::class.java)) }
-        findViewById<Button>(R.id.btnMenuRemote).setOnClickListener {
+        findViewById<View>(R.id.boxRemote).setOnClickListener {
             openSubScreen(R.id.groupRemote, R.string.btn_menu_remote) }
-        findViewById<Button>(R.id.btnMenuQuick).setOnClickListener {
+        findViewById<View>(R.id.boxQuick).setOnClickListener {
             openSubScreen(R.id.groupQuick, R.string.btn_menu_quick) }
-        findViewById<Button>(R.id.btnMenuAutomation).setOnClickListener {
+        findViewById<View>(R.id.boxAutomation).setOnClickListener {
             startActivity(Intent(this, AutomationActivity::class.java)) }
         // Android Back closes a sub-screen before leaving the app.
         onBackPressedDispatcher.addCallback(this,
@@ -1182,6 +1205,8 @@ class MainActivity : LocalizedActivity() {
                 override fun handleOnBackPressed() {
                     if (subScreenOpen()) {
                         closeSubScreen()
+                    } else if (settingsOpen) {
+                        closeSettings()
                     } else {
                         isEnabled = false
                         onBackPressedDispatcher.onBackPressed()
@@ -1359,7 +1384,7 @@ class MainActivity : LocalizedActivity() {
     private fun showPage(itemId: Int) {
         pageHome.visibility = if (itemId == R.id.navHome) View.VISIBLE else View.GONE
         pageInbox.visibility = if (itemId == R.id.navInbox) View.VISIBLE else View.GONE
-        pageSettings.visibility = if (itemId == R.id.navSettings) View.VISIBLE else View.GONE
+        pageConfig.visibility = if (itemId == R.id.navConfig) View.VISIBLE else View.GONE
         if (itemId == R.id.navInbox) markInboxSeen()
         closeSubScreen()
     }
