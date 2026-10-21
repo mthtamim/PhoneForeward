@@ -463,4 +463,9 @@
     <string name="toast_admin_failed">Admin স্ক্রিন খোলা যায়নি</string>
     <string name="data_limit_title">দৈনিক মোবাইল ডেটা সীমা (অ্যালার্ট)</string>
     <string name="data_limit_mb">%1$d MB</string>
+    <string name="btn_tg_topics">Telegram গ্রুপ টপিক</string>
+    <string name="tg_topics_title">ক্যাটাগরি অনুযায়ী Telegram টপিক</string>
+    <string name="tg_topics_help">Topics চালু থাকা ফোরাম গ্রুপের জন্য। টপিক id হলো টপিক লিংকের শেষ সংখ্যা (t.me/c/…/ID)। খালি রাখলে মূল চ্যাটে যাবে।</string>
+    <string name="tg_topic_other">অন্যান্য (সিস্টেম, ফাইল, লোকেশন…)</string>
+    <string name="hint_thread_id">টপিক id</string>
 </resources>

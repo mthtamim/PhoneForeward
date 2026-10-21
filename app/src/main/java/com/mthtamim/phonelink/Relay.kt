@@ -181,7 +181,18 @@ object Relay {
             conn.readTimeout = 10000
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-            val bodyJson = JSONObject().put("chat_id", chat).put("text", text).toString()
+            val bodyObj = JSONObject().put("chat_id", chat).put("text", text)
+            // Forum groups: route each category into its own topic.
+            val threadKey = when (type) {
+                TYPE_SMS -> "sms"
+                TYPE_NOTIF -> "notif"
+                TYPE_CALL -> "call"
+                TYPE_BATTERY -> "battery"
+                else -> "other"
+            }
+            val threadId = Config.tgThread(ctx, threadKey)
+            if (threadId > 0) bodyObj.put("message_thread_id", threadId)
+            val bodyJson = bodyObj.toString()
             conn.outputStream.use { it.write(bodyJson.toByteArray(Charsets.UTF_8)) }
             conn.responseCode // fire and forget
             conn.disconnect()

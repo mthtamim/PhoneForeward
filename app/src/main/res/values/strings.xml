@@ -473,4 +473,9 @@
     <string name="toast_admin_failed">Could not open the admin screen</string>
     <string name="data_limit_title">Daily mobile-data limit (alert)</string>
     <string name="data_limit_mb">%1$d MB</string>
+    <string name="btn_tg_topics">Telegram group topics</string>
+    <string name="tg_topics_title">Telegram topics per category</string>
+    <string name="tg_topics_help">For forum groups with Topics on. The topic id is the last number of the topic link (t.me/c/…/ID). Empty = main chat.</string>
+    <string name="tg_topic_other">Other (system, files, location…)</string>
+    <string name="hint_thread_id">topic id</string>
 </resources>

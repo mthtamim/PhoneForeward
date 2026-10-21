@@ -463,6 +463,7 @@ class MainActivity : LocalizedActivity() {
             toast(getString(R.string.toast_test_sent))
             refreshStatus()
         }
+        findViewById<Button>(R.id.btnTgTopics).setOnClickListener { showTgTopicsDialog() }
         findViewById<Button>(R.id.btnSaveServer).setOnClickListener {
             var url = etServer.text.toString().trim()
             if (url.isEmpty()) url = "https://ntfy.sh"
@@ -1134,6 +1135,40 @@ class MainActivity : LocalizedActivity() {
             prefs.edit().putStringSet("seen_ids", seen).apply()
             Relay.sendSeen(this, fresh)
         } catch (_: Exception) { }
+    }
+
+    /** Telegram forum-topic ids, one per message category. */
+    private fun showTgTopicsDialog() {
+        val keys = listOf("sms", "notif", "call", "battery", "other")
+        val labelRes = listOf(R.string.label_sms, R.string.label_notif,
+            R.string.label_calls, R.string.label_battery, R.string.tg_topic_other)
+        val inputs = keys.mapIndexed { i, key ->
+            EditText(this).apply {
+                hint = getString(labelRes[i]) + " — " +
+                    getString(R.string.hint_thread_id)
+                inputType = InputType.TYPE_CLASS_NUMBER
+                val v = Config.tgThread(this@MainActivity, key)
+                if (v > 0) setText(v.toString())
+            }
+        }
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(48, 8, 48, 8)
+            inputs.forEach { addView(it) }
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.tg_topics_title))
+            .setMessage(getString(R.string.tg_topics_help))
+            .setView(layout)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                fun num(et: EditText) = et.text.toString().trim().toIntOrNull() ?: 0
+                Config.setTgThreads(this,
+                    num(inputs[0]), num(inputs[1]), num(inputs[2]),
+                    num(inputs[3]), num(inputs[4]))
+                toast(getString(R.string.toast_filters_saved))
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
     }
 
     // ---------------- v2.3 dialogs ----------------

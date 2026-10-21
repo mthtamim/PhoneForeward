@@ -647,6 +647,14 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTgTopics"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_tg_topics" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveServer"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="match_parent"

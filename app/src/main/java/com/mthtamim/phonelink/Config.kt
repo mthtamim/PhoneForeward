@@ -163,6 +163,21 @@ object Config {
     /** Telegram mirror of forwarded messages (bot token + chat id). */
     fun tgToken(ctx: Context): String = prefs(ctx).getString("tg_token", "") ?: ""
     fun tgChat(ctx: Context): String = prefs(ctx).getString("tg_chat", "") ?: ""
+
+    /** Telegram forum-topic (thread) ids per category; 0 = main chat. */
+    fun tgThread(ctx: Context, key: String): Int =
+        prefs(ctx).getInt("tg_thread_$key", 0)
+
+    fun setTgThreads(ctx: Context, sms: Int, notif: Int, call: Int,
+                     battery: Int, other: Int) {
+        prefs(ctx).edit()
+            .putInt("tg_thread_sms", sms)
+            .putInt("tg_thread_notif", notif)
+            .putInt("tg_thread_call", call)
+            .putInt("tg_thread_battery", battery)
+            .putInt("tg_thread_other", other)
+            .apply()
+    }
     fun setTelegram(ctx: Context, token: String, chat: String) {
         prefs(ctx).edit().putString("tg_token", token.trim()).putString("tg_chat", chat.trim()).apply()
     }
