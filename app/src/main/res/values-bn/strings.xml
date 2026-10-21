@@ -950,7 +950,7 @@
     <string name="aa_notif_reply">নোটিফিকেশনে রিপ্লাই দাও</string>
     <string name="aah_notif_reply">প্যাকেজ|রিপ্লাই লেখা</string>
     <string name="aa_rich_notify">বাটনসহ নোটিফিকেশন</string>
-    <string name="aah_rich_notify">শিরোনাম|লেখা|বাটন১|বাটন২ — চাপলে 'নোটিফিকেশন বাটন' ট্রিগার চলে</string>
+    <string name="aah_rich_notify">শিরোনাম|লেখা|বাটন১|বাটন২ — চাপলে \'নোটিফিকেশন বাটন\' ট্রিগার চলে</string>
     <string name="aa_type_text">ফোকাস করা ঘরে লেখা বসাও</string>
     <string name="aah_type_text">লেখা (Accessibility চালু থাকতে হবে)</string>
     <string name="aa_font_scale">ফন্টের আকার বদলাও</string>
