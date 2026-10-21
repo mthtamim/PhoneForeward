@@ -1573,7 +1573,7 @@ class MainActivity : LocalizedActivity() {
             cfgExportLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT)
                 .addCategory(Intent.CATEGORY_OPENABLE)
                 .setType("application/json")
-                .putExtra(Intent.EXTRA_TITLE, "phonelink-settings.json"))
+                .putExtra(Intent.EXTRA_TITLE, "phonelink-backup.json"))
         }
         findViewById<Button>(R.id.btnImportConfig).setOnClickListener {
             cfgImportLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))

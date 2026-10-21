@@ -8,6 +8,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
 <ImageButton
@@ -23,6 +24,7 @@
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
             android:gravity="center_vertical"
             android:text="@string/auto_title"
@@ -40,55 +42,71 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:orientation="horizontal">
+        android:orientation="vertical">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAutoQr"
-            style="@style/PL.BtnTonal"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:text="@string/auto_qr" />
+            android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAutoLog"
-            style="@style/PL.BtnTonal"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:text="@string/auto_log" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAutoQr"
+                style="@style/PL.BtnTonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:text="@string/auto_qr" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAutoVars"
-            style="@style/PL.BtnTonal"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:text="@string/auto_vars" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAutoLog"
+                style="@style/PL.BtnTonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:text="@string/auto_log" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAutoExport"
-            style="@style/PL.BtnTonal"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:text="@string/auto_export" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAutoVars"
+                style="@style/PL.BtnTonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:text="@string/auto_vars" />
+        </LinearLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAutoImport"
-            style="@style/PL.BtnTonal"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_weight="1"
-            android:text="@string/auto_import" />
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAutoExport"
+                style="@style/PL.BtnTonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:text="@string/auto_export" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAutoImport"
+                style="@style/PL.BtnTonal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:text="@string/auto_import" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
