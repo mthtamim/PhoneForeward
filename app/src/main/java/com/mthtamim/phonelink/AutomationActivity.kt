@@ -5,6 +5,8 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
+import androidx.appcompat.app.AlertDialog
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
