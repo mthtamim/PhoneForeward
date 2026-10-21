@@ -27,9 +27,12 @@ object PermChecks {
     /** (label string res, granted) for each runtime permission line. */
     fun runtimeList(ctx: Context): List<Pair<Int, Boolean>> = listOf(
         R.string.perm_line_sms to has(ctx, Manifest.permission.RECEIVE_SMS),
+        R.string.perm_line_send_sms to has(ctx, Manifest.permission.SEND_SMS),
         R.string.perm_line_phone to has(ctx, Manifest.permission.READ_PHONE_STATE),
+        R.string.perm_line_call_log to has(ctx, Manifest.permission.READ_CALL_LOG),
         R.string.perm_line_contacts to has(ctx, Manifest.permission.READ_CONTACTS),
         R.string.perm_line_location to has(ctx, Manifest.permission.ACCESS_FINE_LOCATION),
+        R.string.perm_line_camera to has(ctx, Manifest.permission.CAMERA),
         R.string.perm_line_notif_post to
             (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 has(ctx, Manifest.permission.POST_NOTIFICATIONS))
@@ -39,10 +42,13 @@ object PermChecks {
     fun runtimeToRequest(ctx: Context): Array<String> {
         val perms = mutableListOf(
             Manifest.permission.RECEIVE_SMS,
+            Manifest.permission.SEND_SMS,
             Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_CALL_LOG,
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.CAMERA
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             perms.add(Manifest.permission.POST_NOTIFICATIONS)

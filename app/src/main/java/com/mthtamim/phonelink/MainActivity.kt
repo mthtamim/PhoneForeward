@@ -1,5 +1,6 @@
 package com.mthtamim.phonelink
 
+import android.app.TimePickerDialog
 import android.content.BroadcastReceiver
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -12,6 +13,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
+import android.provider.Settings
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -42,6 +44,11 @@ class MainActivity : LocalizedActivity() {
     private lateinit var tvRelay: TextView
     private lateinit var tvDelivery: TextView
     private lateinit var tvQueueInfo: TextView
+    private lateinit var tvQuietInfo: TextView
+    private lateinit var tvDigestInfo: TextView
+    private lateinit var tvGeoInfo: TextView
+    private lateinit var tvRetentionInfo: TextView
+    private lateinit var tvStats: TextView
     private lateinit var tvPermNotif: TextView
     private lateinit var tvPermSms: TextView
     private lateinit var tvPermLoc: TextView
@@ -72,6 +79,48 @@ class MainActivity : LocalizedActivity() {
 
     private val fileLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) sendFile(uri)
+    }
+
+    private val backupLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data
+        if (result.resultCode == RESULT_OK && uri != null) {
+            thread {
+                var ok = false
+                try {
+                    contentResolver.openOutputStream(uri)?.use {
+                        it.write(History.exportJson(applicationContext).toByteArray(Charsets.UTF_8))
+                    }
+                    ok = true
+                } catch (_: Exception) { }
+                Handler(Looper.getMainLooper()).post {
+                    toast(getString(if (ok) R.string.toast_backup_done else R.string.toast_backup_failed))
+                }
+            }
+        }
+    }
+
+    private val restoreLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data
+        if (result.resultCode == RESULT_OK && uri != null) {
+            thread {
+                var count = -1
+                try {
+                    val text = contentResolver.openInputStream(uri)?.bufferedReader()
+                        ?.readText().orEmpty()
+                    count = History.importJson(applicationContext, text)
+                } catch (_: Exception) { }
+                Handler(Looper.getMainLooper()).post {
+                    if (count >= 0) {
+                        refreshInbox()
+                        toast(getString(R.string.toast_restore_done, count))
+                    } else {
+                        toast(getString(R.string.toast_backup_failed))
+                    }
+                }
+            }
+        }
     }
 
     private fun applyPairCode(code: String) {
@@ -147,6 +196,11 @@ class MainActivity : LocalizedActivity() {
         tvRelay = findViewById(R.id.tvRelay)
         tvDelivery = findViewById(R.id.tvDelivery)
         tvQueueInfo = findViewById(R.id.tvQueueInfo)
+        tvQuietInfo = findViewById(R.id.tvQuietInfo)
+        tvDigestInfo = findViewById(R.id.tvDigestInfo)
+        tvGeoInfo = findViewById(R.id.tvGeoInfo)
+        tvRetentionInfo = findViewById(R.id.tvRetentionInfo)
+        tvStats = findViewById(R.id.tvStats)
         tvPermNotif = findViewById(R.id.tvPermNotif)
         tvPermSms = findViewById(R.id.tvPermSms)
         tvPermLoc = findViewById(R.id.tvPermLoc)
@@ -165,8 +219,10 @@ class MainActivity : LocalizedActivity() {
         val etBlocked = findViewById<EditText>(R.id.etBlocked)
         val etServer = findViewById<EditText>(R.id.etServer)
         val etBackupServer = findViewById<EditText>(R.id.etBackupServer)
+        val etPriority = findViewById<EditText>(R.id.etPriority)
 
         etDeviceName.setText(Config.deviceName(this))
+        etPriority.setText(Config.priorityRaw(this))
         etServer.setText(Config.serverUrl(this))
         etBackupServer.setText(Config.backupServerUrl(this))
         etExcluded.setText(getSharedPreferences("phonelink_cfg", Context.MODE_PRIVATE)
@@ -401,6 +457,119 @@ class MainActivity : LocalizedActivity() {
                 .show()
         }
 
+        // ----- smart control (v2.1) -----
+        findViewById<Button>(R.id.btnApps).setOnClickListener {
+            startActivity(Intent(this, AppsActivity::class.java))
+        }
+        val swQuiet = findViewById<CompoundButton>(R.id.swQuiet)
+        swQuiet.isChecked = Config.quietOn(this)
+        swQuiet.setOnCheckedChangeListener { _, checked ->
+            Config.setToggle(this, "quiet_on", checked); refreshStatus()
+        }
+        findViewById<Button>(R.id.btnQuietTimes).setOnClickListener {
+            val start = Config.quietStart(this)
+            TimePickerDialog(this, { _, sh, sm ->
+                val end = Config.quietEnd(this)
+                TimePickerDialog(this, { _, eh, em ->
+                    Config.setQuietWindow(this, sh * 60 + sm, eh * 60 + em)
+                    refreshStatus()
+                }, end / 60, end % 60, true).show()
+            }, start / 60, start % 60, true).show()
+        }
+        findViewById<Button>(R.id.btnDigest).setOnClickListener {
+            val options = intArrayOf(0, 30, 60, 120, 240)
+            val labels = options.map {
+                if (it == 0) getString(R.string.digest_off)
+                else getString(R.string.digest_every, it)
+            }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.digest_label))
+                .setItems(labels) { _, which ->
+                    Config.setDigestMinutes(this, options[which]); refreshStatus()
+                }
+                .show()
+        }
+        findViewById<Button>(R.id.btnSaveSmart).setOnClickListener {
+            Config.setPriorityRaw(this, etPriority.text.toString())
+            toast(getString(R.string.toast_filters_saved))
+        }
+        bindToggle(R.id.swSmsTrigger, "sms_trigger", Config.smsTriggerOn(this))
+
+        // ----- more features (v2.1) -----
+        bindToggle(R.id.swTts, "tts_codes", Config.ttsCodes(this))
+        bindToggle(R.id.swSmsReply, "allow_sms_reply", Config.allowSmsReply(this))
+        bindToggle(R.id.swSnap, "allow_snap", Config.allowSnap(this))
+        bindToggle(R.id.swGeo, "geo_on", Config.geoOn(this))
+        findViewById<Button>(R.id.btnSetGeo).setOnClickListener {
+            toast(getString(R.string.toast_geo_fetching))
+            LocationHelper.fetchCoords(this,
+                { lat, lng ->
+                    Config.setGeoCenter(this, lat, lng)
+                    runOnUiThread { refreshStatus(); toast(getString(R.string.toast_geo_set)) }
+                },
+                { runOnUiThread { toast(getString(R.string.toast_geo_failed)) } })
+        }
+        bindToggle(R.id.swDailySummary, "daily_summary_on", Config.dailySummaryOn(this))
+        findViewById<Button>(R.id.btnUsageAccess).setOnClickListener {
+            try { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
+            catch (_: Exception) { toast(getString(R.string.toast_no_usage_settings)) }
+        }
+
+        // ----- data & statistics (v2.1) -----
+        findViewById<Button>(R.id.btnResetStats).setOnClickListener {
+            Stats.reset(this); refreshStatus(); toast(getString(R.string.toast_stats_reset))
+        }
+        findViewById<Button>(R.id.btnRetention).setOnClickListener {
+            val options = intArrayOf(0, 7, 30)
+            val labels = options.map {
+                if (it == 0) getString(R.string.retention_forever)
+                else getString(R.string.retention_days, it)
+            }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_retention))
+                .setItems(labels) { _, which ->
+                    Config.setInboxKeepDays(this, options[which]); refreshStatus()
+                }
+                .show()
+        }
+        findViewById<Button>(R.id.btnBackupInbox).setOnClickListener {
+            val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/json"
+                putExtra(Intent.EXTRA_TITLE, "phonelink-inbox-backup.json")
+            }
+            backupLauncher.launch(intent)
+        }
+        findViewById<Button>(R.id.btnRestoreInbox).setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            restoreLauncher.launch(intent)
+        }
+
+        // ----- devices, SOS, new commands (v2.1) -----
+        findViewById<Button>(R.id.btnDevices).setOnClickListener { showDevicesDialog() }
+        findViewById<Button>(R.id.btnSos).setOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.sos_title))
+                .setMessage(getString(R.string.sos_confirm))
+                .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                    Relay.send(this, Relay.TYPE_SYSTEM, "🆘 SOS — সাহায্য দরকার",
+                        "${Config.deviceName(this)} থেকে জরুরি SOS পাঠানো হয়েছে।")
+                    LocationHelper.fetchAndSend(this)
+                    toast(getString(R.string.toast_sos_sent))
+                }
+                .setNegativeButton(getString(R.string.btn_cancel), null)
+                .show()
+        }
+        findViewById<Button>(R.id.btnCmdSnap).setOnClickListener {
+            Relay.sendCommand(this, "SNAP"); toast(getString(R.string.toast_cmd_snap))
+        }
+        findViewById<Button>(R.id.btnCmdSummary).setOnClickListener {
+            Relay.sendCommand(this, "SUMMARY"); toast(getString(R.string.toast_cmd_summary))
+        }
+
         // ----- appearance: language & theme -----
         val toggleLang = findViewById<MaterialButtonToggleGroup>(R.id.toggleLang)
         toggleLang.check(if (Config.language(this) == "en") R.id.btnLangEn else R.id.btnLangBn)
@@ -516,11 +685,61 @@ class MainActivity : LocalizedActivity() {
         }
         labels.add(getString(if (item.pinned) R.string.menu_unpin else R.string.menu_pin))
         actions.add { History.setPinned(this, item, !item.pinned); refreshInbox() }
+        if (item.type == Relay.TYPE_SMS && item.extra.startsWith("tel:")) {
+            labels.add(getString(R.string.menu_reply_sms))
+            actions.add { showReplyDialog(item.extra.removePrefix("tel:")) }
+        }
         labels.add(getString(R.string.menu_delete))
         actions.add { History.delete(this, item); refreshInbox(); toast(getString(R.string.toast_item_deleted)) }
         AlertDialog.Builder(this)
             .setTitle(item.title.take(60))
             .setItems(labels.toTypedArray()) { _, which -> actions[which]() }
+            .show()
+    }
+
+    private fun showReplyDialog(number: String) {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_reply_text)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.reply_title, number))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    val extra = org.json.JSONObject()
+                        .put("number", number).put("text", text)
+                    Relay.sendCommand(this, "REPLY_SMS", null, extra)
+                    toast(getString(R.string.toast_reply_sent))
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showDevicesDialog() {
+        val peers = Peers.list(this)
+        if (peers.isEmpty()) {
+            toast(getString(R.string.devices_empty))
+            return
+        }
+        val now = System.currentTimeMillis()
+        val labels = peers.map { p ->
+            val mins = (now - p.seen) / 60000
+            val whenText = when {
+                mins < 1 -> getString(R.string.time_just_now)
+                mins < 60 -> getString(R.string.time_mins_ago, mins)
+                mins < 1440 -> getString(R.string.time_hours_ago, mins / 60)
+                else -> getString(R.string.time_days_ago, mins / 1440)
+            }
+            val batt = if (p.battery >= 0) " • 🔋 ${p.battery}%" else ""
+            "${p.name}$batt — $whenText"
+        }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.devices_title))
+            .setItems(labels, null)
+            .setPositiveButton(android.R.string.ok, null)
             .show()
     }
 
@@ -574,6 +793,22 @@ class MainActivity : LocalizedActivity() {
             }
             .setNegativeButton(getString(R.string.btn_cancel)) { _, _ -> onDone(false) }
             .show()
+    }
+
+    private fun fmtClock(minutes: Int): String =
+        String.format(Locale.US, "%02d:%02d", minutes / 60, minutes % 60)
+
+    private fun buildStatsText(): String {
+        val sb = StringBuilder()
+        sb.append(getString(R.string.stats_sent, Stats.sent(this)))
+        sb.append(" • ").append(getString(R.string.stats_recv, Stats.recv(this)))
+        sb.append(" • ").append(getString(R.string.stats_cmd, Stats.cmds(this)))
+        val top = Stats.typeCounts(this, sentSide = true).entries
+            .sortedByDescending { it.value }.take(4)
+        if (top.isNotEmpty()) {
+            sb.append("\n").append(top.joinToString(" • ") { "${it.key}: ${it.value}" })
+        }
+        return sb.toString()
     }
 
     private fun refreshPairCode() {
@@ -641,6 +876,21 @@ class MainActivity : LocalizedActivity() {
         }
 
         tvQueueInfo.text = getString(R.string.queue_info, Relay.queueSize(this))
+
+        // Smart-control / data info lines
+        tvQuietInfo.text = getString(R.string.quiet_window,
+            fmtClock(Config.quietStart(this)), fmtClock(Config.quietEnd(this)))
+        val dm = Config.digestMinutes(this)
+        tvDigestInfo.text = if (dm == 0) getString(R.string.digest_off)
+            else getString(R.string.digest_every, dm) +
+                " • " + getString(R.string.digest_waiting, DigestStore.size(this))
+        tvGeoInfo.text = if (Config.geoIsSet(this)) {
+            getString(R.string.geo_set, Config.geoLat(this), Config.geoLng(this), Config.geoRadius(this))
+        } else getString(R.string.geo_not_set)
+        val kd = Config.inboxKeepDays(this)
+        tvRetentionInfo.text = if (kd == 0) getString(R.string.retention_forever)
+            else getString(R.string.retention_days, kd)
+        tvStats.text = buildStatsText()
 
         val q = Relay.queueSize(this)
         if (q > 0) {

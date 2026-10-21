@@ -205,4 +205,27 @@ object LocationHelper {
             ?: Relay.send(appCtx, Relay.TYPE_LOCATION, "লোকেশন পাওয়া যায়নি",
                 "GPS বন্ধ বা কোনো লোকেশন রেকর্ড নেই।")
     }
+
+    /** Raw coordinates for the geofence: best last-known fix, or null. */
+    fun fetchCoords(ctx: Context, cb: (Double, Double) -> Unit, onFail: () -> Unit) {
+        val appCtx = ctx.applicationContext
+        if (appCtx.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED &&
+            appCtx.checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED) { onFail(); return }
+        try {
+            val lm = appCtx.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+            var best: Location? = null
+            for (p in listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER,
+                LocationManager.PASSIVE_PROVIDER)) {
+                try {
+                    if (!lm.isProviderEnabled(p)) continue
+                    val loc = lm.getLastKnownLocation(p) ?: continue
+                    if (best == null || loc.time > best!!.time) best = loc
+                } catch (_: Exception) { }
+            }
+            val b = best
+            if (b != null) cb(b.latitude, b.longitude) else onFail()
+        } catch (_: Exception) { onFail() }
+    }
 }

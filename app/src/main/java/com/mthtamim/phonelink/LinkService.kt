@@ -9,8 +9,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.media.AudioAttributes
 import android.media.AudioManager
+import android.media.RingtoneManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -18,6 +21,8 @@ import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.IBinder
+import android.speech.tts.TextToSpeech
+import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -71,6 +76,8 @@ class LinkService : Service() {
         running = false
         dataThread?.interrupt(); cmdThread?.interrupt(); heartbeatThread?.interrupt()
         unregisterEventSources()
+        try { tts?.shutdown() } catch (_: Exception) { }
+        tts = null
         super.onDestroy()
     }
 
@@ -206,6 +213,27 @@ class LinkService : Service() {
             CHANNEL_SERVICE, lc.getString(R.string.svc_channel_service), NotificationManager.IMPORTANCE_LOW))
         nm.createNotificationChannel(NotificationChannel(
             CHANNEL_INBOX, lc.getString(R.string.svc_channel_messages), NotificationManager.IMPORTANCE_HIGH))
+        // Distinct sounds per message kind (v2.1): calls and priority
+        // contacts ring like a phone call, OTP messages use the alarm
+        // tone, and quiet-hours deliveries are fully silent.
+        val urgent = NotificationChannel(
+            CHANNEL_URGENT, lc.getString(R.string.svc_channel_urgent), NotificationManager.IMPORTANCE_HIGH)
+        urgent.setSound(
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE).build())
+        nm.createNotificationChannel(urgent)
+        val otp = NotificationChannel(
+            CHANNEL_OTP, lc.getString(R.string.svc_channel_otp), NotificationManager.IMPORTANCE_HIGH)
+        otp.setSound(
+            RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build())
+        nm.createNotificationChannel(otp)
+        val low = NotificationChannel(
+            CHANNEL_LOW, lc.getString(R.string.svc_channel_quiet), NotificationManager.IMPORTANCE_LOW)
+        low.setSound(null, null)
+        low.enableVibration(false)
+        nm.createNotificationChannel(low)
     }
 
     /** Service contexts ignore the activity locale wrap, so build one from the saved language. */
@@ -335,6 +363,7 @@ class LinkService : Service() {
         if (from.isNotEmpty()) {
             Config.setLastSenderSeen(ctx, System.currentTimeMillis())
             Config.setLastSenderName(ctx, from)
+            Peers.touch(ctx, from, payload.optInt("battery", -1))
         }
         if (type == Relay.TYPE_HEARTBEAT) {
             val battery = payload.optInt("battery", -1)
@@ -342,6 +371,14 @@ class LinkService : Service() {
             StatusWidgetProvider.refresh(ctx)
             return // silent: only updates "last seen" + widget
         }
+
+        // SMS items carry the sender number so the inbox can offer a
+        // two-way reply; it rides in the extra field as a tel: value.
+        var extraStr = payload.optString("extra", "")
+        if (type == Relay.TYPE_SMS && payload.has("number")) {
+            extraStr = "tel:" + payload.optString("number")
+        }
+        val priority = payload.optInt("priority", 0) == 1
 
         val item = History.Item(
             type = type,
@@ -351,10 +388,11 @@ class LinkService : Service() {
             time = payload.optLong("time", System.currentTimeMillis()),
             id = payload.optString("id", ""),
             code = payload.optString("code", ""),
-            extra = payload.optString("extra", "")
+            extra = extraStr
         )
         History.add(ctx, item)
-        showInboxNotification(item)
+        Stats.incRecv(ctx, type)
+        showInboxNotification(item, priority)
         // Delivery receipt back to the sender (commands topic), when the
         // payload carries an id (v2). Old/plain messages simply skip it.
         if (item.id.isNotEmpty()) Relay.sendAck(ctx, item.id, item.title)
@@ -363,12 +401,23 @@ class LinkService : Service() {
 
     private var notifId = 100
 
-    private fun showInboxNotification(item: History.Item) {
+    private fun showInboxNotification(item: History.Item, priority: Boolean = false) {
         val intent = Intent(this, MainActivity::class.java)
         val pi = PendingIntent.getActivity(this, 0, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val lc = localized(applicationContext)
-        val builder = Notification.Builder(this, CHANNEL_INBOX)
+        // Channel (and therefore sound) by kind: quiet hours silence
+        // everything except calls and priority contacts; OTP codes get
+        // their own tone; urgent items ring like a call.
+        val urgent = priority || item.type == Relay.TYPE_CALL
+        val quiet = Config.isQuietNow(applicationContext) && !urgent
+        val channel = when {
+            quiet -> CHANNEL_LOW
+            item.code.isNotEmpty() -> CHANNEL_OTP
+            urgent -> CHANNEL_URGENT
+            else -> CHANNEL_INBOX
+        }
+        val builder = Notification.Builder(this, channel)
             .setContentTitle(item.title)
             .setContentText(item.body.take(120))
             .setStyle(Notification.BigTextStyle().bigText(item.body))
@@ -401,6 +450,45 @@ class LinkService : Service() {
         }
         val nm = getSystemService(NotificationManager::class.java)
         nm.notify(myId, builder.build())
+        // Spoken OTP: read the code aloud so it can be heard hands-free.
+        if (item.code.isNotEmpty() && Config.ttsCodes(applicationContext) && !quiet) {
+            speakCode(item.code)
+        }
+    }
+
+    // ------------- text-to-speech for OTP codes -------------
+
+    private var tts: TextToSpeech? = null
+    @Volatile private var ttsReady = false
+    @Volatile private var pendingSpeak: String? = null
+
+    private fun speakCode(code: String) {
+        val lc = localized(applicationContext)
+        val text = lc.getString(R.string.tts_code_prefix) + " " +
+            code.toCharArray().joinToString(" ")
+        val engine = tts
+        if (engine != null && ttsReady) {
+            try { engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pl-code") } catch (_: Exception) { }
+            return
+        }
+        if (engine == null) {
+            pendingSpeak = text
+            try {
+                tts = TextToSpeech(applicationContext) { status ->
+                    if (status == TextToSpeech.SUCCESS) {
+                        ttsReady = true
+                        try { tts?.language = java.util.Locale("bn", "BD") } catch (_: Exception) { }
+                        pendingSpeak?.let {
+                            try { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, "pl-code") }
+                            catch (_: Exception) { }
+                        }
+                        pendingSpeak = null
+                    }
+                }
+            } catch (_: Exception) { }
+        } else {
+            pendingSpeak = text
+        }
     }
 
     /** Big on-screen message requested by the other phone (SCREEN command). */
@@ -469,6 +557,46 @@ class LinkService : Service() {
                 Relay.send(ctx, Relay.TYPE_INFO, "ফ্ল্যাশলাইট অফ", "")
             }
             "INFO" -> Relay.send(ctx, Relay.TYPE_INFO, "ফোনের তথ্য", PhoneInfo.text(ctx))
+            "SNAP" -> {
+                when {
+                    !Config.allowSnap(ctx) ->
+                        Relay.send(ctx, Relay.TYPE_INFO, "স্ন্যাপশট বন্ধ আছে",
+                            "ওই ফোনে Settings থেকে 'রিমোট ছবি' অনুমতি দেওয়া হয়নি।")
+                    ctx.checkSelfPermission(android.Manifest.permission.CAMERA)
+                        != PackageManager.PERMISSION_GRANTED ->
+                        Relay.send(ctx, Relay.TYPE_INFO, "ক্যামেরা permission নেই",
+                            "ছবি তুলতে ওই ফোনে ক্যামেরা permission লাগবে।")
+                    else -> try {
+                        androidx.core.content.ContextCompat.startForegroundService(
+                            ctx, Intent(ctx, SnapService::class.java))
+                    } catch (_: Exception) { }
+                }
+            }
+            "REPLY_SMS" -> {
+                val number = payload.optString("number", "")
+                val text = payload.optString("text", "")
+                when {
+                    !Config.allowSmsReply(ctx) ->
+                        Relay.send(ctx, Relay.TYPE_INFO, "SMS রিপ্লাই বন্ধ আছে",
+                            "ওই ফোনে Settings থেকে SMS রিপ্লাইয়ের অনুমতি দেওয়া হয়নি।")
+                    number.isEmpty() || text.isEmpty() -> { }
+                    ctx.checkSelfPermission(android.Manifest.permission.SEND_SMS)
+                        != PackageManager.PERMISSION_GRANTED ->
+                        Relay.send(ctx, Relay.TYPE_INFO, "SMS পাঠানোর permission নেই",
+                            "রিপ্লাই পাঠাতে ওই ফোনে SEND_SMS permission লাগবে।")
+                    else -> try {
+                        @Suppress("DEPRECATION")
+                        SmsManager.getDefault().sendTextMessage(number, null, text.take(600), null, null)
+                        Relay.send(ctx, Relay.TYPE_INFO, "✉️ রিপ্লাই পাঠানো হয়েছে",
+                            "$number নম্বরে: ${text.take(80)}")
+                    } catch (e: Exception) {
+                        Relay.send(ctx, Relay.TYPE_INFO, "রিপ্লাই পাঠানো যায়নি", "${e.message}")
+                    }
+                }
+            }
+            "SUMMARY" -> thread {
+                Relay.send(ctx, Relay.TYPE_SYSTEM, "🗓️ দৈনিক সারাংশ", DailySummary.build(ctx))
+            }
             "SCREEN" -> {
                 val text = payload.optString("arg", "")
                 if (text.isNotEmpty()) showScreenMessage(text)
@@ -487,14 +615,76 @@ class LinkService : Service() {
                 Relay.send(applicationContext, Relay.TYPE_HEARTBEAT, "heartbeat", "", extra)
                 Relay.flushQueue(applicationContext)
                 checkSimChanged()
+                flushDigestIfDue()
+                checkGeofence()
+                checkDailySummary()
             } catch (_: Exception) { }
             try { Thread.sleep(25 * 60 * 1000L) } catch (_: InterruptedException) { break }
         }
     }
 
+    /** Bundled digest-mode notifications go out as one message when due. */
+    private fun flushDigestIfDue() {
+        val ctx = applicationContext
+        val mins = Config.digestMinutes(ctx)
+        if (mins <= 0 || DigestStore.size(ctx) == 0) return
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        val last = prefs.getLong("last_digest", 0L)
+        if (System.currentTimeMillis() - last < mins * 60000L) return
+        val entries = DigestStore.drain(ctx)
+        if (entries.isEmpty()) return
+        prefs.edit().putLong("last_digest", System.currentTimeMillis()).apply()
+        val body = entries.take(25).joinToString("\n") {
+            "• ${it.app}: ${it.title} — ${it.body}".take(160)
+        }
+        Relay.send(ctx, Relay.TYPE_SYSTEM, "🗞️ নোটিফিকেশন সারাংশ (${entries.size})", body)
+    }
+
+    /** Geofence transitions, checked against the last known fix. */
+    private fun checkGeofence() {
+        val ctx = applicationContext
+        if (!Config.geoOn(ctx) || !Config.geoIsSet(ctx)) return
+        LocationHelper.fetchCoords(ctx, { lat, lng ->
+            try {
+                val res = FloatArray(1)
+                android.location.Location.distanceBetween(
+                    lat, lng, Config.geoLat(ctx), Config.geoLng(ctx), res)
+                val inside = res[0] <= Config.geoRadius(ctx)
+                val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+                val prev = prefs.getInt("geo_inside", -1)
+                prefs.edit().putInt("geo_inside", if (inside) 1 else 0).apply()
+                if (prev == 1 && !inside) {
+                    Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকা ছেড়েছে",
+                        "${Config.deviceName(ctx)} নির্ধারিত এলাকার বাইরে (প্রায় ${res[0].toInt()} মিটার দূরে)।")
+                } else if (prev == 0 && inside) {
+                    Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকায় ফিরেছে",
+                        "${Config.deviceName(ctx)} আবার নির্ধারিত এলাকায়।")
+                }
+            } catch (_: Exception) { }
+        }, { })
+    }
+
+    /** Daily summary once a day after 21:30 local time. */
+    private fun checkDailySummary() {
+        val ctx = applicationContext
+        if (!Config.dailySummaryOn(ctx)) return
+        val cal = java.util.Calendar.getInstance()
+        val mins = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        if (mins < 21 * 60 + 30) return
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        if (prefs.getString("last_summary_day", "") == today) return
+        prefs.edit().putString("last_summary_day", today).apply()
+        Relay.send(ctx, Relay.TYPE_SYSTEM, "🗓️ দৈনিক সারাংশ", DailySummary.build(ctx))
+    }
+
     companion object {
         const val CHANNEL_SERVICE = "phonelink_service"
         const val CHANNEL_INBOX = "phonelink_inbox"
+        const val CHANNEL_URGENT = "phonelink_urgent"
+        const val CHANNEL_OTP = "phonelink_otp"
+        const val CHANNEL_LOW = "phonelink_quiet"
         const val ACTION_NEW_ITEM = "com.mthtamim.phonelink.NEW_ITEM"
 
         fun start(ctx: Context) {

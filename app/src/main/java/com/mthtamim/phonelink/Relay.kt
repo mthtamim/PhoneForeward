@@ -50,6 +50,7 @@ object Relay {
             put("time", System.currentTimeMillis())
             extra?.let { e -> e.keys().forEach { k -> put(k, e.get(k)) } }
         }
+        if (type != TYPE_HEARTBEAT) Stats.incSent(appCtx, type)
         executor.execute {
             if (post(appCtx, Config.dataTopic(appCtx), payload)) {
                 if (type != TYPE_HEARTBEAT) addPendingAck(appCtx, payload)
@@ -59,7 +60,7 @@ object Relay {
         }
     }
 
-    fun sendCommand(ctx: Context, command: String, arg: String? = null) {
+    fun sendCommand(ctx: Context, command: String, arg: String? = null, extra: JSONObject? = null) {
         val appCtx = ctx.applicationContext
         val payload = JSONObject().apply {
             put("v", 2)
@@ -67,9 +68,11 @@ object Relay {
             put("type", "COMMAND")
             put("command", command)
             if (!arg.isNullOrEmpty()) put("arg", arg)
+            extra?.let { e -> e.keys().forEach { k -> put(k, e.get(k)) } }
             put("from", Config.deviceName(appCtx))
             put("time", System.currentTimeMillis())
         }
+        Stats.incCmd(appCtx)
         executor.execute { post(appCtx, Config.cmdTopic(appCtx), payload) }
     }
 

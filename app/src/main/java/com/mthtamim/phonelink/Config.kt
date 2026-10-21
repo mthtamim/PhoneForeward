@@ -65,6 +65,65 @@ object Config {
     fun allowLocation(ctx: Context) = prefs(ctx).getBoolean("allow_location", true)
     fun allowRing(ctx: Context) = prefs(ctx).getBoolean("allow_ring", true)
     fun allowFlash(ctx: Context) = prefs(ctx).getBoolean("allow_flash", true)
+    fun allowSnap(ctx: Context) = prefs(ctx).getBoolean("allow_snap", false)
+    fun allowSmsReply(ctx: Context) = prefs(ctx).getBoolean("allow_sms_reply", false)
+    fun smsTriggerOn(ctx: Context) = prefs(ctx).getBoolean("sms_trigger", true)
+    fun ttsCodes(ctx: Context) = prefs(ctx).getBoolean("tts_codes", false)
+
+    // ---------- smart control (v2.1) ----------
+
+    /** Quiet hours: receiver notifications stay silent in this window. */
+    fun quietOn(ctx: Context) = prefs(ctx).getBoolean("quiet_on", false)
+    fun quietStart(ctx: Context) = prefs(ctx).getInt("quiet_start", 23 * 60)
+    fun quietEnd(ctx: Context) = prefs(ctx).getInt("quiet_end", 7 * 60)
+    fun setQuietWindow(ctx: Context, startMin: Int, endMin: Int) {
+        prefs(ctx).edit().putInt("quiet_start", startMin).putInt("quiet_end", endMin).apply()
+    }
+
+    fun isQuietNow(ctx: Context): Boolean {
+        if (!quietOn(ctx)) return false
+        val cal = java.util.Calendar.getInstance()
+        val now = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        val s = quietStart(ctx); val e = quietEnd(ctx)
+        return if (s <= e) now in s until e else (now >= s || now < e)
+    }
+
+    /** Notifications in digest mode are bundled and sent every N minutes (0 = off). */
+    fun digestMinutes(ctx: Context) = prefs(ctx).getInt("digest_minutes", 60)
+    fun setDigestMinutes(ctx: Context, m: Int) { prefs(ctx).edit().putInt("digest_minutes", m).apply() }
+
+    /** Priority contacts (comma separated numbers): bypass quiet hours, urgent sound, ⭐ mark. */
+    fun priorityRaw(ctx: Context): String = prefs(ctx).getString("priority_numbers", "") ?: ""
+    fun setPriorityRaw(ctx: Context, raw: String) {
+        prefs(ctx).edit().putString("priority_numbers", raw.trim()).apply()
+    }
+
+    private fun digitsOf(s: String): String = s.filter { it.isDigit() }
+
+    fun isPriorityNumber(ctx: Context, number: String?): Boolean {
+        if (number.isNullOrBlank()) return false
+        val mine = digitsOf(number).takeLast(10)
+        if (mine.isEmpty()) return false
+        return priorityRaw(ctx).split(",", " ", ";")
+            .map { digitsOf(it).takeLast(10) }
+            .any { it.isNotEmpty() && it == mine }
+    }
+
+    /** Geofence: alert when the sender phone leaves/enters a saved area. */
+    fun geoOn(ctx: Context) = prefs(ctx).getBoolean("geo_on", false)
+    fun geoLat(ctx: Context) = prefs(ctx).getFloat("geo_lat", 0f).toDouble()
+    fun geoLng(ctx: Context) = prefs(ctx).getFloat("geo_lng", 0f).toDouble()
+    fun geoRadius(ctx: Context) = prefs(ctx).getInt("geo_radius", 200)
+    fun setGeoCenter(ctx: Context, lat: Double, lng: Double) {
+        prefs(ctx).edit().putFloat("geo_lat", lat.toFloat()).putFloat("geo_lng", lng.toFloat()).apply()
+    }
+    fun geoIsSet(ctx: Context) = geoLat(ctx) != 0.0 || geoLng(ctx) != 0.0
+
+    fun dailySummaryOn(ctx: Context) = prefs(ctx).getBoolean("daily_summary_on", false)
+
+    /** Inbox auto-clean: keep only the last N days (0 = keep forever). Pinned items survive. */
+    fun inboxKeepDays(ctx: Context) = prefs(ctx).getInt("inbox_keep_days", 0)
+    fun setInboxKeepDays(ctx: Context, d: Int) { prefs(ctx).edit().putInt("inbox_keep_days", d).apply() }
 
     fun setToggle(ctx: Context, key: String, v: Boolean) {
         prefs(ctx).edit().putBoolean(key, v).apply()

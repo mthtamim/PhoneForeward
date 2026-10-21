@@ -157,6 +157,14 @@
                     style="@style/PL.BodySmall"
                     android:layout_marginTop="8dp"
                     android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDevices"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_devices" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -477,6 +485,31 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="@string/cmd_screen" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdSnap"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/cmd_snap" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdSummary"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/cmd_summary" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -522,6 +555,15 @@
                         android:layout_weight="1"
                         android:text="@string/btn_send_file" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_sos"
+                    android:textColor="#FFFFFF"
+                    app:backgroundTint="@color/status_bad" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

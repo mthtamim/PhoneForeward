@@ -48,8 +48,14 @@ object History {
     @Synchronized
     fun add(ctx: Context, item: Item) {
         try {
-            val items = all(ctx).toMutableList()
+            var items = all(ctx).toMutableList()
             items.add(0, item)
+            // Auto-clean: drop items older than the keep window (pinned survive).
+            val days = Config.inboxKeepDays(ctx)
+            if (days > 0) {
+                val cutoff = System.currentTimeMillis() - days * 86400000L
+                items = items.filter { it.pinned || it.time >= cutoff }.toMutableList()
+            }
             // Cap at 500: drop the oldest non-pinned items first.
             while (items.size > 500) {
                 val idx = items.indexOfLast { !it.pinned }
@@ -93,4 +99,25 @@ object History {
 
     @Synchronized
     fun clear(ctx: Context) { try { file(ctx).delete() } catch (_: Exception) { } }
+
+    /** Whole inbox as one JSON document, for the backup file. */
+    fun exportJson(ctx: Context): String {
+        val arr = org.json.JSONArray()
+        for (item in all(ctx)) arr.put(item.toJson())
+        return arr.toString()
+    }
+
+    /** Replaces the inbox with a backup document. Returns the item count. */
+    @Synchronized
+    fun importJson(ctx: Context, text: String): Int {
+        return try {
+            val arr = org.json.JSONArray(text)
+            val items = mutableListOf<Item>()
+            for (i in 0 until arr.length()) {
+                items.add(Item.fromJson(arr.getJSONObject(i)))
+            }
+            writeAll(ctx, items.sortedByDescending { it.time }.take(500))
+            items.size
+        } catch (_: Exception) { -1 }
+    }
 }

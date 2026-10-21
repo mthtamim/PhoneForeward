@@ -1,0 +1,93 @@
+package com.mthtamim.phonelink
+
+import android.app.AppOpsManager
+import android.app.usage.UsageStatsManager
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Process
+import android.provider.CallLog
+import java.util.Calendar
+
+/**
+ * End-of-day summary built on the SENDER phone: today's calls, screen
+ * time with top apps, forwarded count and current battery. Sections the
+ * phone has no permission for are simply skipped.
+ */
+object DailySummary {
+
+    fun build(ctx: Context): String {
+        val lines = mutableListOf<String>()
+        val start = startOfToday()
+
+        // ---- calls today (needs READ_CALL_LOG) ----
+        if (ctx.checkSelfPermission(android.Manifest.permission.READ_CALL_LOG)
+            == PackageManager.PERMISSION_GRANTED) {
+            try {
+                var incoming = 0; var outgoing = 0; var missed = 0; var talkSecs = 0L
+                ctx.contentResolver.query(
+                    CallLog.Calls.CONTENT_URI,
+                    arrayOf(CallLog.Calls.TYPE, CallLog.Calls.DURATION),
+                    "${CallLog.Calls.DATE} >= ?", arrayOf(start.toString()), null
+                )?.use { c ->
+                    val tIdx = c.getColumnIndex(CallLog.Calls.TYPE)
+                    val dIdx = c.getColumnIndex(CallLog.Calls.DURATION)
+                    while (c.moveToNext()) {
+                        when (c.getInt(tIdx)) {
+                            CallLog.Calls.INCOMING_TYPE -> incoming++
+                            CallLog.Calls.OUTGOING_TYPE -> outgoing++
+                            CallLog.Calls.MISSED_TYPE -> missed++
+                        }
+                        talkSecs += c.getLong(dIdx)
+                    }
+                }
+                lines.add("📞 কল: ইনকামিং $incoming, আউটগোয়িং $outgoing, মিসড $missed" +
+                    " (মোট কথা ${talkSecs / 60} মিনিট)")
+            } catch (_: Exception) { }
+        }
+
+        // ---- screen time today (needs usage access) ----
+        if (usageAccess(ctx)) {
+            try {
+                val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+                val stats = usm.queryUsageStats(
+                    UsageStatsManager.INTERVAL_DAILY, start, System.currentTimeMillis())
+                var total = 0L
+                val perApp = mutableListOf<Pair<String, Long>>()
+                for (s in stats) {
+                    if (s.totalTimeInForeground > 0) {
+                        total += s.totalTimeInForeground
+                        perApp.add(s.packageName to s.totalTimeInForeground)
+                    }
+                }
+                if (total > 0) {
+                    lines.add("📱 স্ক্রিন টাইম: ${total / 3600000} ঘণ্টা ${(total % 3600000) / 60000} মিনিট")
+                    val top = perApp.sortedByDescending { it.second }.take(3)
+                    for ((pkg, ms) in top) {
+                        lines.add("• ${Contacts.appLabel(ctx, pkg)}: ${ms / 60000} মিনিট")
+                    }
+                }
+            } catch (_: Exception) { }
+        }
+
+        lines.add("✉️ মোট ফরোয়ার্ড (সব সময়): ${Stats.sent(ctx)} টা")
+        lines.add("🔋 ${SystemReceiver.batteryStatusText(ctx)}")
+        return lines.joinToString("\n")
+    }
+
+    fun usageAccess(ctx: Context): Boolean {
+        return try {
+            val ops = ctx.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            @Suppress("DEPRECATION")
+            val mode = ops.checkOpNoThrow(
+                AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), ctx.packageName)
+            mode == AppOpsManager.MODE_ALLOWED
+        } catch (_: Exception) { false }
+    }
+
+    private fun startOfToday(): Long {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+}

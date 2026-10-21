@@ -10,6 +10,17 @@ import android.telephony.TelephonyManager
  * incoming ringing, answered, missed, ended (with duration), outgoing.
  */
 class CallReceiver : BroadcastReceiver() {
+
+    private fun extraFor(ctx: Context, number: String?): org.json.JSONObject {
+        val e = org.json.JSONObject()
+        if (!number.isNullOrBlank()) e.put("number", number)
+        if (Config.isPriorityNumber(ctx, number)) e.put("priority", 1)
+        return e
+    }
+
+    private fun star(ctx: Context, number: String?): String =
+        if (Config.isPriorityNumber(ctx, number)) "⭐ " else ""
+
     override fun onReceive(context: Context, intent: Intent) {
         val ctx = context.applicationContext
         if (!Config.isSender(ctx) || !Config.fwdCalls(ctx)) return
@@ -18,8 +29,8 @@ class CallReceiver : BroadcastReceiver() {
             Intent.ACTION_NEW_OUTGOING_CALL -> {
                 val number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER)
                 outgoingNumber = number
-                Relay.send(ctx, Relay.TYPE_CALL, "আউটগোয়িং কল",
-                    Contacts.labelForNumber(ctx, number))
+                Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, number)}আউটগোয়িং কল",
+                    Contacts.labelForNumber(ctx, number), extraFor(ctx, number))
             }
             TelephonyManager.ACTION_PHONE_STATE_CHANGED -> {
                 val state = intent.getStringExtra(TelephonyManager.EXTRA_STATE) ?: return
@@ -31,8 +42,10 @@ class CallReceiver : BroadcastReceiver() {
                             incomingNumber = number ?: incomingNumber
                             callStart = System.currentTimeMillis()
                             answered = false
-                            Relay.send(ctx, Relay.TYPE_CALL, "ইনকামিং কল বাজছে",
-                                Contacts.labelForNumber(ctx, incomingNumber))
+                            Relay.send(ctx, Relay.TYPE_CALL,
+                                "${star(ctx, incomingNumber)}ইনকামিং কল বাজছে",
+                                Contacts.labelForNumber(ctx, incomingNumber),
+                                extraFor(ctx, incomingNumber))
                         }
                     }
                     TelephonyManager.EXTRA_STATE_OFFHOOK -> {
@@ -43,13 +56,16 @@ class CallReceiver : BroadcastReceiver() {
                     }
                     TelephonyManager.EXTRA_STATE_IDLE -> {
                         if (lastState == TelephonyManager.EXTRA_STATE_RINGING && !answered) {
-                            Relay.send(ctx, Relay.TYPE_CALL, "মিসড কল",
-                                Contacts.labelForNumber(ctx, incomingNumber))
+                            Relay.send(ctx, Relay.TYPE_CALL,
+                                "${star(ctx, incomingNumber)}মিসড কল",
+                                Contacts.labelForNumber(ctx, incomingNumber),
+                                extraFor(ctx, incomingNumber))
                         } else if (lastState == TelephonyManager.EXTRA_STATE_OFFHOOK) {
                             val secs = ((System.currentTimeMillis() - callStart) / 1000).coerceAtLeast(0)
                             val who = incomingNumber ?: outgoingNumber
-                            Relay.send(ctx, Relay.TYPE_CALL, "কল শেষ",
-                                "${Contacts.labelForNumber(ctx, who)} — সময়: ${secs / 60} মিনিট ${secs % 60} সেকেন্ড")
+                            Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, who)}কল শেষ",
+                                "${Contacts.labelForNumber(ctx, who)} — সময়: ${secs / 60} মিনিট ${secs % 60} সেকেন্ড",
+                                extraFor(ctx, who))
                         }
                         incomingNumber = null
                         outgoingNumber = null

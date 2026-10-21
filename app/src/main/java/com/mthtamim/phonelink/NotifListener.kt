@@ -15,6 +15,12 @@ class NotifListener : NotificationListenerService() {
         if (pkg == ctx.packageName) return
         if (Config.excludedApps(ctx).contains(pkg)) return
 
+        // Smart Control per-app rule: OFF never forwards; in allowlist
+        // mode only apps with an explicit rule forward at all.
+        val appRule = AppRules.rule(ctx, pkg)
+        if (appRule == AppRules.OFF) return
+        if (AppRules.allowlistMode(ctx) && appRule == AppRules.DEFAULT) return
+
         val notif = sbn.notification ?: return
         // Skip ongoing/foreground-service noise (music players, downloads in progress etc.)
         if ((notif.flags and Notification.FLAG_ONGOING_EVENT) != 0) return
@@ -44,6 +50,13 @@ class NotifListener : NotificationListenerService() {
         val app = Contacts.appLabel(ctx, pkg)
         val heading = if (title.isNotEmpty()) "$app: $title" else app
         val bodyText = text.ifEmpty { title }
+
+        // Digest apps are bundled and sent periodically instead of now.
+        if (appRule == AppRules.DIGEST && Config.digestMinutes(ctx) > 0) {
+            DigestStore.add(ctx, app, heading, bodyText)
+            return
+        }
+
         val code = Otp.find("$title $bodyText")
         if (code.isNotEmpty()) {
             val extra = org.json.JSONObject().put("code", code)

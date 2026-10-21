@@ -1,12 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#000000">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <!-- Viewfinder frame to aim with -->
+    <View
+        android:layout_width="260dp"
+        android:layout_height="260dp"
+        android:layout_gravity="center"
+        android:background="@drawable/scan_frame" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnTorch"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:text="@string/btn_torch" />
 
     <TextView
         android:layout_width="match_parent"
