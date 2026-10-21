@@ -70,6 +70,7 @@ class LinkService : Service() {
         if (Config.btReceiveOn(applicationContext)) BtShare.startServer(applicationContext)
         if (Config.automationOn(applicationContext)) WebhookServer.start(applicationContext)
         WebInbox.start(applicationContext)
+        Automation.scheduleTimeRules(applicationContext)
     }
 
     // ------------- v2.7: SMS-sent observer (automation trigger) -------------

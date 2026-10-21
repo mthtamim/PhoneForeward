@@ -72,6 +72,7 @@ object Automation {
         }
         prefs(ctx).edit().putString("rules", newJson).apply()
         refreshWatchers(ctx)
+        scheduleTimeRules(ctx)
         // v2.9: optional two-phone rule sync over the existing relay.
         if (!applyingRemote && Config.rulesSyncOn(ctx) && newJson.length < 120_000) {
             try { Relay.send(ctx, "RULESYNC", "", newJson) } catch (_: Exception) { }
@@ -1676,6 +1677,96 @@ object Automation {
     }
 
     // ---------------- tick: time & polled triggers ----------------
+
+    // ---- v2.11.3: exact alarms for time_at rules ----
+    // The heartbeat tick can be ~25 min late; time rules deserve the
+    // system alarm clock instead. The tick path stays as a safety net
+    // and both paths share the same once-a-day marking.
+    fun scheduleTimeRules(ctx: Context) {
+        try {
+            val am = ctx.getSystemService(Context.ALARM_SERVICE)
+                as android.app.AlarmManager
+            val wanted = mutableSetOf<String>()
+            for (rule in rules(ctx).filter { it.optBoolean("enabled", true) }) {
+                val times = ruleTriggers(rule)
+                    .filter { it.optString("type") == "time_at" }
+                    .map { parseHm(it.optString("param")) }
+                if (times.isEmpty()) continue
+                val id = rule.optString("id")
+                if (id.isEmpty()) continue
+                wanted.add(id)
+                val next = nextTimeMillis(times)
+                val pi = timeRulePi(ctx, id)
+                val exactOk = android.os.Build.VERSION.SDK_INT < 31 ||
+                    am.canScheduleExactAlarms()
+                try {
+                    if (exactOk) am.setExactAndAllowWhileIdle(
+                        android.app.AlarmManager.RTC_WAKEUP, next, pi)
+                    else am.setAndAllowWhileIdle(
+                        android.app.AlarmManager.RTC_WAKEUP, next, pi)
+                } catch (e: Exception) {
+                    try { am.setAndAllowWhileIdle(
+                        android.app.AlarmManager.RTC_WAKEUP, next, pi) }
+                    catch (_: Exception) { }
+                }
+            }
+            val prev = prefs(ctx).getStringSet("time_alarm_ids", emptySet())
+                ?: emptySet()
+            for (old in prev - wanted) {
+                try { am.cancel(timeRulePi(ctx, old)) } catch (_: Exception) { }
+            }
+            prefs(ctx).edit().putStringSet("time_alarm_ids", wanted).apply()
+        } catch (_: Exception) { }
+    }
+
+    private fun timeRulePi(ctx: Context, id: String): android.app.PendingIntent {
+        val intent = Intent(ctx, TimeRuleReceiver::class.java)
+            .putExtra("ruleId", id)
+        return android.app.PendingIntent.getBroadcast(ctx, id.hashCode(), intent,
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or
+                android.app.PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    private fun nextTimeMillis(timesMin: List<Int>): Long {
+        val cal = java.util.Calendar.getInstance()
+        val nowMin = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 +
+            cal.get(java.util.Calendar.MINUTE)
+        val sorted = timesMin.sorted()
+        val target = sorted.firstOrNull { it > nowMin } ?: sorted.first()
+        val at = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, target / 60)
+            set(java.util.Calendar.MINUTE, target % 60)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+            if (target <= nowMin) add(java.util.Calendar.DAY_OF_YEAR, 1)
+        }
+        return at.timeInMillis
+    }
+
+    /** Called by TimeRuleReceiver when a time rule's alarm rings. */
+    fun fireTimeRule(ctx: Context, id: String) {
+        try {
+            if (!Config.automationOn(ctx)) return
+            val rule = rules(ctx).firstOrNull { it.optString("id") == id }
+                ?: return
+            if (!rule.optBoolean("enabled", true)) return
+            val alreadyDone = prefs(ctx).getString("day_$id", "") == dayKey()
+            val due = !alreadyDone && ruleTriggers(rule).any { trig ->
+                trig.optString("type") == "time_at" &&
+                    minutesNow() >= parseHm(trig.optString("param")) &&
+                    minutesNow() - parseHm(trig.optString("param")) < 65
+            }
+            if (due && constraintsPass(ctx, rule)) {
+                prefs(ctx).edit().putString("day_$id", dayKey()).apply()
+                markFired(ctx, id, System.currentTimeMillis())
+                ruleNameHint = rule.optString("name")
+                log(ctx, "▶ " + rule.optString("name") + " (time_at)")
+                runActions(ctx, rule, JSONObject(), 0)
+            }
+        } catch (_: Exception) { }
+        scheduleTimeRules(ctx)
+    }
+
     fun tick(ctx: Context) {
         if (!Config.automationOn(ctx)) return
         Thread {
