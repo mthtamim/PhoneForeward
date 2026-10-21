@@ -91,7 +91,7 @@
     <string name="sec_server">Relay server</string>
     <string name="hint_server">https://ntfy.sh</string>
     <string name="btn_save_server">Save server</string>
-    <string name="footer_about">PhoneLink v2.3 — default relay is ntfy.sh (free, no account needed). Both phones just need the same code and the same server. Messages travel through the relay, so keep your pair code secret.</string>
+    <string name="footer_about">PhoneLink v2.4 — default relay is ntfy.sh (free, no account needed). Both phones just need the same code and the same server. Messages travel through the relay, so keep your pair code secret.</string>
 
     <!-- Permissions screen -->
     <string name="perm_title">Permissions</string>
@@ -670,4 +670,12 @@
     <string name="toast_no_peers">No other phone seen yet</string>
     <string name="toast_saved">Saved</string>
     <string name="toast_screen_session">Screen-share session started</string>
+    <string name="menu_title">Menu</string>
+    <string name="btn_menu_remote">🎛️ Remote commands &amp; info</string>
+    <string name="btn_menu_quick">⚡ Quick send</string>
+    <string name="btn_menu_automation">🤖 Automation rules</string>
+    <string name="rg_find">🔍 Find &amp; status</string>
+    <string name="rg_camera">📸 Camera &amp; screen</string>
+    <string name="rg_sound">🔊 Sound &amp; media</string>
+    <string name="rg_control">🎛️ Control &amp; modes</string>
 </resources>

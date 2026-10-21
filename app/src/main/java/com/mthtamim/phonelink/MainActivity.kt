@@ -578,7 +578,6 @@ class MainActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnCmdStopRing).setOnClickListener { Relay.sendCommand(this, "STOP_RING"); toast(getString(R.string.toast_cmd_stop_ring)) }
         findViewById<Button>(R.id.btnCmdFlashOn).setOnClickListener { Relay.sendCommand(this, "FLASH_ON"); toast(getString(R.string.toast_cmd_flash_on)) }
         findViewById<Button>(R.id.btnCmdFlashOff).setOnClickListener { Relay.sendCommand(this, "FLASH_OFF"); toast(getString(R.string.toast_cmd_flash_off)) }
-        findViewById<Button>(R.id.btnCmdLost).setOnClickListener { Relay.sendCommand(this, "LOST"); toast(getString(R.string.toast_cmd_lost)) }
         findViewById<Button>(R.id.btnCmdInfo).setOnClickListener { Relay.sendCommand(this, "INFO"); toast(getString(R.string.toast_cmd_info)) }
         findViewById<Button>(R.id.btnCmdScreen).setOnClickListener { showScreenDialog() }
 
@@ -1063,26 +1062,34 @@ class MainActivity : LocalizedActivity() {
 
     // ------------- v2.4 wiring -------------
 
-    private val settingsPanels = listOf(
+    // ------------- v2.4.1 sub-screens -------------
+    // Everything that used to pile onto Home/Settings now opens as a
+    // full-screen sub-screen (overlay) with its own title and back.
+
+    private val subGroups = listOf(
+        R.id.groupRemote, R.id.groupQuick,
         R.id.panelGeneral, R.id.panelForward, R.id.panelSmart,
         R.id.panelSecurity, R.id.panelRelay, R.id.panelData,
         R.id.panelGroup, R.id.panelFamily
     )
 
-    private fun showSettingsMenu() {
-        findViewById<View>(R.id.settingsMenu).visibility = View.VISIBLE
-        findViewById<View>(R.id.panelBar).visibility = View.GONE
-        for (id in settingsPanels) findViewById<View>(id).visibility = View.GONE
+    private fun openSubScreen(groupId: Int, titleRes: Int) {
+        findViewById<View>(R.id.subRoot).visibility = View.VISIBLE
+        findViewById<View>(R.id.bottomNav).visibility = View.GONE
+        findViewById<TextView>(R.id.tvSubTitle).setText(titleRes)
+        for (id in subGroups) {
+            findViewById<View>(id).visibility =
+                if (id == groupId) View.VISIBLE else View.GONE
+        }
+        findViewById<View>(R.id.subScroll).scrollTo(0, 0)
     }
 
-    private fun showSettingsPanel(panelId: Int, titleRes: Int) {
-        findViewById<View>(R.id.settingsMenu).visibility = View.GONE
-        findViewById<View>(R.id.panelBar).visibility = View.VISIBLE
-        findViewById<TextView>(R.id.tvPanelTitle).setText(titleRes)
-        for (id in settingsPanels) {
-            findViewById<View>(id).visibility =
-                if (id == panelId) View.VISIBLE else View.GONE
-        }
+    private fun subScreenOpen(): Boolean =
+        findViewById<View>(R.id.subRoot).visibility == View.VISIBLE
+
+    private fun closeSubScreen() {
+        findViewById<View>(R.id.subRoot).visibility = View.GONE
+        findViewById<View>(R.id.bottomNav).visibility = View.VISIBLE
     }
 
     private fun doCheckin() {
@@ -1143,27 +1150,44 @@ class MainActivity : LocalizedActivity() {
     }
 
     private fun wireV24() {
-        // --- settings category menu ---
-        findViewById<Button>(R.id.btnPanelBack).setOnClickListener { showSettingsMenu() }
+        // --- sub-screen navigation (v2.4.1) ---
+        findViewById<Button>(R.id.btnSubBack).setOnClickListener { closeSubScreen() }
         findViewById<Button>(R.id.menuGeneral).setOnClickListener {
-            showSettingsPanel(R.id.panelGeneral, R.string.cat_general) }
+            openSubScreen(R.id.panelGeneral, R.string.cat_general) }
         findViewById<Button>(R.id.menuForward).setOnClickListener {
-            showSettingsPanel(R.id.panelForward, R.string.cat_forward) }
+            openSubScreen(R.id.panelForward, R.string.cat_forward) }
         findViewById<Button>(R.id.menuSmart).setOnClickListener {
-            showSettingsPanel(R.id.panelSmart, R.string.cat_smart) }
+            openSubScreen(R.id.panelSmart, R.string.cat_smart) }
         findViewById<Button>(R.id.menuSecurity).setOnClickListener {
-            showSettingsPanel(R.id.panelSecurity, R.string.cat_security) }
+            openSubScreen(R.id.panelSecurity, R.string.cat_security) }
         findViewById<Button>(R.id.menuRelay).setOnClickListener {
-            showSettingsPanel(R.id.panelRelay, R.string.cat_relay) }
+            openSubScreen(R.id.panelRelay, R.string.cat_relay) }
         findViewById<Button>(R.id.menuData).setOnClickListener {
-            showSettingsPanel(R.id.panelData, R.string.cat_data) }
+            openSubScreen(R.id.panelData, R.string.cat_data) }
         findViewById<Button>(R.id.menuGroup).setOnClickListener {
-            showSettingsPanel(R.id.panelGroup, R.string.cat_group) }
+            openSubScreen(R.id.panelGroup, R.string.cat_group) }
         findViewById<Button>(R.id.menuFamily).setOnClickListener {
-            showSettingsPanel(R.id.panelFamily, R.string.cat_family) }
+            openSubScreen(R.id.panelFamily, R.string.cat_family) }
         findViewById<Button>(R.id.menuAutomation).setOnClickListener {
             startActivity(Intent(this, AutomationActivity::class.java)) }
-        showSettingsMenu()
+        findViewById<Button>(R.id.btnMenuRemote).setOnClickListener {
+            openSubScreen(R.id.groupRemote, R.string.btn_menu_remote) }
+        findViewById<Button>(R.id.btnMenuQuick).setOnClickListener {
+            openSubScreen(R.id.groupQuick, R.string.btn_menu_quick) }
+        findViewById<Button>(R.id.btnMenuAutomation).setOnClickListener {
+            startActivity(Intent(this, AutomationActivity::class.java)) }
+        // Android Back closes a sub-screen before leaving the app.
+        onBackPressedDispatcher.addCallback(this,
+            object : androidx.activity.OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (subScreenOpen()) {
+                        closeSubScreen()
+                    } else {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            })
 
         // --- new switches ---
         fun bindSw(id: Int, initial: Boolean, onChange: (Boolean) -> Unit) {
@@ -1337,7 +1361,7 @@ class MainActivity : LocalizedActivity() {
         pageInbox.visibility = if (itemId == R.id.navInbox) View.VISIBLE else View.GONE
         pageSettings.visibility = if (itemId == R.id.navSettings) View.VISIBLE else View.GONE
         if (itemId == R.id.navInbox) markInboxSeen()
-        if (itemId == R.id.navSettings) showSettingsMenu()
+        closeSubScreen()
     }
 
     private fun bindModeSwitch(id: Int, initial: Boolean, onChange: (Boolean) -> Unit) {

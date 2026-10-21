@@ -84,7 +84,7 @@
     <string name="sec_server">রিলে সার্ভার</string>
     <string name="hint_server">https://ntfy.sh</string>
     <string name="btn_save_server">সার্ভার সেভ করো</string>
-    <string name="footer_about">PhoneLink v2.3 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।</string>
+    <string name="footer_about">PhoneLink v2.4 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।</string>
 
     <string name="perm_title">Permission</string>
     <string name="perm_intro">PhoneLink ঠিকমতো কাজ করতে এই permission গুলো লাগে। যেগুলো দেওয়া আছে সেগুলো সবুজ দেখাবে। এই স্ক্রিনটা অটোমেটিক শুধু প্রথমবারই আসে।</string>
@@ -660,4 +660,12 @@
     <string name="toast_no_peers">অন্য কোনো ফোন এখনো দেখা যায়নি</string>
     <string name="toast_saved">সংরক্ষিত হয়েছে</string>
     <string name="toast_screen_session">স্ক্রিন শেয়ার সেশন শুরু হয়েছে</string>
+    <string name="menu_title">মেনু</string>
+    <string name="btn_menu_remote">🎛️ রিমোট কমান্ড ও তথ্য</string>
+    <string name="btn_menu_quick">⚡ দ্রুত পাঠাও</string>
+    <string name="btn_menu_automation">🤖 অটোমেশন নিয়ম</string>
+    <string name="rg_find">🔍 খোঁজ ও অবস্থা</string>
+    <string name="rg_camera">📸 ক্যামেরা ও স্ক্রিন</string>
+    <string name="rg_sound">🔊 শব্দ ও মিডিয়া</string>
+    <string name="rg_control">🎛️ নিয়ন্ত্রণ ও মোড</string>
 </resources>

@@ -32,6 +32,1718 @@
             android:id="@+id/pageSettings"
             layout="@layout/page_settings"
             android:visibility="gone" />
+
+        <!-- ===== Sub-screen overlay (v2.4.1) ===== -->
+        <FrameLayout
+            android:id="@+id/subRoot"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?android:attr/colorBackground"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSubBack"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/btn_back" />
+
+                    <TextView
+                        android:id="@+id/tvSubTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <ScrollView
+                    android:id="@+id/subScroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <LinearLayout
+                        android:id="@+id/subContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
+
+                    <LinearLayout
+                        android:id="@+id/groupRemote"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+<!-- ===== Remote command card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_remote" />
+
+                <TextView
+                    android:id="@+id/tvSenderSeen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/sender_never_seen"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/rg_find"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdLocation"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginEnd="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_location" />
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdRing"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_marginEnd="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_ring" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdStopRing"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_stop_ring" />
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdFlashOn"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginEnd="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_flash_on" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdFlashOff"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_flash_off" />
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdBattery"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_battery" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdPing"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginEnd="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_ping" />
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdInfo"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_info" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdSummary"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_summary" />
+                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnCmdStatus"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                            android:layout_weight="1"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/cmd_status" />
+                </LinearLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/rg_camera"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdSnap"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginEnd="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_snap" />
+                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnScreenshot"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                            android:layout_weight="1"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/btn_screenshot_cmd" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnScreenShare"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                            android:layout_weight="1"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/btn_screen_share" />
+                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnCmdScreen"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                            android:layout_weight="1"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/cmd_screen" />
+                </LinearLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/rg_sound"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdSpeak"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginEnd="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_speak" />
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdAlarm"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginEnd="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_alarm" />
+                </LinearLayout>
+                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:orientation="horizontal">
+                
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnMediaPlay"
+                                        style="@style/Widget.Material3.Button.TextButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="⏯" />
+                
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnMediaNext"
+                                        style="@style/Widget.Material3.Button.TextButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="⏭" />
+                
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnMediaVolDown"
+                                        style="@style/Widget.Material3.Button.TextButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="🔉" />
+                
+                                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnMediaVolUp"
+                                        style="@style/Widget.Material3.Button.TextButton"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="🔊" />
+                                </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnCmdRinger"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="match_parent"
+                                        android:layout_marginTop="8dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="4dp"
+                                        android:text="@string/cmd_ringer" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/rg_control"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                            android:id="@+id/btnCmdLock"
+                                            style="@style/Widget.Material3.Button.OutlinedButton"
+                                            android:layout_width="0dp"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_weight="1"
+                                            android:text="@string/cmd_lock" />
+                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnCmdRemote"
+                                        style="@style/Widget.Material3.Button.TonalButton"
+                                        android:layout_width="0dp"
+                                            android:layout_weight="1"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/btn_remote_panel" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnMode"
+                                        style="@style/Widget.Material3.Button.TonalButton"
+                                        android:layout_width="0dp"
+                                            android:layout_weight="1"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/btn_mode" />
+                    <com.google.android.material.button.MaterialButton
+                                        android:id="@+id/btnLostMode"
+                                        style="@style/Widget.Material3.Button.OutlinedButton"
+                                        android:layout_width="0dp"
+                                            android:layout_weight="1"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/btn_lost_mode" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+<!-- ===== Remote info card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_remote_info" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCmdGallery"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/cmd_gallery" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdRecentCalls"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/cmd_recent_calls" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdRecentSms"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/cmd_recent_sms" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCmdNote"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/cmd_note" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/groupQuick"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+<!-- ===== Quick send card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_quick_send" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSendClipboard"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_send_clipboard" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSendFile"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_send_file" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVoice"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_voice" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSiren"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_siren" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSchedule"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_schedule" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTemplates"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_templates" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnContactCard"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_contact_card" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnWallpaper"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_wallpaper" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/PL.Field"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:hint="@string/hint_my_status">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etMyStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:maxLines="1" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveStatus"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_save" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_sos"
+                    android:textColor="#FFFFFF"
+                    app:backgroundTint="@color/status_bad" />
+            
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckin"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_checkin" />
+                </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelGeneral"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+<!-- ===== Permissions card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_permissions" />
+
+                <TextView
+                    android:id="@+id/tvPermSummary"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenPerms"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_open_perms" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+<!-- ===== Appearance card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_appearance" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_language"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleLang"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLangBn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/lang_bn" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLangEn"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/lang_en" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:text="@string/label_theme"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnThemeSystem"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/theme_system" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnThemeLight"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/theme_light" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnThemeDark"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/theme_dark" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        
+<TextView
+            style="@style/PL.BodySmall"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/footer_about" />
+</LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelForward"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+<!-- ===== Sender features card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_sender_features" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSms"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_sms" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swNotif"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_notif" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swCalls"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_calls" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swBattery"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_battery" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swApps"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_apps" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSystem"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_system" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swNetwork"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_network" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSecurity"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_security" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swLocCmd"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/allow_loc_cmd" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swRingCmd"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/allow_ring_cmd" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swFlashCmd"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/allow_flash_cmd" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swPresence"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_presence" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swMedia"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_media" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+<!-- ===== Filters card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_filters" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_excluded">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etExcluded"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:maxLines="3"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_blocked">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBlocked"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:maxLines="3"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveFilters"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_save_filters" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTest"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_test" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelSmart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+<!-- ===== Smart control card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_smart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnApps"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/btn_apps" />
+
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/apps_hint_short" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swQuiet"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/quiet_label" />
+
+                <TextView
+                    android:id="@+id/tvQuietInfo"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnQuietTimes"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_quiet_times" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/digest_label"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <TextView
+                    android:id="@+id/tvDigestInfo"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDigest"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_digest" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_priority">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPriority"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:maxLines="2"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_alert_words">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAlertWords"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:maxLines="2"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveSmart"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_save" />
+
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/priority_hint" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSmsTrigger"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/sms_trigger_label" />
+
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:text="@string/sms_trigger_hint" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+<!-- ===== More features card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_more" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swTts"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/tts_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swTtsCalls"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/tts_calls_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSmsReply"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/sms_reply_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutoReply"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/auto_reply_label" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_auto_reply">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAutoReply"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:maxLines="2"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swRoutine"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/routine_label" />
+
+                <TextView
+                    android:id="@+id/tvRoutineInfo"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRoutineTime"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_routine_time" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swLowLoc"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/low_loc_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSnap"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/snap_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swGeo"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/geo_label" />
+
+                <TextView
+                    android:id="@+id/tvGeoInfo"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSetGeo"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_set_geo" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swDailySummary"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/daily_summary_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUsageAccess"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_usage_access" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_smart_extra" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutoPriority"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/auto_priority_label" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swClipSync"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/clip_sync_label" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelSecurity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+<!-- ===== Security card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_security" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swEncryption"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/enc_label" />
+
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:text="@string/enc_hint" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAppLock"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/lock_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnChangePin"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_change_pin" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+<!-- ===== Security card (v2.3) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_security" />
+
+                <TextView
+                    android:id="@+id/tvPinInfo"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSetPin"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_set_pin" />
+
+                <TextView
+                    android:id="@+id/tvAdminInfo"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="10dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAdmin"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_admin" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swGuard"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/guard_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swIntruder"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/intruder_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSecLog"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_seclog" />
+            
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnA11y"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_a11y" />
+                </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelRelay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+<!-- ===== Relay server card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_server" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_server">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etServer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:maxLines="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_backup_server">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBackupServer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:maxLines="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_tg_token">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etTgToken"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_tg_chat">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etTgChat"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTgTopics"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_tg_topics" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveServer"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_save_server" />
+            
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swLan"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/lan_label" />
+                </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+<!-- ===== Offline queue card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_queue" />
+
+                <TextView
+                    android:id="@+id/tvQueueInfo"
+                    style="@style/PL.BodySmall" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnViewQueue"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_view_queue" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFlushQueue"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_flush_queue" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnClearQueue"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_clear_queue" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelData"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+<!-- ===== Data & statistics card ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_data" />
+
+                <TextView
+                    android:id="@+id/tvStats"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnResetStats"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_reset_stats" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <TextView
+                    android:id="@+id/tvRetentionInfo"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRetention"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_retention" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBackupInbox"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_backup_inbox" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRestoreInbox"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_restore_inbox" />
+                </LinearLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutosave"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/autosave_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDataLimit"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_data_limit" />
+            
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportCsv"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_export_csv" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportPdf"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_export_pdf" />
+                </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/group_note" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCommanders"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_commanders" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPeerModes"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_peer_modes" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCharts"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_charts" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportConfig"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_export_config" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnImportConfig"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_import_config" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConfigCode"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_config_code" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+
+<LinearLayout
+            android:id="@+id/panelFamily"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swLostLocal"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/lost_local_label" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swLostDark"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/lost_dark_label" />
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="@string/hint_lost_contact">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etLostContact"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveLostContact"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_save" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckinTime"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_checkin_time" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSimpleMode"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/simple_mode_label" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+                    </LinearLayout>
+                </ScrollView>
+            </LinearLayout>
+        </FrameLayout>
     </FrameLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
