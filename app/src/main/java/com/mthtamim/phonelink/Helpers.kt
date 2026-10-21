@@ -63,6 +63,36 @@ object FlashHelper {
     private var strobeRunnable: Runnable? = null
     private var strobeOn = false
 
+    // v2.13: the system is the source of truth for torch state. A
+    // TorchCallback keeps isOn() honest even when another app or the
+    // system tile changed the torch, so OFF and TOGGLE can never act
+    // on a stale guess.
+    @Volatile private var torchState = false
+    @Volatile private var callbackReady = false
+
+    private fun ensureCallback(ctx: Context) {
+        if (callbackReady) return
+        try {
+            val cm = ctx.applicationContext.getSystemService(
+                Context.CAMERA_SERVICE)
+                as android.hardware.camera2.CameraManager
+            cm.registerTorchCallback(object :
+                android.hardware.camera2.CameraManager.TorchCallback() {
+                override fun onTorchModeChanged(id: String, enabled: Boolean) {
+                    torchState = enabled
+                }
+            }, handler)
+            callbackReady = true
+        } catch (_: Exception) { }
+    }
+
+    fun isOn(ctx: Context): Boolean {
+        ensureCallback(ctx)
+        return torchState
+    }
+
+    fun toggle(ctx: Context): Boolean = setTorch(ctx, !isOn(ctx))
+
     private fun cameraId(ctx: Context): String? {
         return try {
             val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
@@ -86,15 +116,28 @@ object FlashHelper {
             if (maxLevel <= 1) { cm.setTorchMode(id, true); return }
             val strength = (level * maxLevel / 5).coerceIn(1, maxLevel)
             cm.turnOnTorchWithStrengthLevel(id, strength)
-        } catch (_: Exception) { try { setTorch(ctx, level > 0) } catch (_: Exception) { } }
+        } catch (_: Exception) { setTorch(ctx, level > 0) }
     }
 
-    fun setTorch(ctx: Context, on: Boolean) {
-        try {
-            val cm = ctx.getSystemService(Context.CAMERA_SERVICE) as android.hardware.camera2.CameraManager
-            val id = cameraId(ctx) ?: return
-            cm.setTorchMode(id, on)
-        } catch (_: Exception) { }
+    /** Returns false when the torch could not be set (e.g. the camera
+     *  stayed busy), so callers can surface the failure instead of
+     *  failing silently. One retry covers a momentary camera grab. */
+    fun setTorch(ctx: Context, on: Boolean): Boolean {
+        ensureCallback(ctx)
+        for (attempt in 0..1) {
+            try {
+                val cm = ctx.getSystemService(Context.CAMERA_SERVICE)
+                    as android.hardware.camera2.CameraManager
+                val id = cameraId(ctx) ?: return false
+                cm.setTorchMode(id, on)
+                torchState = on
+                return true
+            } catch (_: Exception) {
+                if (attempt == 0) try { Thread.sleep(250) }
+                    catch (_: Exception) { }
+            }
+        }
+        return false
     }
 
     fun startStrobe(ctx: Context, seconds: Int) {

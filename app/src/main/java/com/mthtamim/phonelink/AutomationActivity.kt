@@ -59,7 +59,8 @@ object AutoCatalog {
         "mobile_data")
     val actions = listOf(
         "notify_peer", "local_notify", "speak_local", "speak_peer", "command_peer",
-        "send_sms", "torch", "ringer", "open_app", "http", "write_file",
+        "send_sms", "torch", "torch_on", "torch_off", "torch_toggle",
+        "ringer", "open_app", "http", "write_file",
         "set_var", "if_var", "wait", "mode_set", "lost_on", "lost_off", "tap_text",
         // v2.7 MacroDroid expansion
         "media_control", "volume_set", "brightness_set", "screen_timeout_set",
@@ -244,6 +245,28 @@ class AutomationActivity : LocalizedActivity() {
             }
         }
         findViewById<Button>(R.id.btnAutoBackup).setOnClickListener { showBackups() }
+        val btnRest = findViewById<Button>(R.id.btnRestTime)
+        btnRest.text = Automation.restSeconds(this).toString() + "s"
+        btnRest.setOnClickListener {
+            val et = EditText(this).apply {
+                inputType = android.text.InputType.TYPE_CLASS_NUMBER
+                setText(Automation.restSeconds(this@AutomationActivity)
+                    .toString())
+                setSelection(text.length)
+                hint = getString(R.string.auto_rest_hint)
+            }
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.auto_rest_title))
+                .setView(et)
+                .setPositiveButton(getString(R.string.btn_save)) { _, _ ->
+                    val sec = et.text.toString().toIntOrNull() ?: 10
+                    Automation.setRestSeconds(this, sec)
+                    btnRest.text = Automation.restSeconds(this)
+                        .toString() + "s"
+                }
+                .setNegativeButton(getString(R.string.btn_cancel), null)
+                .show()
+        }
     }
 
     override fun onResume() {

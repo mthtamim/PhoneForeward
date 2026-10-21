@@ -1141,4 +1141,10 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="hide_yes">লুকিয়ে দাও</string>
     <string name="toast_hidden">আইকন লুকানো হয়েছে — খুলতে *#*#7646#*#* ডায়াল করো</string>
     <string name="toast_shown">আইকন আবার দেখা যাচ্ছে</string>
+    <string name="aa_torch_on">টর্চ চালু</string>
+    <string name="aa_torch_off">টর্চ বন্ধ</string>
+    <string name="aa_torch_toggle">টর্চ টগল (চালু ⇄ বন্ধ)</string>
+    <string name="auto_rest_label">একই নিয়ম আবার চলার আগে বিশ্রাম</string>
+    <string name="auto_rest_title">বিশ্রামের সময় (সেকেন্ড)</string>
+    <string name="auto_rest_hint">০ = বিশ্রাম নেই, সর্বোচ্চ ৩০০</string>
 </resources>

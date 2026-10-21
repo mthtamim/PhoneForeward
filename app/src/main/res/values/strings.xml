@@ -1151,4 +1151,10 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="hide_yes">Hide it</string>
     <string name="toast_hidden">Icon hidden — dial *#*#7646#*#* to open</string>
     <string name="toast_shown">Icon is visible again</string>
+    <string name="aa_torch_on">Torch ON</string>
+    <string name="aa_torch_off">Torch OFF</string>
+    <string name="aa_torch_toggle">Torch toggle (on ⇄ off)</string>
+    <string name="auto_rest_label">Rest before the same rule can run again</string>
+    <string name="auto_rest_title">Rest time (seconds)</string>
+    <string name="auto_rest_hint">0 = no rest, max 300</string>
 </resources>

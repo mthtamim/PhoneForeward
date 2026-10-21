@@ -245,8 +245,20 @@ object Automation {
     }
 
     private fun debounced(ctx: Context, ruleId: String, now: Long): Boolean {
+        val rest = restSeconds(ctx)
+        if (rest <= 0) return false
         val last = prefs(ctx).getLong("fired_$ruleId", 0L)
-        return now - last < 20_000
+        return now - last < rest * 1000L
+    }
+
+    /** v2.13: rest before the same rule may fire again, in seconds
+     *  (default 10, customizable on the automation screen). */
+    fun restSeconds(ctx: Context): Int =
+        prefs(ctx).getInt("debounce_sec", 10).coerceIn(0, 300)
+
+    fun setRestSeconds(ctx: Context, sec: Int) {
+        prefs(ctx).edit().putInt("debounce_sec",
+            sec.coerceIn(0, 300)).apply()
     }
 
     private fun markFired(ctx: Context, ruleId: String, now: Long) {
@@ -692,7 +704,17 @@ object Automation {
                                 parts[1].trim().take(600), null, deliveredPi)
                     }
                 }
-                "torch" -> FlashHelper.setTorch(ctx, param != "off")
+                "torch" -> {
+                    val wantOn = param.trim().lowercase() != "off"
+                    if (!FlashHelper.setTorch(ctx, wantOn))
+                        log(ctx, "⚠ " + ruleNameHint + " (torch)")
+                }
+                "torch_on" -> if (!FlashHelper.setTorch(ctx, true))
+                    log(ctx, "⚠ " + ruleNameHint + " (torch_on)")
+                "torch_off" -> if (!FlashHelper.setTorch(ctx, false))
+                    log(ctx, "⚠ " + ruleNameHint + " (torch_off)")
+                "torch_toggle" -> if (!FlashHelper.toggle(ctx))
+                    log(ctx, "⚠ " + ruleNameHint + " (torch_toggle)")
                 "ringer" -> setRinger(ctx, param)
                 "open_app" -> openApp(ctx, param)
                 "http" -> httpCall(param)
