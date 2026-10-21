@@ -106,6 +106,19 @@ object Config {
         prefs(ctx).edit().putString("last_sender_name", n).apply()
     }
 
+    // ---------- appearance / onboarding ----------
+    /** UI language: "bn", "en" or "system". */
+    fun language(ctx: Context): String = prefs(ctx).getString("app_lang", "bn") ?: "bn"
+    fun setLanguage(ctx: Context, v: String) { prefs(ctx).edit().putString("app_lang", v).apply() }
+
+    /** Theme: "system", "light" or "dark". */
+    fun themeMode(ctx: Context): String = prefs(ctx).getString("theme_mode", "system") ?: "system"
+    fun setThemeMode(ctx: Context, v: String) { prefs(ctx).edit().putString("theme_mode", v).apply() }
+
+    /** The automatic permission wizard is shown only once (first run / first service start). */
+    fun wizardShown(ctx: Context): Boolean = prefs(ctx).getBoolean("perm_wizard_shown", false)
+    fun setWizardShown(ctx: Context) { prefs(ctx).edit().putBoolean("perm_wizard_shown", true).apply() }
+
     private fun generateCode(): String {
         val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // no confusing I/O/0/1
         return (1..10).map { alphabet[Random.nextInt(alphabet.length)] }.joinToString("")

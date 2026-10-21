@@ -67,12 +67,13 @@ class LinkService : Service() {
         val intent = Intent(this, MainActivity::class.java)
         val pi = PendingIntent.getActivity(this, 0, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val lc = localized(applicationContext)
         val roles = mutableListOf<String>()
-        if (Config.isSender(applicationContext)) roles.add("পাঠাচ্ছে")
-        if (Config.isReceiver(applicationContext)) roles.add("গ্রহণ করছে")
+        if (Config.isSender(applicationContext)) roles.add(lc.getString(R.string.svc_sending))
+        if (Config.isReceiver(applicationContext)) roles.add(lc.getString(R.string.svc_receiving))
         val notif = Notification.Builder(this, CHANNEL_SERVICE)
-            .setContentTitle("PhoneLink চালু আছে")
-            .setContentText(if (roles.isEmpty()) "কোনো মোড চালু নেই" else roles.joinToString(" + "))
+            .setContentTitle(lc.getString(R.string.svc_running))
+            .setContentText(if (roles.isEmpty()) lc.getString(R.string.svc_no_mode) else roles.joinToString(" + "))
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentIntent(pi)
             .setOngoing(true)
@@ -85,11 +86,21 @@ class LinkService : Service() {
     }
 
     private fun createChannels() {
+        val lc = localized(applicationContext)
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(NotificationChannel(
-            CHANNEL_SERVICE, "PhoneLink সার্ভিস", NotificationManager.IMPORTANCE_LOW))
+            CHANNEL_SERVICE, lc.getString(R.string.svc_channel_service), NotificationManager.IMPORTANCE_LOW))
         nm.createNotificationChannel(NotificationChannel(
-            CHANNEL_INBOX, "ফরোয়ার্ড করা মেসেজ", NotificationManager.IMPORTANCE_HIGH))
+            CHANNEL_INBOX, lc.getString(R.string.svc_channel_messages), NotificationManager.IMPORTANCE_HIGH))
+    }
+
+    /** Service contexts ignore the activity locale wrap, so build one from the saved language. */
+    private fun localized(ctx: Context): Context {
+        val lang = Config.language(ctx)
+        if (lang == "system") return ctx
+        val cfg = android.content.res.Configuration(ctx.resources.configuration)
+        cfg.setLocale(java.util.Locale(lang))
+        return ctx.createConfigurationContext(cfg)
     }
 
     // ---------------- listening loops ----------------

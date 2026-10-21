@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhoneLink</string>
+    <string name="app_tagline">এক ফোনের SMS, নোটিফিকেশন, কলসহ সবকিছু আরেক ফোনে রিয়েল-টাইমে</string>
+
+    <string name="nav_home">হোম</string>
+    <string name="nav_inbox">ইনবক্স</string>
+    <string name="nav_settings">সেটিংস</string>
+
+    <string name="sec_status">স্ট্যাটাস</string>
+    <string name="label_mode">মোড</string>
+    <string name="mode_both">Sender + Receiver</string>
+    <string name="mode_sender">Sender</string>
+    <string name="mode_receiver">Receiver</string>
+    <string name="mode_none">কিছুই চালু নেই</string>
+    <string name="perm_notif_access">নোটিফিকেশন Access</string>
+    <string name="perm_sms">SMS Permission</string>
+    <string name="perm_location">লোকেশন Permission</string>
+    <string name="perm_battery">Battery Optimization থেকে বাদ</string>
+    <string name="status_granted">✓ দেওয়া আছে</string>
+    <string name="status_missing">✗ দেওয়া হয়নি</string>
+    <string name="btn_fix_perms">Permission ঠিক করো</string>
+    <string name="queue_offline">অফলাইন কিউতে %1$d টা মেসেজ জমা আছে — নেট এলেই পাঠিয়ে দেওয়া হবে।</string>
+
+    <string name="sec_pairing">পেয়ারিং</string>
+    <string name="pairing_hint">দুটি ফোনেই একই পেয়ার কোড থাকতে হবে। কোডটা গোপন রাখো — যার কাছে কোড, সে-ই সব মেসেজ দেখতে পারবে।</string>
+    <string name="hint_pair_code_input">আরেক ফোনের কোড এখানে লিখো</string>
+    <string name="btn_apply_code">কোড সেট করো</string>
+    <string name="btn_new_code">নতুন কোড</string>
+    <string name="hint_device_name">এই ফোনের নাম (যেমন: আমার ফোন)</string>
+    <string name="btn_save_name">নাম সেভ করো</string>
+
+    <string name="sec_role">এই ফোনের ভূমিকা</string>
+    <string name="role_sender_label">Sender — এই ফোন থেকে সবকিছু পাঠাও</string>
+    <string name="role_receiver_label">Receiver — আরেক ফোনের মেসেজ এখানে নাও</string>
+    <string name="btn_start_service">▶ সার্ভিস চালু</string>
+    <string name="btn_stop_service">⏸ বন্ধ</string>
+
+    <string name="sec_remote">রিমোট কমান্ড</string>
+    <string name="sender_never_seen">Sender ফোনের খবর এখনো পাওয়া যায়নি</string>
+    <string name="sender_last_seen">Sender (%1$s) সর্বশেষ সক্রিয়: %2$s</string>
+    <string name="time_just_now">এইমাত্র</string>
+    <string name="time_mins_ago">%1$d মিনিট আগে</string>
+    <string name="time_hours_ago">%1$d ঘণ্টা আগে</string>
+    <string name="time_days_ago">%1$d দিন আগে</string>
+    <string name="cmd_ping">🏓 অনলাইন?</string>
+    <string name="cmd_battery">🔋 ব্যাটারি</string>
+    <string name="cmd_location">📍 লোকেশন</string>
+    <string name="cmd_ring">🔔 রিং বাজাও</string>
+    <string name="cmd_stop_ring">🔕 রিং বন্ধ</string>
+
+    <string name="sec_inbox">ইনবক্স (ট্যাপ করলে কপি হবে)</string>
+    <string name="hint_search">ইনবক্সে খুঁজো…</string>
+    <string name="btn_refresh">↻ রিফ্রেশ</string>
+    <string name="btn_clear_inbox">🗑️ ইনবক্স মুছো</string>
+    <string name="inbox_empty">ইনবক্স খালি</string>
+
+    <string name="sec_permissions">Permission</string>
+    <string name="perm_summary_ok">সব permission ঠিক আছে ✓</string>
+    <string name="perm_summary_missing">%1$d টা permission এখনো বাকি</string>
+    <string name="btn_open_perms">Permission দেখো</string>
+    <string name="sec_sender_features">Sender ফিচার</string>
+    <string name="fwd_sms">SMS ফরোয়ার্ড</string>
+    <string name="fwd_notif">সব অ্যাপের নোটিফিকেশন ফরোয়ার্ড</string>
+    <string name="fwd_calls">কল — ইনকামিং / মিসড / শেষ (সময়সহ)</string>
+    <string name="fwd_battery">ব্যাটারি — কম / চার্জিং / ফুল</string>
+    <string name="fwd_apps">অ্যাপ ইনস্টল / আনইনস্টল</string>
+    <string name="fwd_system">ফোন চালু হওয়ার খবর</string>
+    <string name="allow_loc_cmd">রিমোট কমান্ডে লোকেশন পাঠাতে দাও</string>
+    <string name="allow_ring_cmd">রিমোট কমান্ডে রিং বাজাতে দাও</string>
+    <string name="sec_filters">ফিল্টার</string>
+    <string name="hint_excluded">যেসব অ্যাপ বাদ যাবে — প্যাকেজ নাম, কমা দিয়ে (যেমন com.facebook.katana)</string>
+    <string name="hint_blocked">ব্লক করা শব্দ — এ শব্দ থাকলে ফরোয়ার্ড হবে না, কমা দিয়ে</string>
+    <string name="btn_save_filters">ফিল্টার সেভ করো</string>
+    <string name="btn_test">🧪 টেস্ট মেসেজ পাঠাও</string>
+    <string name="sec_appearance">চেহারা ও ভাষা</string>
+    <string name="label_language">ভাষা</string>
+    <string name="lang_bn">বাংলা</string>
+    <string name="lang_en">English</string>
+    <string name="label_theme">থিম</string>
+    <string name="theme_system">সিস্টেম</string>
+    <string name="theme_light">লাইট</string>
+    <string name="theme_dark">ডার্ক</string>
+    <string name="sec_server">রিলে সার্ভার</string>
+    <string name="hint_server">https://ntfy.sh</string>
+    <string name="btn_save_server">সার্ভার সেভ করো</string>
+    <string name="footer_about">PhoneLink v1.1 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।</string>
+
+    <string name="perm_title">Permission</string>
+    <string name="perm_intro">PhoneLink ঠিকমতো কাজ করতে এই permission গুলো লাগে। যেগুলো দেওয়া আছে সেগুলো সবুজ দেখাবে। এই স্ক্রিনটা অটোমেটিক শুধু প্রথমবারই আসে।</string>
+    <string name="perm_notif_title">নোটিফিকেশন Access</string>
+    <string name="perm_notif_desc">সব অ্যাপের নোটিফিকেশন ফরোয়ার্ডের জন্য লাগে (WhatsApp, Messenger, বিকাশ…)। সিস্টেমের তালিকায় PhoneLink চালু করে দাও।</string>
+    <string name="btn_open_settings">সেটিংস খোলো</string>
+    <string name="perm_runtime_title">ফোনের Permission</string>
+    <string name="perm_runtime_desc">SMS, ফোন স্টেট, কন্টাক্ট, লোকেশন আর নোটিফিকেশন পোস্ট করার অনুমতি।</string>
+    <string name="btn_grant">দাও</string>
+    <string name="perm_line_sms">SMS</string>
+    <string name="perm_line_phone">ফোন স্টেট</string>
+    <string name="perm_line_contacts">কন্টাক্ট</string>
+    <string name="perm_line_location">লোকেশন</string>
+    <string name="perm_line_notif_post">নোটিফিকেশন পোস্ট</string>
+    <string name="perm_battery_title">Battery Optimization</string>
+    <string name="perm_battery_desc">Battery optimization চালু থাকলে Android অ্যাপটাকে মেরে ফেলে, ফরোয়ার্ডিং বন্ধ হয়ে যায়। PhoneLink-কে এ থেকে বাদ দাও।</string>
+    <string name="btn_done">হয়ে গেছে</string>
+
+    <string name="toast_code_short">কোড কমপক্ষে ৮ অক্ষরের হতে হবে</string>
+    <string name="toast_code_set">পেয়ার কোড সেট হয়েছে — সার্ভিস রিস্টার্ট হচ্ছে</string>
+    <string name="toast_new_code">নতুন কোড তৈরি হয়েছে — এই কোডটাই আরেক ফোনে দাও</string>
+    <string name="toast_name_saved">নাম সেভ হয়েছে</string>
+    <string name="toast_pick_mode">আগে Sender বা Receiver — অন্তত একটা মোড চালু করো</string>
+    <string name="toast_service_starting">সার্ভিস চালু হচ্ছে</string>
+    <string name="toast_service_stopped">সার্ভিস বন্ধ করা হয়েছে</string>
+    <string name="toast_enable_in_list">তালিকায় PhoneLink চালু করে দাও</string>
+    <string name="toast_filters_saved">ফিল্টার সেভ হয়েছে</string>
+    <string name="toast_test_sent">টেস্ট পাঠানো হয়েছে</string>
+    <string name="toast_server_saved">সার্ভার সেভ হয়েছে</string>
+    <string name="toast_copied">কপি হয়েছে</string>
+    <string name="toast_inbox_cleared">ইনবক্স মোছা হয়েছে</string>
+    <string name="toast_cmd_ping">পিং পাঠানো হয়েছে</string>
+    <string name="toast_cmd_battery">ব্যাটারি কমান্ড পাঠানো হয়েছে</string>
+    <string name="toast_cmd_location">লোকেশন কমান্ড পাঠানো হয়েছে</string>
+    <string name="toast_cmd_ring">রিং কমান্ড পাঠানো হয়েছে</string>
+    <string name="toast_cmd_stop_ring">রিং বন্ধের কমান্ড পাঠানো হয়েছে</string>
+    <string name="toast_perm_updated">Permission আপডেট হয়েছে</string>
+    <string name="toast_perm_needed">কিছু permission এখনো বাকি — আগে ঠিক করে নাও</string>
+    <string name="test_title">🧪 টেস্ট মেসেজ</string>
+    <string name="test_body">%1$s থেকে টেস্ট — ফরোয়ার্ডিং কাজ করছে। ব্যাটারি: %2$d%%</string>
+
+    <string name="svc_running">PhoneLink চালু আছে</string>
+    <string name="svc_sending">পাঠাচ্ছে</string>
+    <string name="svc_receiving">গ্রহণ করছে</string>
+    <string name="svc_no_mode">কোনো মোড চালু নেই</string>
+    <string name="svc_channel_service">PhoneLink সার্ভিস</string>
+    <string name="svc_channel_messages">ফরোয়ার্ড করা মেসেজ</string>
+</resources>

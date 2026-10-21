@@ -1,33 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="SectionTitle">
+    <!-- Card section heading inside a page -->
+    <style name="PL.CardTitle" parent="TextAppearance.Material3.TitleMedium">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">20dp</item>
-        <item name="android:layout_marginBottom">6dp</item>
-        <item name="android:textColor">#F8FAFC</item>
-        <item name="android:textSize">17sp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
-    <style name="AppSwitch">
+
+    <!-- Small explanatory text -->
+    <style name="PL.BodySmall" parent="TextAppearance.Material3.BodySmall">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:paddingTop">6dp</item>
-        <item name="android:paddingBottom">6dp</item>
-        <item name="android:textColor">#E2E8F0</item>
-        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
     </style>
-    <style name="AppButton">
+
+    <!-- A switch row: label fills, switch sits at the end -->
+    <style name="PL.SwitchRow" parent="Widget.Material3.CompoundButton.Switch">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.Material3.BodyLarge</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <!-- Permission / status row label -->
+    <style name="PL.StatusLabel" parent="TextAppearance.Material3.BodyMedium">
         <item name="android:layout_width">0dp</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_weight">1</item>
-        <item name="android:layout_margin">3dp</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
-    <style name="AppButtonWide">
+
+    <!-- Permission / status row value (colour set from code: green or red) -->
+    <style name="PL.StatusValue" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- Outlined text field wrapper spacing -->
+    <style name="PL.Field" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:layout_marginTop">4dp</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:layout_marginTop">8dp</item>
     </style>
 </resources>

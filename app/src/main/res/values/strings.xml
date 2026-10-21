@@ -1,4 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PhoneLink</string>
+    <string name="app_tagline">SMS, notifications, calls and more from one phone to another — in real time</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_inbox">Inbox</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Status / home -->
+    <string name="sec_status">Status</string>
+    <string name="label_mode">Mode</string>
+    <string name="mode_both">Sender + Receiver</string>
+    <string name="mode_sender">Sender</string>
+    <string name="mode_receiver">Receiver</string>
+    <string name="mode_none">Nothing enabled</string>
+    <string name="perm_notif_access">Notification access</string>
+    <string name="perm_sms">SMS permission</string>
+    <string name="perm_location">Location permission</string>
+    <string name="perm_battery">Battery optimization off</string>
+    <string name="status_granted">✓ Granted</string>
+    <string name="status_missing">✗ Missing</string>
+    <string name="btn_fix_perms">Fix permissions</string>
+    <string name="queue_offline">%1$d message(s) waiting in the offline queue — they will be sent when the internet returns.</string>
+
+    <!-- Pairing -->
+    <string name="sec_pairing">Pairing</string>
+    <string name="pairing_hint">Both phones must use the same pair code. Keep the code secret — whoever has it can see every message.</string>
+    <string name="hint_pair_code_input">Type the other phone\'s code here</string>
+    <string name="btn_apply_code">Set code</string>
+    <string name="btn_new_code">New code</string>
+    <string name="hint_device_name">This phone\'s name (e.g. My phone)</string>
+    <string name="btn_save_name">Save name</string>
+
+    <!-- Role / service -->
+    <string name="sec_role">This phone\'s role</string>
+    <string name="role_sender_label">Sender — send everything from this phone</string>
+    <string name="role_receiver_label">Receiver — get the other phone\'s messages here</string>
+    <string name="btn_start_service">▶ Start service</string>
+    <string name="btn_stop_service">⏸ Stop</string>
+
+    <!-- Remote commands -->
+    <string name="sec_remote">Remote commands</string>
+    <string name="sender_never_seen">No news from the Sender phone yet</string>
+    <string name="sender_last_seen">Sender (%1$s) last active: %2$s</string>
+    <string name="time_just_now">just now</string>
+    <string name="time_mins_ago">%1$d min ago</string>
+    <string name="time_hours_ago">%1$d h ago</string>
+    <string name="time_days_ago">%1$d d ago</string>
+    <string name="cmd_ping">🏓 Online?</string>
+    <string name="cmd_battery">🔋 Battery</string>
+    <string name="cmd_location">📍 Location</string>
+    <string name="cmd_ring">🔔 Ring</string>
+    <string name="cmd_stop_ring">🔕 Stop ring</string>
+
+    <!-- Inbox -->
+    <string name="sec_inbox">Inbox (tap an item to copy)</string>
+    <string name="hint_search">Search inbox…</string>
+    <string name="btn_refresh">↻ Refresh</string>
+    <string name="btn_clear_inbox">🗑️ Clear inbox</string>
+    <string name="inbox_empty">Inbox is empty</string>
+
+    <!-- Settings -->
+    <string name="sec_permissions">Permissions</string>
+    <string name="perm_summary_ok">All permissions are in place ✓</string>
+    <string name="perm_summary_missing">%1$d permission(s) still missing</string>
+    <string name="btn_open_perms">View permissions</string>
+    <string name="sec_sender_features">Sender features</string>
+    <string name="fwd_sms">Forward SMS</string>
+    <string name="fwd_notif">Forward all app notifications</string>
+    <string name="fwd_calls">Calls — incoming / missed / ended (with duration)</string>
+    <string name="fwd_battery">Battery — low / charging / full</string>
+    <string name="fwd_apps">App install / uninstall</string>
+    <string name="fwd_system">Phone switched-on news</string>
+    <string name="allow_loc_cmd">Allow location on remote command</string>
+    <string name="allow_ring_cmd">Allow ring on remote command</string>
+    <string name="sec_filters">Filters</string>
+    <string name="hint_excluded">Apps to exclude — package names, comma separated (e.g. com.facebook.katana)</string>
+    <string name="hint_blocked">Blocked words — if a message contains one, it is not forwarded</string>
+    <string name="btn_save_filters">Save filters</string>
+    <string name="btn_test">🧪 Send test message</string>
+    <string name="sec_appearance">Appearance</string>
+    <string name="label_language">Language</string>
+    <string name="lang_bn">বাংলা</string>
+    <string name="lang_en">English</string>
+    <string name="label_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="sec_server">Relay server</string>
+    <string name="hint_server">https://ntfy.sh</string>
+    <string name="btn_save_server">Save server</string>
+    <string name="footer_about">PhoneLink v1.1 — default relay is ntfy.sh (free, no account needed). Both phones just need the same code and the same server. Messages travel through the relay, so keep your pair code secret.</string>
+
+    <!-- Permissions screen -->
+    <string name="perm_title">Permissions</string>
+    <string name="perm_intro">PhoneLink needs these permissions to work. Granted ones are green. You only see this screen automatically the first time.</string>
+    <string name="perm_notif_title">Notification access</string>
+    <string name="perm_notif_desc">Needed to forward other apps\' notifications (WhatsApp, Messenger, bKash…). Turn PhoneLink on in the system list.</string>
+    <string name="btn_open_settings">Open settings</string>
+    <string name="perm_runtime_title">Phone permissions</string>
+    <string name="perm_runtime_desc">SMS, phone state, contacts, location and notifications posting.</string>
+    <string name="btn_grant">Grant</string>
+    <string name="perm_line_sms">SMS</string>
+    <string name="perm_line_phone">Phone state</string>
+    <string name="perm_line_contacts">Contacts</string>
+    <string name="perm_line_location">Location</string>
+    <string name="perm_line_notif_post">Notifications posting</string>
+    <string name="perm_battery_title">Battery optimization</string>
+    <string name="perm_battery_desc">If battery optimization stays on, Android kills the app and forwarding stops. Exempt PhoneLink from it.</string>
+    <string name="btn_done">Done</string>
+
+    <!-- Toasts and dynamic text -->
+    <string name="toast_code_short">The code must be at least 8 characters</string>
+    <string name="toast_code_set">Pair code set — service is restarting</string>
+    <string name="toast_new_code">New code created — enter this code on the other phone</string>
+    <string name="toast_name_saved">Name saved</string>
+    <string name="toast_pick_mode">Turn on Sender or Receiver — at least one mode — first</string>
+    <string name="toast_service_starting">Service is starting</string>
+    <string name="toast_service_stopped">Service stopped</string>
+    <string name="toast_enable_in_list">Turn on PhoneLink in the list</string>
+    <string name="toast_filters_saved">Filters saved</string>
+    <string name="toast_test_sent">Test message sent</string>
+    <string name="toast_server_saved">Server saved</string>
+    <string name="toast_copied">Copied</string>
+    <string name="toast_inbox_cleared">Inbox cleared</string>
+    <string name="toast_cmd_ping">Ping sent</string>
+    <string name="toast_cmd_battery">Battery command sent</string>
+    <string name="toast_cmd_location">Location command sent</string>
+    <string name="toast_cmd_ring">Ring command sent</string>
+    <string name="toast_cmd_stop_ring">Stop-ring command sent</string>
+    <string name="toast_perm_updated">Permissions updated</string>
+    <string name="toast_perm_needed">Some permissions are still missing — let\'s fix them first</string>
+    <string name="test_title">🧪 Test message</string>
+    <string name="test_body">Test from %1$s — forwarding works. Battery: %2$d%%</string>
+
+    <!-- Foreground service notification -->
+    <string name="svc_running">PhoneLink is running</string>
+    <string name="svc_sending">Sending</string>
+    <string name="svc_receiving">Receiving</string>
+    <string name="svc_no_mode">No mode enabled</string>
+    <string name="svc_channel_service">PhoneLink service</string>
+    <string name="svc_channel_messages">Forwarded messages</string>
 </resources>
