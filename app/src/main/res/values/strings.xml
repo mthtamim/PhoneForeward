@@ -91,7 +91,7 @@
     <string name="sec_server">Relay server</string>
     <string name="hint_server">https://ntfy.sh</string>
     <string name="btn_save_server">Save server</string>
-    <string name="footer_about">PhoneLink v2.1 — default relay is ntfy.sh (free, no account needed). Both phones just need the same code and the same server. Messages travel through the relay, so keep your pair code secret.</string>
+    <string name="footer_about">PhoneLink v2.2 — default relay is ntfy.sh (free, no account needed). Both phones just need the same code and the same server. Messages travel through the relay, so keep your pair code secret.</string>
 
     <!-- Permissions screen -->
     <string name="perm_title">Permissions</string>
@@ -236,7 +236,7 @@
     <!-- v2.1 -->
     <string name="btn_torch">🔦 Torch</string>
     <string name="apps_title">Choose apps</string>
-    <string name="apps_hint">Tap an app to cycle: Default → Instant → Digest → Off.</string>
+    <string name="apps_hint">Tap an app to cycle: Default → Instant → Digest → Off. Long-press sets a daily usage limit.</string>
     <string name="apps_hint_short">Pick which apps\' notifications get forwarded, and how.</string>
     <string name="allowlist_label">Only chosen apps (allowlist mode)</string>
     <string name="hint_app_search">Search apps…</string>
@@ -312,4 +312,44 @@
     <string name="tile_label">PhoneLink sender</string>
     <string name="tile_on">Sender on</string>
     <string name="tile_off">Sender off</string>
+
+    <!-- v2.2 -->
+    <string name="fwd_presence">Lock / unlock events</string>
+    <string name="fwd_media">New photo / screenshot auto-forward</string>
+    <string name="tts_calls_label">Announce caller name aloud</string>
+    <string name="tts_call_prefix">Incoming call from</string>
+    <string name="auto_reply_label">Auto-reply SMS on missed call</string>
+    <string name="hint_auto_reply">Auto-reply text (saved with the Save button in Smart control)</string>
+    <string name="routine_label">Morning routine status</string>
+    <string name="routine_at">Daily at %1$s</string>
+    <string name="btn_routine_time">Set routine time</string>
+    <string name="low_loc_label">Last location when battery is dying (≤5%)</string>
+    <string name="hint_alert_words">Alert words (comma separated) — always urgent</string>
+    <string name="hint_tg_token">Telegram bot token (mirror archive)</string>
+    <string name="hint_tg_chat">Telegram chat ID</string>
+    <string name="perm_line_media">Photos / media</string>
+    <string name="btn_voice">🎤 Voice message</string>
+    <string name="voice_title">Voice message</string>
+    <string name="voice_ready">Tap record, speak, then stop to send (max 60s)</string>
+    <string name="voice_recording">Recording… %1$d s</string>
+    <string name="btn_voice_record">⏺ Record</string>
+    <string name="btn_voice_stop_send">⏹ Stop &amp; send</string>
+    <string name="toast_voice_failed">Recording failed</string>
+    <string name="toast_mic_denied">Microphone permission is needed</string>
+    <string name="btn_profiles">👥 Pairing profiles</string>
+    <string name="profiles_title">Pairing profiles</string>
+    <string name="profile_add_current">＋ Save current code as a profile</string>
+    <string name="hint_profile_name">Profile name (e.g. Home)</string>
+    <string name="profile_default_name">Profile</string>
+    <string name="toast_profile_saved">Profile saved</string>
+    <string name="cmd_status">🩺 Health report</string>
+    <string name="toast_cmd_status">Health report requested</string>
+    <string name="menu_reply_notif">Reply to this notification</string>
+    <string name="reply_notif_title">Reply (sent on the other phone)</string>
+    <string name="delivery_seen">👁 Seen %1$s</string>
+    <string name="quick_callback">I\'ll call you back</string>
+    <string name="quick_busy">Busy right now, text me</string>
+    <string name="limit_title">Daily limit — %1$s</string>
+    <string name="hint_limit_minutes">Minutes per day (e.g. 120)</string>
+    <string name="limit_remove">Remove limit</string>
 </resources>

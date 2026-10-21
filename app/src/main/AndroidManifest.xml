@@ -22,6 +22,10 @@
         tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <application
@@ -38,6 +42,10 @@
 
         <activity
             android:name=".AppsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".VoiceActivity"
             android:exported="false" />
 
         <activity

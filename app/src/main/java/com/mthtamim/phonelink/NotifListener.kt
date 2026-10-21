@@ -1,8 +1,14 @@
 package com.mthtamim.phonelink
 
 import android.app.Notification
+import android.app.PendingIntent
+import android.app.RemoteInput
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import org.json.JSONObject
 
 class NotifListener : NotificationListenerService() {
 
@@ -14,12 +20,6 @@ class NotifListener : NotificationListenerService() {
         val pkg = sbn.packageName ?: return
         if (pkg == ctx.packageName) return
         if (Config.excludedApps(ctx).contains(pkg)) return
-
-        // Smart Control per-app rule: OFF never forwards; in allowlist
-        // mode only apps with an explicit rule forward at all.
-        val appRule = AppRules.rule(ctx, pkg)
-        if (appRule == AppRules.OFF) return
-        if (AppRules.allowlistMode(ctx) && appRule == AppRules.DEFAULT) return
 
         val notif = sbn.notification ?: return
         // Skip ongoing/foreground-service noise (music players, downloads in progress etc.)
@@ -51,23 +51,87 @@ class NotifListener : NotificationListenerService() {
         val heading = if (title.isNotEmpty()) "$app: $title" else app
         val bodyText = text.ifEmpty { title }
 
-        // Digest apps are bundled and sent periodically instead of now.
-        if (appRule == AppRules.DIGEST && Config.digestMinutes(ctx) > 0) {
-            DigestStore.add(ctx, app, heading, bodyText)
-            return
+        // Keyword alerts punch through every app rule: OFF, allowlist
+        // and digest are all skipped for a message with an alert word.
+        val alertHit = Config.containsAlertWord(ctx, full)
+
+        // Smart Control per-app rule.
+        val appRule = AppRules.rule(ctx, pkg)
+        if (!alertHit) {
+            if (appRule == AppRules.OFF) return
+            if (AppRules.allowlistMode(ctx) && appRule == AppRules.DEFAULT) return
+            if (appRule == AppRules.DIGEST && Config.digestMinutes(ctx) > 0) {
+                DigestStore.add(ctx, app, heading, bodyText)
+                return
+            }
         }
 
+        // Remember the notification's reply action (WhatsApp/Messenger
+        // style) so the other phone can answer without touching this one.
+        val reply = findReplyAction(sbn)
+        if (reply != null) registerReplyTarget(sbn.key, reply.first, reply.second, pkg)
+
+        val extra = JSONObject()
+        if (reply != null) extra.put("notifKey", sbn.key)
+        if (alertHit) extra.put("priority", 1)
         val code = Otp.find("$title $bodyText")
-        if (code.isNotEmpty()) {
-            val extra = org.json.JSONObject().put("code", code)
-            Relay.send(ctx, Relay.TYPE_NOTIF, "🔑 $heading", bodyText, extra)
-        } else {
-            Relay.send(ctx, Relay.TYPE_NOTIF, heading, bodyText)
+        val prefix = when {
+            alertHit && code.isNotEmpty() -> "🚨🔑 "
+            alertHit -> "🚨 "
+            code.isNotEmpty() -> "🔑 "
+            else -> ""
         }
+        if (code.isNotEmpty()) extra.put("code", code)
+        Relay.send(ctx, Relay.TYPE_NOTIF, "$prefix$heading", bodyText,
+            if (extra.length() > 0) extra else null)
+    }
+
+    private fun findReplyAction(sbn: StatusBarNotification): Pair<PendingIntent, RemoteInput>? {
+        val n = sbn.notification
+        val actions = mutableListOf<Notification.Action>()
+        n.actions?.let { actions.addAll(it) }
+        try { actions.addAll(Notification.WearableExtender(n).actions) } catch (_: Exception) { }
+        for (a in actions) {
+            val inputs = a.remoteInputs ?: continue
+            if (inputs.isNotEmpty() && a.actionIntent != null) {
+                return a.actionIntent to inputs[0]
+            }
+        }
+        return null
     }
 
     companion object {
         private val lock = Any()
         private val recent = HashMap<String, Long>()
+
+        class ReplyTarget(
+            val intent: PendingIntent,
+            val remote: RemoteInput,
+            val pkg: String
+        )
+
+        private val replyTargets = LinkedHashMap<String, ReplyTarget>()
+
+        fun registerReplyTarget(sbnKey: String, intent: PendingIntent, remote: RemoteInput, pkg: String) {
+            synchronized(lock) {
+                replyTargets[sbnKey] = ReplyTarget(intent, remote, pkg)
+                while (replyTargets.size > 100) {
+                    replyTargets.remove(replyTargets.keys.first())
+                }
+            }
+        }
+
+        /** Fires the stored reply action with the given text. */
+        fun fireReply(ctx: Context, sbnKey: String, text: String): Boolean {
+            val target = synchronized(lock) { replyTargets[sbnKey] } ?: return false
+            return try {
+                val intent = Intent()
+                val bundle = Bundle()
+                bundle.putCharSequence(target.remote.resultKey, text)
+                RemoteInput.addResultsToIntent(arrayOf(target.remote), intent, bundle)
+                target.intent.send(ctx, 0, intent)
+                true
+            } catch (e: Exception) { false }
+        }
     }
 }

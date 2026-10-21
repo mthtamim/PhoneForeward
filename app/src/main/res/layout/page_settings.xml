@@ -116,6 +116,16 @@
                     android:id="@+id/swFlashCmd"
                     style="@style/PL.SwitchRow"
                     android:text="@string/allow_flash_cmd" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swPresence"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_presence" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swMedia"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/fwd_media" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -283,6 +293,19 @@
                         android:textSize="13sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_alert_words">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAlertWords"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:maxLines="2"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveSmart"
                     style="@style/Widget.Material3.Button.TonalButton"
@@ -375,9 +398,54 @@
                     android:text="@string/tts_label" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swTtsCalls"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/tts_calls_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swSmsReply"
                     style="@style/PL.SwitchRow"
                     android:text="@string/sms_reply_label" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutoReply"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/auto_reply_label" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_auto_reply">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAutoReply"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:maxLines="2"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swRoutine"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/routine_label" />
+
+                <TextView
+                    android:id="@+id/tvRoutineInfo"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRoutineTime"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_routine_time" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swLowLoc"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/low_loc_label" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swSnap"
@@ -550,6 +618,32 @@
                         android:layout_height="wrap_content"
                         android:inputType="textUri"
                         android:maxLines="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_tg_token">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etTgToken"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_tg_chat">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etTgChat"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textSize="13sp" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton

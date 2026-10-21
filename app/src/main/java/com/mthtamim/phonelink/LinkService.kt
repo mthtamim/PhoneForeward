@@ -6,11 +6,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
+import android.content.ContentUris
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.database.ContentObserver
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.RingtoneManager
@@ -18,9 +20,14 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.net.Uri
 import android.net.wifi.WifiManager
+import android.os.BatteryManager
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.provider.MediaStore
 import android.speech.tts.TextToSpeech
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
@@ -50,8 +57,10 @@ class LinkService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        startedAt = System.currentTimeMillis()
         createChannels()
         registerEventSources()
+        registerMediaObserver()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -76,6 +85,10 @@ class LinkService : Service() {
         running = false
         dataThread?.interrupt(); cmdThread?.interrupt(); heartbeatThread?.interrupt()
         unregisterEventSources()
+        try {
+            mediaObserver?.let { contentResolver.unregisterContentObserver(it) }
+        } catch (_: Exception) { }
+        mediaObserver = null
         try { tts?.shutdown() } catch (_: Exception) { }
         tts = null
         super.onDestroy()
@@ -94,6 +107,8 @@ class LinkService : Service() {
 
     private var netCallback: ConnectivityManager.NetworkCallback? = null
     private var ringerReceiver: BroadcastReceiver? = null
+    private var presenceReceiver: BroadcastReceiver? = null
+    private var mediaObserver: ContentObserver? = null
     private var lastWifiSsid: String? = null
 
     private fun registerEventSources() {
@@ -139,6 +154,84 @@ class LinkService : Service() {
             registerReceiver(rr, IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION))
             ringerReceiver = rr
         } catch (_: Exception) { }
+        try {
+            val pr = object : BroadcastReceiver() {
+                override fun onReceive(c: Context?, i: Intent?) {
+                    val ctx = applicationContext
+                    if (!Config.isSender(ctx) || !Config.fwdPresence(ctx)) return
+                    when (i?.action) {
+                        Intent.ACTION_USER_PRESENT ->
+                            Relay.send(ctx, Relay.TYPE_SYSTEM, "🔓 ফোন আনলক হয়েছে", "")
+                        Intent.ACTION_SCREEN_OFF ->
+                            Relay.send(ctx, Relay.TYPE_SYSTEM, "🔒 ফোন লক হয়েছে", "")
+                    }
+                }
+            }
+            val f = IntentFilter().apply {
+                addAction(Intent.ACTION_USER_PRESENT)
+                addAction(Intent.ACTION_SCREEN_OFF)
+            }
+            registerReceiver(pr, f)
+            presenceReceiver = pr
+        } catch (_: Exception) { }
+    }
+
+    /** Watches the gallery for new photos/screenshots (sender side). */
+    private fun registerMediaObserver() {
+        try {
+            val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+                override fun onChange(selfChange: Boolean, uri: Uri?) {
+                    thread { checkNewMedia() }
+                }
+            }
+            contentResolver.registerContentObserver(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, true, observer)
+            mediaObserver = observer
+        } catch (_: Exception) { }
+    }
+
+    private fun checkNewMedia() {
+        val ctx = applicationContext
+        if (!Config.isSender(ctx) || !Config.fwdMedia(ctx)) return
+        try {
+            val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+            val cursor = contentResolver.query(collection,
+                arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME,
+                    MediaStore.Images.Media.DATE_ADDED),
+                null, null, "${MediaStore.Images.Media.DATE_ADDED} DESC") ?: return
+            cursor.use { c ->
+                if (!c.moveToFirst()) return
+                val id = c.getLong(0)
+                val name = c.getString(1) ?: "photo.jpg"
+                val addedSec = c.getLong(2)
+                val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+                val lastId = prefs.getLong("last_media_id", -1L)
+                if (lastId == -1L) {
+                    prefs.edit().putLong("last_media_id", id).apply()
+                    return
+                }
+                if (id == lastId) return
+                prefs.edit().putLong("last_media_id", id).apply()
+                // Only forward genuinely new captures, not library rescans.
+                if (System.currentTimeMillis() / 1000 - addedSec > 180) return
+                val itemUri = ContentUris.withAppendedId(collection, id)
+                val bytes = contentResolver.openInputStream(itemUri)?.use { input ->
+                    val buf = java.io.ByteArrayOutputStream()
+                    val chunk = ByteArray(64 * 1024)
+                    var total = 0
+                    var overflow = false
+                    while (true) {
+                        val n = input.read(chunk)
+                        if (n < 0) break
+                        total += n
+                        if (total > 5 * 1024 * 1024) { overflow = true; break }
+                        buf.write(chunk, 0, n)
+                    }
+                    if (overflow) null else buf.toByteArray()
+                } ?: return
+                Relay.postFile(ctx, name, bytes, "image/jpeg")
+            }
+        } catch (_: Exception) { }
     }
 
     private fun unregisterEventSources() {
@@ -150,6 +243,8 @@ class LinkService : Service() {
         netCallback = null
         try { ringerReceiver?.let { unregisterReceiver(it) } } catch (_: Exception) { }
         ringerReceiver = null
+        try { presenceReceiver?.let { unregisterReceiver(it) } } catch (_: Exception) { }
+        presenceReceiver = null
     }
 
     private fun currentSsid(): String {
@@ -372,13 +467,18 @@ class LinkService : Service() {
             return // silent: only updates "last seen" + widget
         }
 
-        // SMS items carry the sender number so the inbox can offer a
-        // two-way reply; it rides in the extra field as a tel: value.
+        // SMS/call items carry the number so the inbox can offer a
+        // two-way reply; notification items carry their reply key.
+        // Both ride in the extra field with a tel:/notif: prefix.
         var extraStr = payload.optString("extra", "")
-        if (type == Relay.TYPE_SMS && payload.has("number")) {
+        if ((type == Relay.TYPE_SMS || type == Relay.TYPE_CALL) && payload.has("number")) {
             extraStr = "tel:" + payload.optString("number")
         }
+        if (type == Relay.TYPE_NOTIF && payload.has("notifKey")) {
+            extraStr = "notif:" + payload.optString("notifKey")
+        }
         val priority = payload.optInt("priority", 0) == 1
+        val ringing = payload.optInt("ringing", 0) == 1
 
         val item = History.Item(
             type = type,
@@ -393,6 +493,15 @@ class LinkService : Service() {
         History.add(ctx, item)
         Stats.incRecv(ctx, type)
         showInboxNotification(item, priority)
+        // A ringing call gets a full-screen alert with quick SMS replies,
+        // and (when enabled) the caller's name is spoken aloud.
+        if (ringing && type == Relay.TYPE_CALL && extraStr.startsWith("tel:")) {
+            showCallAlert(item, extraStr.removePrefix("tel:"))
+            if (Config.ttsCalls(ctx) && !Config.isQuietNow(ctx)) {
+                val lc = localized(ctx)
+                speakText(lc.getString(R.string.tts_call_prefix) + " " + item.body)
+            }
+        }
         // Delivery receipt back to the sender (commands topic), when the
         // payload carries an id (v2). Old/plain messages simply skip it.
         if (item.id.isNotEmpty()) Relay.sendAck(ctx, item.id, item.title)
@@ -456,7 +565,7 @@ class LinkService : Service() {
         }
     }
 
-    // ------------- text-to-speech for OTP codes -------------
+    // ------------- text-to-speech (OTP codes + caller announce) -------------
 
     private var tts: TextToSpeech? = null
     @Volatile private var ttsReady = false
@@ -464,11 +573,14 @@ class LinkService : Service() {
 
     private fun speakCode(code: String) {
         val lc = localized(applicationContext)
-        val text = lc.getString(R.string.tts_code_prefix) + " " +
-            code.toCharArray().joinToString(" ")
+        speakText(lc.getString(R.string.tts_code_prefix) + " " +
+            code.toCharArray().joinToString(" "))
+    }
+
+    private fun speakText(text: String) {
         val engine = tts
         if (engine != null && ttsReady) {
-            try { engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pl-code") } catch (_: Exception) { }
+            try { engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "pl-tts") } catch (_: Exception) { }
             return
         }
         if (engine == null) {
@@ -479,7 +591,7 @@ class LinkService : Service() {
                         ttsReady = true
                         try { tts?.language = java.util.Locale("bn", "BD") } catch (_: Exception) { }
                         pendingSpeak?.let {
-                            try { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, "pl-code") }
+                            try { tts?.speak(it, TextToSpeech.QUEUE_FLUSH, null, "pl-tts") }
                             catch (_: Exception) { }
                         }
                         pendingSpeak = null
@@ -489,6 +601,41 @@ class LinkService : Service() {
         } else {
             pendingSpeak = text
         }
+    }
+
+    /** Full-screen incoming-call alert with one-tap SMS quick replies. */
+    private fun showCallAlert(item: History.Item, number: String) {
+        val lc = localized(applicationContext)
+        val screenIntent = Intent(this, ScreenActivity::class.java)
+            .putExtra("text", "📞 ${item.title}\n${item.body}")
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        synchronized(this) { notifId += 1 }
+        val myId = notifId
+        val screenPi = PendingIntent.getActivity(this, myId, screenIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val builder = Notification.Builder(this, CHANNEL_URGENT)
+            .setContentTitle(item.title)
+            .setContentText(item.body)
+            .setStyle(Notification.BigTextStyle().bigText(item.body))
+            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setContentIntent(screenPi)
+            .setFullScreenIntent(screenPi, true)
+            .setCategory(Notification.CATEGORY_CALL)
+            .setAutoCancel(true)
+        val presets = listOf(
+            lc.getString(R.string.quick_callback),
+            lc.getString(R.string.quick_busy)
+        )
+        presets.forEachIndexed { idx, preset ->
+            val qi = Intent(this, ActionReceiver::class.java)
+                .setAction(ActionReceiver.ACTION_QUICK_SMS)
+                .putExtra("number", number)
+                .putExtra("text", preset)
+            val qpi = PendingIntent.getBroadcast(this, myId * 10 + idx, qi,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            builder.addAction(android.R.drawable.ic_menu_send, preset, qpi)
+        }
+        getSystemService(NotificationManager::class.java).notify(myId, builder.build())
     }
 
     /** Big on-screen message requested by the other phone (SCREEN command). */
@@ -521,6 +668,13 @@ class LinkService : Service() {
         // Delivery receipts ride the command topic too.
         if (payload.optString("type") == "ACK") {
             Relay.onAck(ctx, payload.optString("ack"), payload.optString("title"))
+            sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
+            return
+        }
+        // Seen receipts: the other phone has opened its inbox.
+        if (payload.optString("type") == "SEEN") {
+            val n = payload.optString("ids").split(",").count { it.isNotBlank() }
+            Relay.onSeen(ctx, n)
             sendBroadcast(Intent(ACTION_NEW_ITEM).setPackage(packageName))
             return
         }
@@ -597,6 +751,25 @@ class LinkService : Service() {
             "SUMMARY" -> thread {
                 Relay.send(ctx, Relay.TYPE_SYSTEM, "🗓️ দৈনিক সারাংশ", DailySummary.build(ctx))
             }
+            "REPLY_NOTIF" -> {
+                val key = payload.optString("key", "")
+                val text = payload.optString("text", "")
+                val ok = key.isNotEmpty() && text.isNotEmpty() &&
+                    NotifListener.fireReply(ctx, key, text)
+                Relay.send(ctx, Relay.TYPE_INFO,
+                    if (ok) "✉️ রিপ্লাই পাঠানো হয়েছে" else "রিপ্লাই পাঠানো যায়নি",
+                    if (ok) text.take(80)
+                    else "নোটিফিকেশনটা আর সক্রিয় নেই, বা ওই অ্যাপে রিপ্লাই সুবিধা নেই।")
+            }
+            "STATUS" -> thread {
+                val upMin = (System.currentTimeMillis() - startedAt) / 60000
+                val body = PhoneInfo.text(ctx) +
+                    "\nসার্ভিস আপটাইম: $upMin মিনিট" +
+                    "\nরিলে ল্যাটেন্সি: ${Relay.lastLatencyMs(ctx)} ms" +
+                    "\nঅফলাইন কিউ: ${Relay.queueSize(ctx)} টা" +
+                    "\nমোট পাঠানো: ${Stats.sent(ctx)} • পাওয়া: ${Stats.recv(ctx)}"
+                Relay.send(ctx, Relay.TYPE_INFO, "🩺 হেলথ রিপোর্ট", body)
+            }
             "SCREEN" -> {
                 val text = payload.optString("arg", "")
                 if (text.isNotEmpty()) showScreenMessage(text)
@@ -618,9 +791,87 @@ class LinkService : Service() {
                 flushDigestIfDue()
                 checkGeofence()
                 checkDailySummary()
+                checkLowBatteryLocation()
+                checkRoutine()
+                checkUsageLimits()
             } catch (_: Exception) { }
-            try { Thread.sleep(25 * 60 * 1000L) } catch (_: InterruptedException) { break }
+            // Battery-friendly: the poorer the battery, the rarer the beat.
+            val pct = SystemReceiver.batteryPercent(applicationContext)
+            val sleepMin = when {
+                pct in 0..19 -> 60L
+                pct in 20..50 -> 40L
+                else -> 25L
+            }
+            try { Thread.sleep(sleepMin * 60 * 1000L) } catch (_: InterruptedException) { break }
         }
+    }
+
+    /** One last location before the battery dies (3-hour cooldown). */
+    private fun checkLowBatteryLocation() {
+        val ctx = applicationContext
+        if (!Config.lowLocOn(ctx)) return
+        val pct = SystemReceiver.batteryPercent(ctx)
+        if (pct < 0 || pct > 5) return
+        try {
+            val bi = ctx.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            val status = bi?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
+            if (status == BatteryManager.BATTERY_STATUS_CHARGING ||
+                status == BatteryManager.BATTERY_STATUS_FULL) return
+        } catch (_: Exception) { }
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        val now = System.currentTimeMillis()
+        if (now - prefs.getLong("last_lowloc", 0L) < 3 * 3600_000L) return
+        prefs.edit().putLong("last_lowloc", now).apply()
+        Relay.send(ctx, Relay.TYPE_SYSTEM, "🔋 ব্যাটারি প্রায় শেষ ($pct%)",
+            "ফোন বন্ধ হওয়ার আগের শেষ লোকেশন পাঠানো হচ্ছে।")
+        LocationHelper.fetchAndSend(ctx)
+    }
+
+    /** Morning routine: one automatic status at the chosen time. */
+    private fun checkRoutine() {
+        val ctx = applicationContext
+        if (!Config.routineOn(ctx)) return
+        val cal = java.util.Calendar.getInstance()
+        val mins = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        if (mins < Config.routineMinutes(ctx)) return
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            .format(java.util.Date())
+        val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+        if (prefs.getString("last_routine_day", "") == today) return
+        prefs.edit().putString("last_routine_day", today).apply()
+        Relay.send(ctx, Relay.TYPE_SYSTEM, "🌅 সকালের স্ট্যাটাস",
+            SystemReceiver.batteryStatusText(ctx))
+        LocationHelper.fetchAndSend(ctx)
+    }
+
+    /** Per-app daily usage limits (set by long-press in the app picker). */
+    private fun checkUsageLimits() {
+        val ctx = applicationContext
+        val pkgs = Config.usageLimitedPkgs(ctx)
+        if (pkgs.isEmpty() || !DailySummary.usageAccess(ctx)) return
+        try {
+            val cal = java.util.Calendar.getInstance()
+            cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0)
+            cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+            val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE)
+                as android.app.usage.UsageStatsManager
+            val stats = usm.queryUsageStats(android.app.usage.UsageStatsManager.INTERVAL_DAILY,
+                cal.timeInMillis, System.currentTimeMillis())
+            val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                .format(java.util.Date())
+            val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+            for (s in stats) {
+                val limit = Config.usageLimit(ctx, s.packageName)
+                if (limit <= 0) continue
+                val usedMin = s.totalTimeInForeground / 60000
+                if (usedMin < limit) continue
+                val key = "usage_alert_${s.packageName}"
+                if (prefs.getString(key, "") == today) continue
+                prefs.edit().putString(key, today).apply()
+                Relay.send(ctx, Relay.TYPE_SYSTEM, "⏰ অ্যাপ ব্যবহারের সীমা পার",
+                    "${Contacts.appLabel(ctx, s.packageName)}: আজ $usedMin মিনিট (সীমা $limit মিনিট)")
+            }
+        } catch (_: Exception) { }
     }
 
     /** Bundled digest-mode notifications go out as one message when due. */
@@ -686,6 +937,8 @@ class LinkService : Service() {
         const val CHANNEL_OTP = "phonelink_otp"
         const val CHANNEL_LOW = "phonelink_quiet"
         const val ACTION_NEW_ITEM = "com.mthtamim.phonelink.NEW_ITEM"
+
+        @Volatile var startedAt: Long = 0L
 
         fun start(ctx: Context) {
             val intent = Intent(ctx, LinkService::class.java)

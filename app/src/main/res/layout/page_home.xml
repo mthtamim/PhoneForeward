@@ -284,6 +284,14 @@
                         android:layout_weight="1"
                         android:text="@string/btn_scan_qr" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnProfiles"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_profiles" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -510,6 +518,14 @@
                         android:layout_weight="1"
                         android:text="@string/cmd_summary" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCmdStatus"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/cmd_status" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -555,6 +571,14 @@
                         android:layout_weight="1"
                         android:text="@string/btn_send_file" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVoice"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_voice" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSos"

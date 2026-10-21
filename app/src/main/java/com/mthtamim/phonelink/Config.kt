@@ -125,6 +125,99 @@ object Config {
     fun inboxKeepDays(ctx: Context) = prefs(ctx).getInt("inbox_keep_days", 0)
     fun setInboxKeepDays(ctx: Context, d: Int) { prefs(ctx).edit().putInt("inbox_keep_days", d).apply() }
 
+    // ---------- v2.2 ----------
+
+    /** Alert words: any message containing one is treated as urgent. */
+    fun alertWords(ctx: Context): List<String> =
+        (prefs(ctx).getString("alert_words", "") ?: "")
+            .split(",").map { it.trim() }.filter { it.isNotEmpty() }
+    fun alertWordsRaw(ctx: Context): String = prefs(ctx).getString("alert_words", "") ?: ""
+    fun setAlertWordsRaw(ctx: Context, raw: String) {
+        prefs(ctx).edit().putString("alert_words", raw.trim()).apply()
+    }
+    fun containsAlertWord(ctx: Context, text: String): Boolean {
+        val lower = text.lowercase()
+        return alertWords(ctx).any { lower.contains(it.lowercase()) }
+    }
+
+    /** Missed-call auto-reply SMS (sender phone). */
+    fun autoReplyOn(ctx: Context) = prefs(ctx).getBoolean("auto_reply_on", false)
+    fun autoReplyText(ctx: Context): String =
+        prefs(ctx).getString("auto_reply_text", "") ?: ""
+    fun setAutoReplyText(ctx: Context, t: String) {
+        prefs(ctx).edit().putString("auto_reply_text", t.trim()).apply()
+    }
+
+    /** Morning routine: one automatic status (battery + summary + location). */
+    fun routineOn(ctx: Context) = prefs(ctx).getBoolean("routine_on", false)
+    fun routineMinutes(ctx: Context) = prefs(ctx).getInt("routine_minutes", 8 * 60)
+    fun setRoutineMinutes(ctx: Context, m: Int) { prefs(ctx).edit().putInt("routine_minutes", m).apply() }
+
+    /** Send one last location when the battery is about to die. */
+    fun lowLocOn(ctx: Context) = prefs(ctx).getBoolean("low_loc_on", true)
+    fun ttsCalls(ctx: Context) = prefs(ctx).getBoolean("tts_calls", false)
+    fun fwdPresence(ctx: Context) = prefs(ctx).getBoolean("fwd_presence", false)
+    fun fwdMedia(ctx: Context) = prefs(ctx).getBoolean("fwd_media", false)
+
+    /** Telegram mirror of forwarded messages (bot token + chat id). */
+    fun tgToken(ctx: Context): String = prefs(ctx).getString("tg_token", "") ?: ""
+    fun tgChat(ctx: Context): String = prefs(ctx).getString("tg_chat", "") ?: ""
+    fun setTelegram(ctx: Context, token: String, chat: String) {
+        prefs(ctx).edit().putString("tg_token", token.trim()).putString("tg_chat", chat.trim()).apply()
+    }
+
+    // ---------- pairing profiles ----------
+    fun profiles(ctx: Context): List<Pair<String, String>> {
+        val out = mutableListOf<Pair<String, String>>()
+        try {
+            val arr = org.json.JSONArray(prefs(ctx).getString("profiles", "[]"))
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                out.add(o.optString("name") to o.optString("code"))
+            }
+        } catch (_: Exception) { }
+        return out
+    }
+
+    fun addProfile(ctx: Context, name: String, code: String) {
+        val list = profiles(ctx).filterNot { it.second.equals(code, ignoreCase = true) } +
+            (name.trim() to code.trim().uppercase())
+        val arr = org.json.JSONArray()
+        for ((n, c) in list.take(5)) {
+            arr.put(org.json.JSONObject().put("name", n).put("code", c))
+        }
+        prefs(ctx).edit().putString("profiles", arr.toString()).apply()
+    }
+
+    fun removeProfile(ctx: Context, code: String) {
+        val list = profiles(ctx).filterNot { it.second.equals(code, ignoreCase = true) }
+        val arr = org.json.JSONArray()
+        for ((n, c) in list) arr.put(org.json.JSONObject().put("name", n).put("code", c))
+        prefs(ctx).edit().putString("profiles", arr.toString()).apply()
+    }
+
+    // ---------- per-app daily usage limits (minutes) ----------
+    fun usageLimit(ctx: Context, pkg: String): Int =
+        try { org.json.JSONObject(prefs(ctx).getString("usage_limits", "{}")).optInt(pkg, 0) }
+        catch (e: Exception) { 0 }
+
+    fun setUsageLimit(ctx: Context, pkg: String, minutes: Int) {
+        val o = try { org.json.JSONObject(prefs(ctx).getString("usage_limits", "{}")) }
+            catch (e: Exception) { org.json.JSONObject() }
+        if (minutes <= 0) o.remove(pkg) else o.put(pkg, minutes)
+        prefs(ctx).edit().putString("usage_limits", o.toString()).apply()
+    }
+
+    fun usageLimitedPkgs(ctx: Context): Set<String> {
+        val out = mutableSetOf<String>()
+        try {
+            val o = org.json.JSONObject(prefs(ctx).getString("usage_limits", "{}"))
+            val keys = o.keys()
+            while (keys.hasNext()) out.add(keys.next())
+        } catch (_: Exception) { }
+        return out
+    }
+
     fun setToggle(ctx: Context, key: String, v: Boolean) {
         prefs(ctx).edit().putBoolean(key, v).apply()
     }

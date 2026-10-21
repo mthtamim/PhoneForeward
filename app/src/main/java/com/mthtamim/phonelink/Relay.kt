@@ -117,19 +117,57 @@ object Relay {
     /** Returns true when the relay accepted the message. */
     fun post(ctx: Context, topic: String, payload: JSONObject): Boolean {
         val primary = baseUrl(ctx)
-        if (postTo(ctx, primary, topic, payload)) { markOk(ctx, primary); return true }
+        if (postTo(ctx, primary, topic, payload)) {
+            markOk(ctx, primary)
+            mirrorTelegram(ctx, topic, payload)
+            return true
+        }
         val backup = Config.backupServerUrl(ctx)
         val main = Config.serverUrl(ctx)
         val other = if (primary == main) backup else main
         if (other.isNotEmpty() && other != primary && postTo(ctx, other, topic, payload)) {
-            markOk(ctx, other); return true
+            markOk(ctx, other)
+            mirrorTelegram(ctx, topic, payload)
+            return true
         }
         return false
+    }
+
+    fun lastLatencyMs(ctx: Context): Long = state(ctx).getLong("last_latency_ms", 0L)
+
+    /**
+     * Optional permanent archive: mirrors every forwarded message to a
+     * Telegram chat through the user's own bot (title + body as text).
+     */
+    private fun mirrorTelegram(ctx: Context, topic: String, payload: JSONObject) {
+        try {
+            if (topic != Config.dataTopic(ctx)) return
+            val type = payload.optString("type")
+            if (type == TYPE_HEARTBEAT || type.isEmpty()) return
+            val token = Config.tgToken(ctx)
+            val chat = Config.tgChat(ctx)
+            if (token.isEmpty() || chat.isEmpty()) return
+            val text = "📲 ${payload.optString("title")}\n${payload.optString("body")}"
+                .trim().take(3800)
+            if (text.isEmpty()) return
+            val url = URL("https://api.telegram.org/bot$token/sendMessage")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.connectTimeout = 10000
+            conn.readTimeout = 10000
+            conn.doOutput = true
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            val bodyJson = JSONObject().put("chat_id", chat).put("text", text).toString()
+            conn.outputStream.use { it.write(bodyJson.toByteArray(Charsets.UTF_8)) }
+            conn.responseCode // fire and forget
+            conn.disconnect()
+        } catch (_: Exception) { }
     }
 
     private fun postTo(ctx: Context, base: String, topic: String, payload: JSONObject): Boolean {
         var conn: HttpURLConnection? = null
         return try {
+            val started = System.currentTimeMillis()
             val url = URL(base + "/" + topic)
             conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
@@ -149,6 +187,11 @@ object Relay {
                 else payload.toString()
             conn.outputStream.use { it.write(wire.toByteArray(Charsets.UTF_8)) }
             val code = conn.responseCode
+            if (code in 200..299) {
+                state(ctx).edit()
+                    .putLong("last_latency_ms", System.currentTimeMillis() - started + 1)
+                    .apply()
+            }
             code in 200..299
         } catch (e: Exception) {
             false
@@ -223,6 +266,32 @@ object Relay {
 
     fun pendingAckCount(ctx: Context): Int =
         try { JSONArray(state(ctx).getString("pending_acks", "[]")).length() } catch (e: Exception) { 0 }
+
+    // ---------------- seen receipts ----------------
+
+    /** Receiver → sender: these inbox items have been looked at. */
+    fun sendSeen(ctx: Context, ids: List<String>) {
+        if (ids.isEmpty()) return
+        val appCtx = ctx.applicationContext
+        val payload = JSONObject().apply {
+            put("v", 2)
+            put("type", "SEEN")
+            put("ids", ids.joinToString(","))
+            put("from", Config.deviceName(appCtx))
+            put("time", System.currentTimeMillis())
+        }
+        executor.execute { post(appCtx, Config.cmdTopic(appCtx), payload) }
+    }
+
+    fun onSeen(ctx: Context, count: Int) {
+        state(ctx).edit()
+            .putLong("last_seen_time", System.currentTimeMillis())
+            .putInt("last_seen_count", count)
+            .apply()
+    }
+
+    fun lastSeenTime(ctx: Context): Long = state(ctx).getLong("last_seen_time", 0L)
+    fun lastSeenCount(ctx: Context): Int = state(ctx).getInt("last_seen_count", 0)
 
     fun lastAckTime(ctx: Context): Long = state(ctx).getLong("last_ack_time", 0L)
     fun lastAckTitle(ctx: Context): String = state(ctx).getString("last_ack_title", "") ?: ""

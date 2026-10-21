@@ -11,10 +11,11 @@ import android.telephony.TelephonyManager
  */
 class CallReceiver : BroadcastReceiver() {
 
-    private fun extraFor(ctx: Context, number: String?): org.json.JSONObject {
+    private fun extraFor(ctx: Context, number: String?, ringing: Boolean = false): org.json.JSONObject {
         val e = org.json.JSONObject()
         if (!number.isNullOrBlank()) e.put("number", number)
         if (Config.isPriorityNumber(ctx, number)) e.put("priority", 1)
+        if (ringing) e.put("ringing", 1)
         return e
     }
 
@@ -45,7 +46,7 @@ class CallReceiver : BroadcastReceiver() {
                             Relay.send(ctx, Relay.TYPE_CALL,
                                 "${star(ctx, incomingNumber)}ইনকামিং কল বাজছে",
                                 Contacts.labelForNumber(ctx, incomingNumber),
-                                extraFor(ctx, incomingNumber))
+                                extraFor(ctx, incomingNumber, ringing = true))
                         }
                     }
                     TelephonyManager.EXTRA_STATE_OFFHOOK -> {
@@ -60,6 +61,7 @@ class CallReceiver : BroadcastReceiver() {
                                 "${star(ctx, incomingNumber)}মিসড কল",
                                 Contacts.labelForNumber(ctx, incomingNumber),
                                 extraFor(ctx, incomingNumber))
+                            maybeAutoReply(ctx, incomingNumber)
                         } else if (lastState == TelephonyManager.EXTRA_STATE_OFFHOOK) {
                             val secs = ((System.currentTimeMillis() - callStart) / 1000).coerceAtLeast(0)
                             val who = incomingNumber ?: outgoingNumber
@@ -77,11 +79,33 @@ class CallReceiver : BroadcastReceiver() {
         }
     }
 
+    /** One auto-reply SMS per caller per 10 minutes, when enabled. */
+    private fun maybeAutoReply(ctx: Context, number: String?) {
+        if (number.isNullOrBlank() || !Config.autoReplyOn(ctx)) return
+        val text = Config.autoReplyText(ctx)
+        if (text.isEmpty()) return
+        try {
+            if (ctx.checkSelfPermission(android.Manifest.permission.SEND_SMS)
+                != android.content.pm.PackageManager.PERMISSION_GRANTED) return
+            val now = System.currentTimeMillis()
+            synchronized(autoReplyLock) {
+                val last = autoReplyAt[number] ?: 0L
+                if (now - last < 10 * 60 * 1000L) return
+                autoReplyAt[number] = now
+            }
+            @Suppress("DEPRECATION")
+            android.telephony.SmsManager.getDefault()
+                .sendTextMessage(number, null, text.take(300), null, null)
+        } catch (_: Exception) { }
+    }
+
     companion object {
         private var lastState: String? = null
         private var incomingNumber: String? = null
         private var outgoingNumber: String? = null
         private var callStart: Long = 0L
         private var answered: Boolean = false
+        private val autoReplyLock = Any()
+        private val autoReplyAt = HashMap<String, Long>()
     }
 }

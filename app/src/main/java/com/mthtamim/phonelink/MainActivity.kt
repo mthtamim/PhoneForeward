@@ -46,6 +46,7 @@ class MainActivity : LocalizedActivity() {
     private lateinit var tvQueueInfo: TextView
     private lateinit var tvQuietInfo: TextView
     private lateinit var tvDigestInfo: TextView
+    private lateinit var tvRoutineInfo: TextView
     private lateinit var tvGeoInfo: TextView
     private lateinit var tvRetentionInfo: TextView
     private lateinit var tvStats: TextView
@@ -198,6 +199,7 @@ class MainActivity : LocalizedActivity() {
         tvQueueInfo = findViewById(R.id.tvQueueInfo)
         tvQuietInfo = findViewById(R.id.tvQuietInfo)
         tvDigestInfo = findViewById(R.id.tvDigestInfo)
+        tvRoutineInfo = findViewById(R.id.tvRoutineInfo)
         tvGeoInfo = findViewById(R.id.tvGeoInfo)
         tvRetentionInfo = findViewById(R.id.tvRetentionInfo)
         tvStats = findViewById(R.id.tvStats)
@@ -220,9 +222,17 @@ class MainActivity : LocalizedActivity() {
         val etServer = findViewById<EditText>(R.id.etServer)
         val etBackupServer = findViewById<EditText>(R.id.etBackupServer)
         val etPriority = findViewById<EditText>(R.id.etPriority)
+        val etAlertWords = findViewById<EditText>(R.id.etAlertWords)
+        val etAutoReply = findViewById<EditText>(R.id.etAutoReply)
+        val etTgToken = findViewById<EditText>(R.id.etTgToken)
+        val etTgChat = findViewById<EditText>(R.id.etTgChat)
 
         etDeviceName.setText(Config.deviceName(this))
         etPriority.setText(Config.priorityRaw(this))
+        etAlertWords.setText(Config.alertWordsRaw(this))
+        etAutoReply.setText(Config.autoReplyText(this))
+        etTgToken.setText(Config.tgToken(this))
+        etTgChat.setText(Config.tgChat(this))
         etServer.setText(Config.serverUrl(this))
         etBackupServer.setText(Config.backupServerUrl(this))
         etExcluded.setText(getSharedPreferences("phonelink_cfg", Context.MODE_PRIVATE)
@@ -325,6 +335,7 @@ class MainActivity : LocalizedActivity() {
             var backup = etBackupServer.text.toString().trim()
             if (backup.isNotEmpty() && !backup.startsWith("http")) backup = "https://$backup"
             Config.setBackupServerUrl(this, backup)
+            Config.setTelegram(this, etTgToken.text.toString(), etTgChat.text.toString())
             LinkService.restart(this)
             toast(getString(R.string.toast_server_saved))
         }
@@ -491,6 +502,8 @@ class MainActivity : LocalizedActivity() {
         }
         findViewById<Button>(R.id.btnSaveSmart).setOnClickListener {
             Config.setPriorityRaw(this, etPriority.text.toString())
+            Config.setAlertWordsRaw(this, etAlertWords.text.toString())
+            Config.setAutoReplyText(this, etAutoReply.text.toString())
             toast(getString(R.string.toast_filters_saved))
         }
         bindToggle(R.id.swSmsTrigger, "sms_trigger", Config.smsTriggerOn(this))
@@ -500,6 +513,31 @@ class MainActivity : LocalizedActivity() {
         bindToggle(R.id.swSmsReply, "allow_sms_reply", Config.allowSmsReply(this))
         bindToggle(R.id.swSnap, "allow_snap", Config.allowSnap(this))
         bindToggle(R.id.swGeo, "geo_on", Config.geoOn(this))
+
+        // ----- v2.2 toggles & actions -----
+        bindToggle(R.id.swPresence, "fwd_presence", Config.fwdPresence(this))
+        bindToggle(R.id.swMedia, "fwd_media", Config.fwdMedia(this))
+        bindToggle(R.id.swTtsCalls, "tts_calls", Config.ttsCalls(this))
+        bindToggle(R.id.swAutoReply, "auto_reply_on", Config.autoReplyOn(this))
+        bindToggle(R.id.swLowLoc, "low_loc_on", Config.lowLocOn(this))
+        val swRoutine = findViewById<CompoundButton>(R.id.swRoutine)
+        swRoutine.isChecked = Config.routineOn(this)
+        swRoutine.setOnCheckedChangeListener { _, checked ->
+            Config.setToggle(this, "routine_on", checked); refreshStatus()
+        }
+        findViewById<Button>(R.id.btnRoutineTime).setOnClickListener {
+            val cur = Config.routineMinutes(this)
+            TimePickerDialog(this, { _, h, m ->
+                Config.setRoutineMinutes(this, h * 60 + m); refreshStatus()
+            }, cur / 60, cur % 60, true).show()
+        }
+        findViewById<Button>(R.id.btnVoice).setOnClickListener {
+            startActivity(Intent(this, VoiceActivity::class.java))
+        }
+        findViewById<Button>(R.id.btnCmdStatus).setOnClickListener {
+            Relay.sendCommand(this, "STATUS"); toast(getString(R.string.toast_cmd_status))
+        }
+        findViewById<Button>(R.id.btnProfiles).setOnClickListener { showProfilesDialog() }
         findViewById<Button>(R.id.btnSetGeo).setOnClickListener {
             toast(getString(R.string.toast_geo_fetching))
             LocationHelper.fetchCoords(this,
@@ -628,6 +666,7 @@ class MainActivity : LocalizedActivity() {
         super.onResume()
         refreshStatus()
         refreshInbox()
+        if (pageInbox.visibility == View.VISIBLE) markInboxSeen()
         inboxReceiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context?, i: Intent?) { refreshInbox(); refreshStatus() }
         }
@@ -650,6 +689,7 @@ class MainActivity : LocalizedActivity() {
         pageHome.visibility = if (itemId == R.id.navHome) View.VISIBLE else View.GONE
         pageInbox.visibility = if (itemId == R.id.navInbox) View.VISIBLE else View.GONE
         pageSettings.visibility = if (itemId == R.id.navSettings) View.VISIBLE else View.GONE
+        if (itemId == R.id.navInbox) markInboxSeen()
     }
 
     private fun bindModeSwitch(id: Int, initial: Boolean, onChange: (Boolean) -> Unit) {
@@ -689,6 +729,14 @@ class MainActivity : LocalizedActivity() {
             labels.add(getString(R.string.menu_reply_sms))
             actions.add { showReplyDialog(item.extra.removePrefix("tel:")) }
         }
+        if (item.type == Relay.TYPE_CALL && item.extra.startsWith("tel:")) {
+            labels.add(getString(R.string.menu_reply_sms))
+            actions.add { showReplyDialog(item.extra.removePrefix("tel:")) }
+        }
+        if (item.type == Relay.TYPE_NOTIF && item.extra.startsWith("notif:")) {
+            labels.add(getString(R.string.menu_reply_notif))
+            actions.add { showNotifReplyDialog(item.extra.removePrefix("notif:")) }
+        }
         labels.add(getString(R.string.menu_delete))
         actions.add { History.delete(this, item); refreshInbox(); toast(getString(R.string.toast_item_deleted)) }
         AlertDialog.Builder(this)
@@ -716,6 +764,77 @@ class MainActivity : LocalizedActivity() {
             }
             .setNegativeButton(getString(R.string.btn_cancel), null)
             .show()
+    }
+
+    private fun showNotifReplyDialog(notifKey: String) {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_reply_text)
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.reply_notif_title))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_send)) { _, _ ->
+                val text = input.text.toString().trim()
+                if (text.isNotEmpty()) {
+                    val extra = org.json.JSONObject()
+                        .put("key", notifKey).put("text", text)
+                    Relay.sendCommand(this, "REPLY_NOTIF", null, extra)
+                    toast(getString(R.string.toast_reply_sent))
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    private fun showProfilesDialog() {
+        val profiles = Config.profiles(this)
+        val labels = mutableListOf<String>()
+        profiles.forEach { (name, code) -> labels.add("⭐ $name — $code") }
+        labels.add(getString(R.string.profile_add_current))
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.profiles_title))
+            .setItems(labels.toTypedArray()) { _, which ->
+                if (which < profiles.size) {
+                    val code = profiles[which].second
+                    Config.setPairCode(this, code)
+                    refreshPairCode()
+                    LinkService.restart(this)
+                    toast(getString(R.string.toast_code_set))
+                } else {
+                    val input = EditText(this).apply {
+                        hint = getString(R.string.hint_profile_name)
+                    }
+                    AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.profile_add_current))
+                        .setView(input)
+                        .setPositiveButton(android.R.string.ok) { _, _ ->
+                            val name = input.text.toString().trim()
+                                .ifEmpty { getString(R.string.profile_default_name) }
+                            Config.addProfile(this, name, Config.pairCode(this))
+                            toast(getString(R.string.toast_profile_saved))
+                        }
+                        .setNegativeButton(getString(R.string.btn_cancel), null)
+                        .show()
+                }
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
+    /** Opening the inbox marks its items seen and tells the sender. */
+    private fun markInboxSeen() {
+        try {
+            val prefs = getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
+            val seen = prefs.getStringSet("seen_ids", emptySet())?.toMutableSet() ?: mutableSetOf()
+            val fresh = History.all(this).map { it.id }
+                .filter { it.isNotEmpty() && it !in seen }
+            if (fresh.isEmpty()) return
+            seen.addAll(fresh)
+            while (seen.size > 300) seen.remove(seen.first())
+            prefs.edit().putStringSet("seen_ids", seen).apply()
+            Relay.sendSeen(this, fresh)
+        } catch (_: Exception) { }
     }
 
     private fun showDevicesDialog() {
@@ -844,13 +963,15 @@ class MainActivity : LocalizedActivity() {
 
         // Relay connection state
         val okAt = Relay.lastRelayOk(this)
+        val latency = Relay.lastLatencyMs(this)
+        val latencySuffix = if (latency > 0) " • ${latency}ms" else ""
         if (okAt == 0L) {
             tvRelay.text = getString(R.string.relay_never)
             tvRelay.setTextColor(ContextCompat.getColor(this, R.color.status_bad))
         } else {
             val ageMin = (System.currentTimeMillis() - okAt) / 60000
             if (ageMin < 3) {
-                tvRelay.text = getString(R.string.relay_connected)
+                tvRelay.text = getString(R.string.relay_connected) + latencySuffix
                 tvRelay.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
             } else {
                 val whenText = when {
@@ -858,7 +979,7 @@ class MainActivity : LocalizedActivity() {
                     ageMin < 1440 -> getString(R.string.time_hours_ago, ageMin / 60)
                     else -> getString(R.string.time_days_ago, ageMin / 1440)
                 }
-                tvRelay.text = getString(R.string.relay_last, whenText)
+                tvRelay.text = getString(R.string.relay_last, whenText) + latencySuffix
                 tvRelay.setTextColor(ContextCompat.getColor(this,
                     if (ageMin < 30) R.color.status_ok else R.color.status_bad))
             }
@@ -867,12 +988,15 @@ class MainActivity : LocalizedActivity() {
         // Delivery state
         val pending = Relay.pendingAckCount(this)
         val ackAt = Relay.lastAckTime(this)
+        val seenAt = Relay.lastSeenTime(this)
+        val seenSuffix = if (seenAt > 0) " • " + getString(R.string.delivery_seen,
+            SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(seenAt))) else ""
         tvDelivery.text = when {
-            pending > 0 -> getString(R.string.delivery_pending, pending)
+            pending > 0 -> getString(R.string.delivery_pending, pending) + seenSuffix
             ackAt > 0 -> getString(R.string.delivery_last,
                 Relay.lastAckTitle(this),
-                SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(ackAt)))
-            else -> getString(R.string.delivery_none)
+                SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(ackAt))) + seenSuffix
+            else -> getString(R.string.delivery_none) + seenSuffix
         }
 
         tvQueueInfo.text = getString(R.string.queue_info, Relay.queueSize(this))
@@ -887,6 +1011,7 @@ class MainActivity : LocalizedActivity() {
         tvGeoInfo.text = if (Config.geoIsSet(this)) {
             getString(R.string.geo_set, Config.geoLat(this), Config.geoLng(this), Config.geoRadius(this))
         } else getString(R.string.geo_not_set)
+        tvRoutineInfo.text = getString(R.string.routine_at, fmtClock(Config.routineMinutes(this)))
         val kd = Config.inboxKeepDays(this)
         tvRetentionInfo.text = if (kd == 0) getString(R.string.retention_forever)
             else getString(R.string.retention_days, kd)

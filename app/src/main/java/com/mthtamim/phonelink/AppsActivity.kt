@@ -46,6 +46,11 @@ class AppsActivity : LocalizedActivity() {
             AppRules.setRule(this, e.pkg, AppRules.next(AppRules.rule(this, e.pkg)))
             adapter.notifyDataSetChanged()
         }
+        lv.setOnItemLongClickListener { _, _, position, _ ->
+            val e = shown.getOrNull(position) ?: return@setOnItemLongClickListener false
+            showLimitDialog(e)
+            true
+        }
 
         val swAllow = findViewById<CompoundButton>(R.id.swAllowlist)
         swAllow.isChecked = AppRules.allowlistMode(this)
@@ -83,6 +88,30 @@ class AppsActivity : LocalizedActivity() {
         }
     }
 
+    /** Long-press: set a daily usage limit (minutes) for this app. */
+    private fun showLimitDialog(e: Entry) {
+        val input = EditText(this).apply {
+            hint = getString(R.string.hint_limit_minutes)
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            val cur = Config.usageLimit(this@AppsActivity, e.pkg)
+            if (cur > 0) setText(cur.toString())
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(getString(R.string.limit_title, e.label))
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val mins = input.text.toString().trim().toIntOrNull() ?: 0
+                Config.setUsageLimit(this, e.pkg, mins)
+                adapter.notifyDataSetChanged()
+            }
+            .setNeutralButton(getString(R.string.limit_remove)) { _, _ ->
+                Config.setUsageLimit(this, e.pkg, 0)
+                adapter.notifyDataSetChanged()
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
+    }
+
     private fun applyFilter() {
         shown = if (query.isEmpty()) all else all.filter {
             it.label.lowercase().contains(query) || it.pkg.lowercase().contains(query)
@@ -101,7 +130,9 @@ class AppsActivity : LocalizedActivity() {
             val e = shown[position]
             view.findViewById<ImageView>(R.id.ivAppIcon).setImageDrawable(e.icon)
             view.findViewById<TextView>(R.id.tvAppName).text = e.label
-            view.findViewById<TextView>(R.id.tvAppPkg).text = e.pkg
+            val limit = Config.usageLimit(this@AppsActivity, e.pkg)
+            view.findViewById<TextView>(R.id.tvAppPkg).text =
+                if (limit > 0) "${e.pkg}  •  ⏰ ${limit}m/day" else e.pkg
             val tvRule = view.findViewById<TextView>(R.id.tvAppRule)
             val rule = AppRules.rule(this@AppsActivity, e.pkg)
             tvRule.text = getString(when (rule) {

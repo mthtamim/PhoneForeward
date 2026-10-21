@@ -84,7 +84,7 @@
     <string name="sec_server">রিলে সার্ভার</string>
     <string name="hint_server">https://ntfy.sh</string>
     <string name="btn_save_server">সার্ভার সেভ করো</string>
-    <string name="footer_about">PhoneLink v2.1 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।</string>
+    <string name="footer_about">PhoneLink v2.2 — ডিফল্ট রিলে ntfy.sh (ফ্রি, অ্যাকাউন্ট লাগে না)। দুটি ফোনে একই কোড + একই সার্ভার থাকলেই চলবে। মেসেজ রিলে দিয়ে যায়, তাই পেয়ার কোড গোপন রাখো।</string>
 
     <string name="perm_title">Permission</string>
     <string name="perm_intro">PhoneLink ঠিকমতো কাজ করতে এই permission গুলো লাগে। যেগুলো দেওয়া আছে সেগুলো সবুজ দেখাবে। এই স্ক্রিনটা অটোমেটিক শুধু প্রথমবারই আসে।</string>
@@ -226,7 +226,7 @@
     <!-- v2.1 -->
     <string name="btn_torch">🔦 টর্চ</string>
     <string name="apps_title">অ্যাপ বাছাই</string>
-    <string name="apps_hint">অ্যাপে ট্যাপ করলে নিয়ম বদলায়: ডিফল্ট → সাথে সাথে → সারাংশে → বন্ধ।</string>
+    <string name="apps_hint">অ্যাপে ট্যাপ করলে নিয়ম বদলায়: ডিফল্ট → সাথে সাথে → সারাংশে → বন্ধ। চেপে ধরলে দৈনিক ব্যবহারের সীমা দেওয়া যায়।</string>
     <string name="apps_hint_short">কোন অ্যাপের নোটিফিকেশন যাবে আর কীভাবে যাবে, বেছে নাও।</string>
     <string name="allowlist_label">শুধু বাছাই করা অ্যাপ (allowlist মোড)</string>
     <string name="hint_app_search">অ্যাপ খোঁজো…</string>
@@ -302,4 +302,44 @@
     <string name="tile_label">PhoneLink সেন্ডার</string>
     <string name="tile_on">সেন্ডার চালু</string>
     <string name="tile_off">সেন্ডার বন্ধ</string>
+
+    <!-- v2.2 -->
+    <string name="fwd_presence">লক / আনলক ইভেন্ট</string>
+    <string name="fwd_media">নতুন ছবি / স্ক্রিনশট অটো-ফরোয়ার্ড</string>
+    <string name="tts_calls_label">কলারের নাম শুনিয়ে দাও</string>
+    <string name="tts_call_prefix">কল আসছে</string>
+    <string name="auto_reply_label">মিসড কলে অটো SMS রিপ্লাই</string>
+    <string name="hint_auto_reply">অটো-রিপ্লাই লেখা (স্মার্ট কন্ট্রোলের সেভ বোতামে সেভ হয়)</string>
+    <string name="routine_label">সকালের রুটিন স্ট্যাটাস</string>
+    <string name="routine_at">প্রতিদিন %1$s টায়</string>
+    <string name="btn_routine_time">রুটিনের সময় দাও</string>
+    <string name="low_loc_label">ব্যাটারি শেষের আগে শেষ লোকেশন (≤৫%)</string>
+    <string name="hint_alert_words">অ্যালার্ট শব্দ (কমা দিয়ে) — সবসময় জরুরি</string>
+    <string name="hint_tg_token">Telegram বট টোকেন (মিরর আর্কাইভ)</string>
+    <string name="hint_tg_chat">Telegram চ্যাট আইডি</string>
+    <string name="perm_line_media">ছবি / মিডিয়া</string>
+    <string name="btn_voice">🎤 ভয়েস মেসেজ</string>
+    <string name="voice_title">ভয়েস মেসেজ</string>
+    <string name="voice_ready">রেকর্ড চাপো, বলো, থামালেই পাঠিয়ে দেবে (সর্বোচ্চ ৬০ সেকেন্ড)</string>
+    <string name="voice_recording">রেকর্ড হচ্ছে… %1$d সেকেন্ড</string>
+    <string name="btn_voice_record">⏺ রেকর্ড</string>
+    <string name="btn_voice_stop_send">⏹ থামাও ও পাঠাও</string>
+    <string name="toast_voice_failed">রেকর্ড করা যায়নি</string>
+    <string name="toast_mic_denied">মাইক্রোফোন permission লাগবে</string>
+    <string name="btn_profiles">👥 পেয়ারিং প্রোফাইল</string>
+    <string name="profiles_title">পেয়ারিং প্রোফাইল</string>
+    <string name="profile_add_current">＋ বর্তমান কোড প্রোফাইল হিসেবে সেভ</string>
+    <string name="hint_profile_name">প্রোফাইলের নাম (যেমন: বাসা)</string>
+    <string name="profile_default_name">প্রোফাইল</string>
+    <string name="toast_profile_saved">প্রোফাইল সেভ হয়েছে</string>
+    <string name="cmd_status">🩺 হেলথ রিপোর্ট</string>
+    <string name="toast_cmd_status">হেলথ রিপোর্ট চাওয়া হয়েছে</string>
+    <string name="menu_reply_notif">এই নোটিফিকেশনে রিপ্লাই</string>
+    <string name="reply_notif_title">রিপ্লাই (আরেক ফোন থেকে যাবে)</string>
+    <string name="delivery_seen">👁 দেখা হয়েছে %1$s</string>
+    <string name="quick_callback">পরে কল ব্যাক করছি</string>
+    <string name="quick_busy">এখন ব্যস্ত আছি, মেসেজ দাও</string>
+    <string name="limit_title">দৈনিক সীমা — %1$s</string>
+    <string name="hint_limit_minutes">দিনে কত মিনিট (যেমন ১২০)</string>
+    <string name="limit_remove">সীমা তোলো</string>
 </resources>

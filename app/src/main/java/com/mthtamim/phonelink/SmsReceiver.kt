@@ -29,9 +29,10 @@ class SmsReceiver : BroadcastReceiver() {
 
         val who = Contacts.labelForNumber(ctx, sender)
         val priority = Config.isPriorityNumber(ctx, sender)
+        val alertHit = Config.containsAlertWord(ctx, body)
         val extra = JSONObject().put("number", sender)
-        if (priority) extra.put("priority", 1)
-        val star = if (priority) "⭐ " else ""
+        if (priority || alertHit) extra.put("priority", 1)
+        val star = (if (alertHit) "🚨 " else "") + (if (priority) "⭐ " else "")
         val code = Otp.find(body)
         if (code.isNotEmpty()) {
             extra.put("code", code)
