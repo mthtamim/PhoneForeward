@@ -399,7 +399,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnMenuRemote"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.MenuBtn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -408,7 +408,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnMenuQuick"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.MenuBtn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -417,7 +417,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnMenuAutomation"
-                    style="@style/Widget.Material3.Button.TonalButton"
+                    style="@style/PL.MenuBtn"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"

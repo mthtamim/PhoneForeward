@@ -55,6 +55,8 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSubBack"
                         style="@style/Widget.Material3.Button.TextButton"
+                        app:backgroundTint="@color/md_surfaceVariant"
+                        app:cornerRadius="12dp"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/btn_back" />
@@ -1751,5 +1753,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:labelVisibilityMode="labeled"
+        app:itemActiveIndicatorColor="@color/md_primaryContainer"
         app:menu="@menu/bottom_nav" />
 </LinearLayout>

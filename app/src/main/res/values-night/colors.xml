@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Dark palette (Material 3) -->
 <resources>
-    <color name="md_primary">#38BDF8</color>
-    <color name="md_onPrimary">#082F49</color>
-    <color name="md_primaryContainer">#0C4A6E</color>
-    <color name="md_onPrimaryContainer">#E0F2FE</color>
-    <color name="md_secondary">#94A3B8</color>
-    <color name="md_onSecondary">#0F172A</color>
-    <color name="md_secondaryContainer">#334155</color>
-    <color name="md_onSecondaryContainer">#E2E8F0</color>
-    <color name="md_background">#0B1220</color>
-    <color name="md_onBackground">#F1F5F9</color>
-    <color name="md_surface">#0B1220</color>
-    <color name="md_onSurface">#F1F5F9</color>
-    <color name="md_surfaceVariant">#1E293B</color>
-    <color name="md_onSurfaceVariant">#94A3B8</color>
-    <color name="md_surfaceContainer">#111C30</color>
-    <color name="md_surfaceContainerHigh">#1E293B</color>
-    <color name="md_outline">#475569</color>
+    <color name="md_primary">#34D399</color>
+    <color name="md_onPrimary">#052E1F</color>
+    <color name="md_primaryContainer">#0B3D2A</color>
+    <color name="md_onPrimaryContainer">#CFF5E1</color>
+    <color name="md_secondary">#9DB2BE</color>
+    <color name="md_onSecondary">#10222B</color>
+    <color name="md_secondaryContainer">#22313A</color>
+    <color name="md_onSecondaryContainer">#E4EEF3</color>
+    <color name="md_background">#0C1216</color>
+    <color name="md_onBackground">#E9F1F4</color>
+    <color name="md_surface">#141D23</color>
+    <color name="md_onSurface">#E9F1F4</color>
+    <color name="md_surfaceVariant">#22313A</color>
+    <color name="md_onSurfaceVariant">#9DB2BE</color>
+    <color name="md_surfaceContainer">#182329</color>
+    <color name="md_surfaceContainerHigh">#22313A</color>
+    <color name="md_outline">#3D515D</color>
     <color name="md_error">#F87171</color>
     <color name="md_onError">#450A0A</color>
     <color name="md_errorContainer">#450A0A</color>
 
     <color name="status_ok">#4ADE80</color>
     <color name="status_bad">#F87171</color>
-    <color name="pair_code">#FACC15</color>
-    <color name="divider">#334155</color>
+    <color name="pair_code">#FBBF24</color>
+    <color name="divider">#22313A</color>
 </resources>

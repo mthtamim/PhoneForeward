@@ -1,10 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ===== Modern design system (v2.5) ===== -->
+
+    <!-- White rounded card, soft border, no heavy shadow -->
+    <style name="PL.CardView" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">?attr/colorSurfaceVariant</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+    </style>
+
+    <style name="PL.BtnFilled" parent="Widget.Material3.Button">
+        <item name="cornerRadius">14dp</item>
+    </style>
+
+    <style name="PL.BtnOutlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">14dp</item>
+    </style>
+
+    <style name="PL.BtnTonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">14dp</item>
+    </style>
+
+    <style name="PL.BtnText" parent="Widget.Material3.Button.TextButton">
+        <item name="cornerRadius">14dp</item>
+    </style>
+
+    <!-- Big menu row (Settings categories, Home menu): white card-like row -->
+    <style name="PL.MenuBtn" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">18dp</item>
+        <item name="android:minHeight">62dp</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:insetTop">2dp</item>
+        <item name="android:insetBottom">2dp</item>
+        <item name="backgroundTint">@color/md_surface</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="strokeColor">?attr/colorSurfaceVariant</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
     <!-- Card section heading inside a page -->
     <style name="PL.CardTitle" parent="TextAppearance.Material3.TitleMedium">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
@@ -40,10 +84,15 @@
         <item name="android:textStyle">bold</item>
     </style>
 
-    <!-- Outlined text field wrapper spacing -->
-    <style name="PL.Field" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+    <!-- Soft filled text field (modern rounded look) -->
+    <style name="PL.Field" parent="Widget.Material3.TextInputLayout.FilledBox">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">8dp</item>
+        <item name="boxBackgroundColor">@color/md_surfaceContainer</item>
+        <item name="boxCornerRadiusTopStart">14dp</item>
+        <item name="boxCornerRadiusTopEnd">14dp</item>
+        <item name="boxCornerRadiusBottomStart">14dp</item>
+        <item name="boxCornerRadiusBottomEnd">14dp</item>
     </style>
 </resources>

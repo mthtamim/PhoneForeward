@@ -18,7 +18,7 @@
             android:orientation="vertical">
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuGeneral"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -26,7 +26,7 @@
                 android:text="@string/cat_general" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuForward"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -34,7 +34,7 @@
                 android:text="@string/cat_forward" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuSmart"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -42,7 +42,7 @@
                 android:text="@string/cat_smart" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuSecurity"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -50,7 +50,7 @@
                 android:text="@string/cat_security" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuRelay"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -58,7 +58,7 @@
                 android:text="@string/cat_relay" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuAutomation"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -66,7 +66,7 @@
                 android:text="@string/cat_automation" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuGroup"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -74,7 +74,7 @@
                 android:text="@string/cat_group" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuFamily"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
@@ -82,7 +82,7 @@
                 android:text="@string/cat_family" />
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/menuData"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/PL.MenuBtn"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
