@@ -409,6 +409,9 @@ class MainActivity : LocalizedActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // v2.15.1: repair any wrongly-typed values a restore left
+        // behind before anything reads them with a typed getter.
+        SettingsTransfer.heal(this)
 
         // Share-to-PhoneLink: another app shared text/a link with us.
         if (intent?.action == Intent.ACTION_SEND && intent.type == "text/plain") {

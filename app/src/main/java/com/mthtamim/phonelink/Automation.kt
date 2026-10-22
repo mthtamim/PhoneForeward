@@ -830,16 +830,23 @@ object Automation {
                 }
                 "auto_rotate_set" -> {
                     if (android.provider.Settings.System.canWrite(ctx)) {
+                        val cur = try {
+                            android.provider.Settings.System.getInt(ctx.contentResolver,
+                                android.provider.Settings.System.ACCELEROMETER_ROTATION, 1) == 1
+                        } catch (e: Exception) { true }
                         android.provider.Settings.System.putInt(ctx.contentResolver,
                             android.provider.Settings.System.ACCELEROMETER_ROTATION,
-                            if (param == "off") 0 else 1)
+                            if (toggleTarget(param, cur)) 1 else 0)
                     } else localNotify(ctx,
                         "Auto-rotate বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
                 }
                 "bt_toggle" -> {
                     // v2.15.0: BluetoothAdapter.enable/disable is dead
                     // on Android 13+, but the shell can still do it.
-                    val on = param != "off"
+                    // v2.15.1: a blank param flips the real state.
+                    val cur = try { BtShare.adapter()?.isEnabled == true }
+                        catch (e: Exception) { false }
+                    val on = toggleTarget(param, cur)
                     if (!shOk("svc bluetooth " + (if (on) "enable" else "disable"))) {
                         try {
                             @Suppress("DEPRECATION")
@@ -1150,11 +1157,17 @@ object Automation {
                 "keep_awake" -> setKeepAwake(ctx, param != "off")
                 "brightness_auto" -> {
                     if (android.provider.Settings.System.canWrite(ctx)) {
+                        val cur = try {
+                            android.provider.Settings.System.getInt(ctx.contentResolver,
+                                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
+                                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL) ==
+                                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+                        } catch (e: Exception) { false }
                         android.provider.Settings.System.putInt(ctx.contentResolver,
                             android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
-                            if (param == "off")
-                                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
-                            else android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC)
+                            if (toggleTarget(param, cur))
+                                android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+                            else android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
                     } else localNotify(ctx,
                         "Auto-উজ্জ্বলতা বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
                 }
@@ -1185,7 +1198,11 @@ object Automation {
                     shAction(ctx, cmd)
                 }
                 "airplane_toggle" -> {
-                    val on = param.trim().lowercase() != "off"
+                    val cur = try {
+                        android.provider.Settings.Global.getInt(
+                            ctx.contentResolver, "airplane_mode_on", 0) == 1
+                    } catch (e: Exception) { false }
+                    val on = toggleTarget(param, cur)
                     // v2.14: cmd connectivity is the way that still
                     // works on Android 11+; the old settings+broadcast
                     // trick is ignored by modern Android.
@@ -1194,12 +1211,22 @@ object Automation {
                         "; settings put global airplane_mode_on " +
                         (if (on) "1" else "0"))
                 }
-                "mobile_data_toggle" ->
-                    shAction(ctx, if (param == "off") "svc data disable"
-                        else "svc data enable")
-                "wifi_toggle" ->
-                    shAction(ctx, if (param == "off") "svc wifi disable"
-                        else "svc wifi enable")
+                "mobile_data_toggle" -> {
+                    val cur = try {
+                        android.provider.Settings.Global.getInt(
+                            ctx.contentResolver, "mobile_data", 0) == 1
+                    } catch (e: Exception) { false }
+                    shAction(ctx, if (toggleTarget(param, cur))
+                        "svc data enable" else "svc data disable")
+                }
+                "wifi_toggle" -> {
+                    val cur = try {
+                        (ctx.getSystemService(Context.WIFI_SERVICE)
+                            as android.net.wifi.WifiManager).isWifiEnabled
+                    } catch (e: Exception) { false }
+                    shAction(ctx, if (toggleTarget(param, cur))
+                        "svc wifi enable" else "svc wifi disable")
+                }
                 "shell_screenshot" -> {
                     val path = param.trim().ifEmpty {
                         "/sdcard/Pictures/phonelink_" +
@@ -1414,12 +1441,18 @@ object Automation {
                 "night_light" -> {
                     // v2.15.0: the Secure write needs WRITE_SECURE_
                     // SETTINGS; the Shizuku shell has it.
+                    // v2.15.1: a blank param flips the stored state.
+                    val cur = try {
+                        android.provider.Settings.Secure.getInt(
+                            ctx.contentResolver, "night_display_activated", 0) == 1
+                    } catch (e: Exception) { false }
+                    val on = toggleTarget(param, cur)
                     var ok = shOk("settings put secure night_display_activated " +
-                        (if (param == "off") "0" else "1"))
+                        (if (on) "1" else "0"))
                     if (!ok) {
                         try { ok = android.provider.Settings.Secure.putInt(
                             ctx.contentResolver, "night_display_activated",
-                            if (param == "off") 0 else 1) } catch (_: Exception) { }
+                            if (on) 1 else 0) } catch (_: Exception) { }
                     }
                     if (!ok) localNotify(ctx,
                         "নাইট লাইট এই ডিভাইসে সরাসরি বদলানো যায়নি (Shizuku থাকলে হয়ে যেত)।")
@@ -1576,8 +1609,13 @@ object Automation {
                     // ("aod_mode") without the secure-settings permission,
                     // so it could never work. The AOSP key is
                     // doze_always_on, written through the Shizuku shell.
+                    // v2.15.1: a blank param flips the stored state.
+                    val cur = try {
+                        android.provider.Settings.Secure.getInt(
+                            ctx.contentResolver, "doze_always_on", 0) == 1
+                    } catch (e: Exception) { false }
                     val ok = shOk("settings put secure doze_always_on " +
-                        (if (param == "off") "0" else "1"))
+                        (if (toggleTarget(param, cur)) "1" else "0"))
                     if (!ok) localNotify(ctx,
                         "Always-on display এই ডিভাইসে সরাসরি বদলানো যায়নি (Shizuku থাকলে হয়ে যেত)।")
                 }
@@ -1750,6 +1788,18 @@ object Automation {
             val plugged = bi?.getIntExtra(
                 android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
             val wireless = plugged == android.os.BatteryManager.BATTERY_PLUGGED_WIRELESS
+            // v2.15.1: charging on/off as a heartbeat edge too — the
+            // manifest receiver and the service's dynamic receiver are
+            // the live paths, this is the third, independent net for
+            // the one trigger family Tamim reports still not firing.
+            val chargingNow = plugged != 0
+            if (wp.contains("edge_charging")) {
+                val prevC = wp.getBoolean("edge_charging", false)
+                if (chargingNow && !prevC) onEvent(ctx, "charging_on", JSONObject())
+                if (!chargingNow && prevC) onEvent(ctx, "charging_off", JSONObject())
+                if (chargingNow != prevC)
+                    wp.edit().putBoolean("edge_charging", chargingNow).apply()
+            } else wp.edit().putBoolean("edge_charging", chargingNow).apply()
             if (wp.contains("edge_wireless")) {
                 val prev = wp.getBoolean("edge_wireless", false)
                 if (wireless && !prev) onEvent(ctx, "wireless_charging", JSONObject())
@@ -2953,6 +3003,17 @@ object Automation {
     /** v2.15.0: secure-settings and radio actions are impossible for a
      *  normal app on modern Android, but Shizuku's shell CAN do them.
      *  Returns true only when the command really ran clean. */
+    /** v2.15.1: where a toggle-family action should end up. An
+     *  explicit on/off param wins; a BLANK param (or the word
+     *  "toggle") means flip — read the live state, do the opposite.
+     *  Tamim asked for real toggles, not an on/off typing box. */
+    private fun toggleTarget(param: String, current: Boolean): Boolean =
+        when (param.trim().lowercase()) {
+            "off", "0", "false" -> false
+            "on", "1", "true" -> true
+            else -> !current
+        }
+
     private fun shOk(command: String): Boolean {
         if (!ShizukuHelper.granted()) return false
         ShizukuHelper.run(command)

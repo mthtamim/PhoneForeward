@@ -21,6 +21,103 @@ object SettingsTransfer {
     private val skipExact = setOf("cmd_pin_digest", "app_pin_hash",
         "panic_pin_hash", "web_pin")
 
+    // v2.15.1: keys the app reads with getLong / getInt. A JSON round
+    // trip cannot tell a small Long from an Int (both are just "42"),
+    // and a restore that guesses wrong makes the typed getter throw
+    // ClassCastException — on a startup path that bricks the app
+    // ("restore an old backup, the app never opens again" — Tamim).
+    // These lists, plus the type of the value already in the store,
+    // are the authority when a restore writes numbers back.
+    private val knownLong = setOf("auto_backup_last", "lan_peer_at",
+        "last_ack_time", "last_digest", "last_latency_ms", "last_lowloc",
+        "last_media_id", "last_photos_at", "last_relay_ok",
+        "last_seen_time", "last_sender_seen", "last_video_id",
+        "media_img_id", "media_vid_id", "mms_seen_id", "net_down_since",
+        "pause_until", "pin_lock_until", "quiet_until",
+        "screen_off_since", "sms_sent_last_id")
+    private val knownInt = setOf("checkin_expect", "clip_hash",
+        "data_limit_mb", "debounce_sec", "digest_minutes", "focus_end",
+        "focus_start", "geo_inside", "geo_radius", "inbox_keep_days",
+        "last_seen_count", "last_sender_battery", "pin_fails",
+        "quiet_end", "quiet_start", "routine_minutes", "smtp_port",
+        "steps_today", "tab", "wx_code", "wxf_code")
+
+    /** Writes one backup value, coerced to the type the app actually
+     *  reads: the type already in the store wins, then the known-key
+     *  tables, then the JSON type. Values that cannot be coerced are
+     *  skipped instead of poisoning the store. */
+    private fun putCoerced(edit: android.content.SharedPreferences.Editor,
+                           current: Map<String, *>, k: String, v: Any) {
+        val cur = current[k]
+        val target = when {
+            cur is Boolean -> "b"
+            cur is Int -> "i"
+            cur is Long -> "l"
+            cur is Float -> "f"
+            cur is String -> "s"
+            cur is Set<*> -> "set"
+            k in knownLong || k.startsWith("fired_") -> "l"
+            k in knownInt -> "i"
+            v is Boolean -> "b"
+            v is Int -> "i"
+            v is Long -> "l"
+            v is Double -> "f"
+            v is String -> "s"
+            v is JSONArray -> "set"
+            else -> "skip"
+        }
+        val num = v as? Number
+        when (target) {
+            "b" -> edit.putBoolean(k, (v as? Boolean)
+                ?: v.toString().equals("true", ignoreCase = true))
+            "i" -> num?.let { edit.putInt(k, it.toInt()) }
+                ?: (v as? String)?.toIntOrNull()?.let { edit.putInt(k, it) }
+            "l" -> num?.let { edit.putLong(k, it.toLong()) }
+                ?: (v as? String)?.toLongOrNull()?.let { edit.putLong(k, it) }
+            "f" -> num?.let { edit.putFloat(k, it.toFloat()) }
+                ?: (v as? String)?.toFloatOrNull()?.let { edit.putFloat(k, it) }
+            "s" -> if (v !is JSONArray && v !is JSONObject)
+                edit.putString(k, v.toString())
+            "set" -> if (v is JSONArray) {
+                val set = mutableSetOf<String>()
+                for (i in 0 until v.length()) set.add(v.optString(i))
+                edit.putStringSet(k, set)
+            }
+        }
+    }
+
+    /** v2.15.1: startup self-repair. If a restore (old or new) already
+     *  poisoned a store with a wrongly-typed number, rewrite the known
+     *  keys to the types the readers expect — installing this version
+     *  un-bricks the app without wiping any data. */
+    fun heal(ctx: Context) {
+        for (name in listOf("phonelink_cfg", "phonelink_auto",
+                            "phonelink_state")) {
+            try {
+                val prefs = ctx.getSharedPreferences(name,
+                    Context.MODE_PRIVATE)
+                val edit = prefs.edit()
+                var changed = false
+                for ((k, v) in prefs.all) {
+                    when {
+                        (k in knownLong || k.startsWith("fired_")) && v is Int -> {
+                            edit.putLong(k, v.toLong()); changed = true }
+                        (k in knownLong || k.startsWith("fired_")) && v is String ->
+                            v.toLongOrNull()?.let {
+                                edit.putLong(k, it); changed = true }
+                        k in knownInt && v is Long &&
+                            v >= Int.MIN_VALUE && v <= Int.MAX_VALUE -> {
+                            edit.putInt(k, v.toInt()); changed = true }
+                        k in knownInt && v is String ->
+                            v.toIntOrNull()?.let {
+                                edit.putInt(k, it); changed = true }
+                    }
+                }
+                if (changed) edit.apply()
+            } catch (_: Exception) { }
+        }
+    }
+
     private fun secret(k: String): Boolean =
         k in skipExact || k.startsWith("peer_pin_")
 
@@ -85,27 +182,18 @@ object SettingsTransfer {
         return true
     }
 
-    /** Clears the store, then writes every value with its JSON type. */
+    /** Clears the store, then writes every value coerced to the type
+     *  the app reads (v2.15.1 — see putCoerced). */
     private fun restore(ctx: Context, name: String, obj: JSONObject,
                         skipSecrets: Boolean) {
-        val edit = ctx.getSharedPreferences(name, Context.MODE_PRIVATE)
-            .edit().clear()
+        val prefs = ctx.getSharedPreferences(name, Context.MODE_PRIVATE)
+        val current = HashMap(prefs.all)
+        val edit = prefs.edit().clear()
         val keys = obj.keys()
         while (keys.hasNext()) {
             val k = keys.next()
             if (skipSecrets && secret(k)) continue
-            when (val v = obj.get(k)) {
-                is Boolean -> edit.putBoolean(k, v)
-                is Int -> edit.putInt(k, v)
-                is Long -> edit.putLong(k, v)
-                is Double -> edit.putFloat(k, v.toFloat())
-                is String -> edit.putString(k, v)
-                is JSONArray -> {
-                    val set = mutableSetOf<String>()
-                    for (i in 0 until v.length()) set.add(v.optString(i))
-                    edit.putStringSet(k, set)
-                }
-            }
+            putCoerced(edit, current, k, obj.get(k))
         }
         edit.apply()
     }
@@ -117,6 +205,7 @@ object SettingsTransfer {
             return false
         val cfg = ctx.getSharedPreferences("phonelink_cfg",
             Context.MODE_PRIVATE)
+        val current = HashMap(cfg.all)
         val edit = cfg.edit()
         if (cfgObj == null) {
             // Rules-only legacy object: just restore the rules below.
@@ -132,18 +221,7 @@ object SettingsTransfer {
         while (keys.hasNext()) {
             val k = keys.next()
             if (secret(k)) continue
-            when (val v = cfgObj.get(k)) {
-                is Boolean -> edit.putBoolean(k, v)
-                is Int -> edit.putInt(k, v)
-                is Long -> edit.putLong(k, v)
-                is Double -> edit.putFloat(k, v.toFloat())
-                is String -> edit.putString(k, v)
-                is JSONArray -> {
-                    val set = mutableSetOf<String>()
-                    for (i in 0 until v.length()) set.add(v.optString(i))
-                    edit.putStringSet(k, set)
-                }
-            }
+            putCoerced(edit, current, k, cfgObj.get(k))
         }
         edit.apply()
         val rules = root.optString("rules", "")

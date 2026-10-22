@@ -58,6 +58,9 @@ class LinkService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        // v2.15.1: repair any wrongly-typed values a restore left
+        // behind before anything reads them with a typed getter.
+        SettingsTransfer.heal(applicationContext)
         startedAt = System.currentTimeMillis()
         createChannels()
         registerEventSources()
