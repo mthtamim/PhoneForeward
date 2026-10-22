@@ -37,28 +37,36 @@ class NotifListener : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         sbn ?: return
         val ctx = applicationContext
-        if (!Config.isSender(ctx) || !Config.fwdNotif(ctx)) return
-
         val pkg = sbn.packageName ?: return
         if (pkg == ctx.packageName) return
-        if (Config.excludedApps(ctx).contains(pkg)) return
 
         val notif = sbn.notification ?: return
-        // Skip ongoing/foreground-service noise (music players, downloads in progress etc.)
-        if ((notif.flags and Notification.FLAG_ONGOING_EVENT) != 0) return
-        if ((notif.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
-
         val extras = notif.extras
         val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
         var text = extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()
             ?: extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
             ?: ""
         text = text.trim()
+
+        // v2.14.1: automation triggers are evaluated FIRST, independent
+        // of the forwarding settings. Before, a phone with notification
+        // forwarding off (or in receiver role) never fired notification
+        // rules at all, even though the listener itself was running.
+        if ((notif.flags and Notification.FLAG_GROUP_SUMMARY) == 0 &&
+            (title.isNotEmpty() || text.isNotEmpty())) {
+            Automation.onEvent(ctx, "notif_received", JSONObject()
+                .put("title", title).put("body", text)
+                .put("app", Contacts.appLabel(ctx, pkg)))
+        }
+
+        if (!Config.isSender(ctx) || !Config.fwdNotif(ctx)) return
+        if (Config.excludedApps(ctx).contains(pkg)) return
+        // Skip ongoing/foreground-service noise (music players, downloads in progress etc.)
+        if ((notif.flags and Notification.FLAG_ONGOING_EVENT) != 0) return
+        if ((notif.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
         if (title.isEmpty() && text.isEmpty()) return
 
         val full = "$title $text"
-        Automation.onEvent(ctx, "notif_received", JSONObject()
-            .put("title", title).put("body", text).put("app", Contacts.appLabel(ctx, pkg)))
         if (Config.containsBlockedWord(ctx, full)) return
 
         // De-duplicate identical notifications arriving within 5 seconds

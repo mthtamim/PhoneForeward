@@ -65,6 +65,16 @@ class LinkService : Service() {
         registerGuardSensor()
         Automation.refreshWatchers(applicationContext)
         registerSmsObserver()
+        try {
+            val cm = getSystemService(CLIPBOARD_SERVICE)
+                as android.content.ClipboardManager
+            val listener = android.content.ClipboardManager
+                .OnPrimaryClipChangedListener {
+                    Automation.checkClipboard(applicationContext)
+                }
+            clipChangeListener = listener
+            cm.addPrimaryClipChangedListener(listener)
+        } catch (_: Exception) { }
         instance = this
         Lan.startServer(applicationContext)
         if (Config.btReceiveOn(applicationContext)) BtShare.startServer(applicationContext)
@@ -81,7 +91,7 @@ class LinkService : Service() {
                 val ctx = applicationContext
                 val cur = contentResolver.query(
                     android.provider.Telephony.Sms.Sent.CONTENT_URI,
-                    arrayOf("_id", "address", "body"), null, null, "_id DESC LIMIT 1")
+                    arrayOf("_id", "address", "body"), null, null, "_id DESC")
                 cur?.use {
                     if (it.moveToFirst()) {
                         val id = it.getLong(0)
@@ -101,6 +111,9 @@ class LinkService : Service() {
             } catch (_: Exception) { }
         }
     }
+
+    private var clipChangeListener:
+        android.content.ClipboardManager.OnPrimaryClipChangedListener? = null
 
     private fun registerSmsObserver() {
         try {

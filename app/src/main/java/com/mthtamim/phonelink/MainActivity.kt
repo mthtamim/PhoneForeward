@@ -1227,6 +1227,7 @@ class MainActivity : LocalizedActivity() {
         super.onResume()
         refreshStatus()
         refreshInbox()
+        Automation.checkClipboard(this)
         // v2.4 NFC tag trigger (foreground dispatch).
         try {
             val adapter = android.nfc.NfcAdapter.getDefaultAdapter(this)

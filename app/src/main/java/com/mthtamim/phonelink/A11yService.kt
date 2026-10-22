@@ -57,6 +57,7 @@ class A11yService : AccessibilityService() {
     override fun onInterrupt() {}
 
     private val focusNotified = mutableMapOf<String, Long>()
+    private var lastAppPkg: String? = null
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         event ?: return
@@ -83,6 +84,25 @@ class A11yService : AccessibilityService() {
                             "$pkg খোলার চেষ্টা আটকে দেওয়া হয়েছে।")
                     }
                     return
+                }
+            }
+        } catch (_: Exception) { }
+        // v2.14.1: live app launch/close from window changes. The
+        // usage-stats poll in tick() can notice a launch ~25 minutes
+        // late (or miss short visits); this is instant, and it shares
+        // the poll's state map so the two paths never double-fire.
+        try {
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                val pkg = event.packageName?.toString() ?: ""
+                val cls = event.className?.toString() ?: ""
+                if (pkg.isNotEmpty() && pkg != packageName &&
+                    pkg != "com.android.systemui" && pkg != "android" &&
+                    !cls.contains("InputMethod") && pkg != lastAppPkg) {
+                    val prev = lastAppPkg
+                    lastAppPkg = pkg
+                    if (prev != null)
+                        Automation.fireAppEvent(applicationContext, "app_closed", prev)
+                    Automation.fireAppEvent(applicationContext, "app_launched", pkg)
                 }
             }
         } catch (_: Exception) { }

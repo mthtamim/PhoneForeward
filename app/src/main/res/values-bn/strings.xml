@@ -1149,4 +1149,11 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="auto_rest_hint">০ = বিশ্রাম নেই, সর্বোচ্চ ৩০০</string>
     <string name="shizuku_testing">Shizuku Shell পরীক্ষা চলছে…</string>
     <string name="shizuku_broken">Shizuku যুক্ত আছে, কিন্তু Shell কমান্ড চলছে না: %1$s</string>
+    <string name="auto_health_title">ট্রিগার স্বাস্থ্য</string>
+    <string name="auto_health_a11y">অ্যাক্সেসিবিলিটি (অ্যাপ খোলা/বন্ধ, স্ক্রিনের লেখা, ভলিউম কী)</string>
+    <string name="auto_health_notif">নোটিফিকেশন অ্যাক্সেস (নোটিফিকেশন ট্রিগার)</string>
+    <string name="auto_health_usage">ব্যবহারের অ্যাক্সেস (অ্যাপ-ট্রিগারের ব্যাকআপ যাচাই)</string>
+    <string name="auto_health_alarm">হুবহু অ্যালার্ম (সময়ের নিয়ম)</string>
+    <string name="auto_health_shizuku">Shizuku (Shell অ্যাকশন)</string>
+    <string name="auto_health_fix"> — ঠিক নেই, ছুঁয়ে সেটিংসে যাও</string>
 </resources>

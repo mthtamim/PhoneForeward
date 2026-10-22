@@ -244,6 +244,55 @@ object Automation {
         }.start()
     }
 
+    /** v2.14.1: single entry for app launch/close transitions, shared
+     *  by the accessibility live path and the usage-stats poll; the
+     *  appstate map guarantees each transition fires exactly once. */
+    fun fireAppEvent(ctx: Context, kind: String, pkg: String) {
+        try {
+            val p = prefs(ctx)
+            val states = (p.getString("appstate", "") ?: "").split(";")
+                .filter { it.contains("=") }
+                .associate { it.substringBefore("=") to it.substringAfter("=") }
+                .toMutableMap()
+            if (states[pkg] == kind) return
+            states[pkg] = kind
+            p.edit().putString("appstate",
+                states.entries.joinToString(";") { "${it.key}=${it.value}" }).apply()
+            val label = appLabel(ctx, pkg)
+            onEvent(ctx, kind, JSONObject().put("pkg", pkg)
+                .put("app", label).put("title", label))
+        } catch (_: Exception) { }
+    }
+
+    /** v2.14.1: the clipboard trigger previously had NO event source
+     *  at all. Android 10+ only lets the focused app read the clipboard,
+     *  so this runs when a change listener fires (app focused) and when
+     *  the main screen resumes; it stays inert unless a clipboard rule
+     *  exists. */
+    fun checkClipboard(ctx: Context) {
+        try {
+            val app = ctx.applicationContext
+            val used = rules(app).any { r ->
+                r.optBoolean("enabled", true) &&
+                    ruleTriggers(r).any { it.optString("type") == "clipboard" }
+            }
+            if (!used) return
+            val cm = app.getSystemService(Context.CLIPBOARD_SERVICE)
+                as android.content.ClipboardManager
+            val clip = cm.primaryClip ?: return
+            if (clip.itemCount == 0) return
+            val text = clip.getItemAt(0).coerceToText(app)?.toString()
+                ?.take(2000) ?: return
+            if (text.isBlank()) return
+            val p = prefs(app)
+            val hash = text.hashCode()
+            if (p.getInt("clip_hash", 0) == hash) return
+            p.edit().putInt("clip_hash", hash).apply()
+            onEvent(app, "clipboard", JSONObject()
+                .put("title", "").put("body", text).put("app", ""))
+        } catch (_: Exception) { }
+    }
+
     private fun debounced(ctx: Context, ruleId: String, now: Long): Boolean {
         val rest = restSeconds(ctx)
         if (rest <= 0) return false
@@ -268,7 +317,7 @@ object Automation {
     private fun triggerParamMatches(ctx: Context, event: String, param: String, data: JSONObject): Boolean {
         if (param.isBlank()) return true
         return when (event) {
-            "sms_received", "notif_received", "screen_text", "notif_cleared",
+            "sms_received", "notif_received", "screen_text", "notif_cleared", "clipboard",
             "sms_sent", "call_outgoing", "call_ended", "qr_scanned",
             "calendar_start", "calendar_end", "rule_toggled",
             "notify_button", "sms_delivered", "screenshot_taken",
@@ -1784,14 +1833,20 @@ object Automation {
             val rule = rules(ctx).firstOrNull { it.optString("id") == id }
                 ?: return
             if (!rule.optBoolean("enabled", true)) return
-            val alreadyDone = prefs(ctx).getString("day_$id", "") == dayKey()
-            val due = !alreadyDone && ruleTriggers(rule).any { trig ->
+            // v2.14.1: the once-a-day latch is per rule AND per time —
+            // a rule set for 08:00 and 22:00 must be able to fire at both.
+            val dueParams = ruleTriggers(rule).filter { trig ->
                 trig.optString("type") == "time_at" &&
                     minutesNow() >= parseHm(trig.optString("param")) &&
-                    minutesNow() - parseHm(trig.optString("param")) < 65
+                    minutesNow() - parseHm(trig.optString("param")) < 65 &&
+                    prefs(ctx).getString(
+                        "day_${id}_${trig.optString("param")}", "") != dayKey()
             }
-            if (due && constraintsPass(ctx, rule)) {
-                prefs(ctx).edit().putString("day_$id", dayKey()).apply()
+            if (dueParams.isNotEmpty() && constraintsPass(ctx, rule)) {
+                val ed = prefs(ctx).edit()
+                for (trig in dueParams)
+                    ed.putString("day_${id}_${trig.optString("param")}", dayKey())
+                ed.apply()
                 markFired(ctx, id, System.currentTimeMillis())
                 ruleNameHint = rule.optString("name")
                 log(ctx, "▶ " + rule.optString("name") + " (time_at)")
@@ -1815,7 +1870,7 @@ object Automation {
                     val should = when (type) {
                         "time_at" -> {
                             val today = dayKey()
-                            val last = prefs(ctx).getString("day_${rule.optString("id")}", "")
+                            val last = prefs(ctx).getString("day_${rule.optString("id")}_$param", "")
                             minutesNow() >= parseHm(param) && last != today &&
                                 minutesNow() - parseHm(param) < 65
                         }
@@ -1842,7 +1897,10 @@ object Automation {
                         else -> false
                     }
                     if (should && constraintsPass(ctx, rule)) {
-                        if (type == "time_at" || type == "sunrise" || type == "sunset" ||
+                        if (type == "time_at") {
+                            prefs(ctx).edit().putString(
+                                "day_${rule.optString("id")}_$param", dayKey()).apply()
+                        } else if (type == "sunrise" || type == "sunset" ||
                             type == "weather_forecast") {
                             prefs(ctx).edit().putString("day_${rule.optString("id")}", dayKey()).apply()
                         }
@@ -1977,9 +2035,6 @@ object Automation {
             val now = System.currentTimeMillis()
             val events = usm.queryEvents(now - 35 * 60_000, now) ?: return
             val ev = UsageEvents.Event()
-            val seenState = prefs(ctx).getString("appstate", "") ?: ""
-            val states = seenState.split(";").filter { it.contains("=") }
-                .associate { it.substringBefore("=") to it.substringAfter("=") }.toMutableMap()
             while (events.hasNextEvent()) {
                 events.getNextEvent(ev)
                 val pkg = ev.packageName ?: continue
@@ -1988,22 +2043,8 @@ object Automation {
                     UsageEvents.Event.MOVE_TO_BACKGROUND, UsageEvents.Event.ACTIVITY_PAUSED -> "app_closed"
                     else -> continue
                 }
-                if (states[pkg] == kind) continue
-                states[pkg] = kind
-                for (rule in watched) {
-                    val trig = ruleTriggers(rule).firstOrNull {
-                        it.optString("type") == kind } ?: continue
-                    if (trig.optString("param").isNotBlank() && trig.optString("param") != pkg) continue
-                    val data = JSONObject().put("pkg", pkg)
-                        .put("app", appLabel(ctx, pkg)).put("title", appLabel(ctx, pkg))
-                    if (constraintsPass(ctx, rule)) {
-                        ruleNameHint = rule.optString("name")
-                        runActions(ctx, rule, data, 0)
-                    }
-                }
+                fireAppEvent(ctx, kind, pkg)
             }
-            prefs(ctx).edit().putString("appstate",
-                states.entries.joinToString(";") { "${it.key}=${it.value}" }).apply()
         } catch (e: Exception) { }
     }
 
@@ -2794,11 +2835,42 @@ object Automation {
     }
 
     private var tts: TextToSpeech? = null
+    private var ttsReady = false
+    private val pendingSpeech = mutableListOf<String>()
+
+    /** v2.14.1: TextToSpeech starts asynchronously — speaking before
+     *  onInit drops the utterance silently, which is why "speak" rules
+     *  worked in the foreground test but stayed mute when fired in the
+     *  background. Queue until the engine is ready, then flush. */
     private fun speak(ctx: Context, text: String) {
-        if (tts == null) {
-            tts = TextToSpeech(ctx.applicationContext) { }
-        }
-        tts?.speak(text, TextToSpeech.QUEUE_ADD, null, "auto")
+        try {
+            val engine = tts
+            if (engine != null && ttsReady) {
+                engine.speak(text, TextToSpeech.QUEUE_ADD, null, "auto")
+                return
+            }
+            synchronized(pendingSpeech) { pendingSpeech.add(text) }
+            if (engine == null) {
+                ttsReady = false
+                tts = TextToSpeech(ctx.applicationContext) { status ->
+                    if (status == TextToSpeech.SUCCESS) {
+                        ttsReady = true
+                        val queued: List<String>
+                        synchronized(pendingSpeech) {
+                            queued = pendingSpeech.toList()
+                            pendingSpeech.clear()
+                        }
+                        for (q in queued)
+                            tts?.speak(q, TextToSpeech.QUEUE_ADD, null, "auto")
+                    } else {
+                        // Dead engine: drop it so the next call retries.
+                        tts = null
+                        ttsReady = false
+                        synchronized(pendingSpeech) { pendingSpeech.clear() }
+                    }
+                }
+            }
+        } catch (_: Exception) { }
     }
 
     private fun setRinger(ctx: Context, mode: String) {

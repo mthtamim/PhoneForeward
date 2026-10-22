@@ -7,6 +7,13 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.app.AlarmManager
+import android.app.AppOpsManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import android.view.accessibility.AccessibilityManager
 import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
@@ -273,8 +280,57 @@ class AutomationActivity : LocalizedActivity() {
 
     override fun onResume() {
         super.onResume()
+        renderHealth()
         render()
     }
+
+    /** v2.14.1: trigger health — several trigger families silently do
+     *  nothing while a system access is off. Show each one's live
+     *  status and let a tap jump to the right settings page. */
+    private fun renderHealth() {
+        val box = findViewById<LinearLayout>(R.id.healthRows)
+        box.removeAllViews()
+        val items = mutableListOf<Triple<Int, Boolean, (() -> Unit)?>>()
+        items.add(Triple(R.string.auto_health_a11y, a11yEnabled()) {
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) })
+        items.add(Triple(R.string.auto_health_notif, PermChecks.notifAccess(this)) {
+            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")) })
+        items.add(Triple(R.string.auto_health_usage, usageAccess()) {
+            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) })
+        if (Build.VERSION.SDK_INT >= 31) {
+            val am = getSystemService(ALARM_SERVICE) as AlarmManager
+            items.add(Triple(R.string.auto_health_alarm, am.canScheduleExactAlarms()) {
+                startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+                    Uri.parse("package:" + packageName))) })
+        }
+        items.add(Triple(R.string.auto_health_shizuku, ShizukuHelper.granted(), null))
+        for ((label, ok, action) in items) {
+            box.addView(TextView(this).apply {
+                text = (if (ok) "✅ " else "⚠️ ") + getString(label) +
+                    (if (ok) "" else getString(R.string.auto_health_fix))
+                setPadding(0, 10, 0, 10)
+                if (!ok && action != null) setOnClickListener { action() }
+            })
+        }
+    }
+
+    private fun a11yEnabled(): Boolean = try {
+        val am = getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager
+        am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+            .any { it.resolveInfo.serviceInfo.packageName == packageName }
+    } catch (_: Exception) { false }
+
+    private fun usageAccess(): Boolean = try {
+        val ao = getSystemService(APP_OPS_SERVICE) as AppOpsManager
+        val mode = if (Build.VERSION.SDK_INT >= 29)
+            ao.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(), packageName)
+        else
+            @Suppress("DEPRECATION")
+            ao.checkOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS,
+                android.os.Process.myUid(), packageName)
+        mode == AppOpsManager.MODE_ALLOWED
+    } catch (_: Exception) { false }
 
     private fun render() {
         container.removeAllViews()

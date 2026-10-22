@@ -11,8 +11,15 @@ class SystemReceiver : BroadcastReceiver() {
         val ctx = context.applicationContext
         // Automation events fire regardless of forwarding roles.
         when (intent.action) {
-            Intent.ACTION_BOOT_COMPLETED ->
+            Intent.ACTION_BOOT_COMPLETED -> {
                 Automation.onEvent(ctx, "boot", JSONObject())
+                // v2.14.1: reboot wipes AlarmManager alarms — re-arm the
+                // time rules for BOTH roles. (LinkService.start below is
+                // sender-gated, so receiver phones silently lost theirs.)
+                Automation.scheduleTimeRules(ctx)
+            }
+            Intent.ACTION_MY_PACKAGE_REPLACED ->
+                Automation.scheduleTimeRules(ctx)
             Intent.ACTION_POWER_CONNECTED ->
                 Automation.onEvent(ctx, "charging_on", JSONObject())
             Intent.ACTION_POWER_DISCONNECTED ->

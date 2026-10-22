@@ -1159,4 +1159,11 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="auto_rest_hint">0 = no rest, max 300</string>
     <string name="shizuku_testing">Testing the Shizuku shell…</string>
     <string name="shizuku_broken">Shizuku is connected, but shell commands fail: %1$s</string>
+    <string name="auto_health_title">Trigger health</string>
+    <string name="auto_health_a11y">Accessibility (app open/close, screen text, volume keys)</string>
+    <string name="auto_health_notif">Notification access (notification triggers)</string>
+    <string name="auto_health_usage">Usage access (app-trigger backup check)</string>
+    <string name="auto_health_alarm">Exact alarms (time rules)</string>
+    <string name="auto_health_shizuku">Shizuku (shell actions)</string>
+    <string name="auto_health_fix"> — not set, tap to open settings</string>
 </resources>
