@@ -1169,4 +1169,5 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="auto_health_all_ok">all clear</string>
     <string name="auto_health_broken">%1$d need attention</string>
     <string name="auto_import_file">From file</string>
+    <string name="auto_health_sms">SMS read permission</string>
 </resources>

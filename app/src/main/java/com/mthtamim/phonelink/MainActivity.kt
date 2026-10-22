@@ -91,6 +91,10 @@ class MainActivity : LocalizedActivity() {
         if (result.resultCode == RESULT_OK) {
             val code = result.data?.getStringExtra("code")?.trim().orEmpty()
             applyPairCode(code)
+            // v2.15.0: a scan counts for the qr_scanned trigger no
+            // matter which screen launched the scanner.
+            if (code.isNotEmpty()) Automation.onEvent(this, "qr_scanned",
+                org.json.JSONObject().put("title", code).put("body", code))
         }
     }
 

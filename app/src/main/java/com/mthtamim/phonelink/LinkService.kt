@@ -65,6 +65,7 @@ class LinkService : Service() {
         registerGuardSensor()
         Automation.refreshWatchers(applicationContext)
         registerSmsObserver()
+        registerLiveAutomationSources()
         try {
             val cm = getSystemService(CLIPBOARD_SERVICE)
                 as android.content.ClipboardManager
@@ -108,9 +109,19 @@ class LinkService : Service() {
                         }
                     }
                 }
-            } catch (_: Exception) { }
+            } catch (e: Exception) {
+                // v2.15.0: without READ_SMS the query throws and the
+                // trigger used to die invisibly. Say it once.
+                if (e is SecurityException && !smsPermWarned) {
+                    smsPermWarned = true
+                    Automation.localNotify(applicationContext,
+                        "SMS-sent ট্রিগারের জন্য SMS পড়ার অনুমতি লাগবে — PhoneLink-এর অনুমতিতে SMS চালু করো।")
+                }
+            }
         }
     }
+
+    @Volatile private var smsPermWarned = false
 
     private var clipChangeListener:
         android.content.ClipboardManager.OnPrimaryClipChangedListener? = null
@@ -200,6 +211,26 @@ class LinkService : Service() {
             mediaObserver?.let { contentResolver.unregisterContentObserver(it) }
         } catch (_: Exception) { }
         mediaObserver = null
+        try { powerReceiver?.let { unregisterReceiver(it) } }
+        catch (_: Exception) { }
+        powerReceiver = null
+        try {
+            musicCallback?.let {
+                (getSystemService(Context.AUDIO_SERVICE)
+                    as android.media.AudioManager).unregisterAudioPlaybackCallback(it)
+            }
+        } catch (_: Exception) { }
+        musicCallback = null
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            try {
+                telephonyCallback?.let {
+                    (getSystemService(Context.TELEPHONY_SERVICE)
+                        as android.telephony.TelephonyManager)
+                        .unregisterTelephonyCallback(it)
+                }
+            } catch (_: Exception) { }
+        }
+        telephonyCallback = null
         try {
             guardListener?.let {
                 (getSystemService(Context.SENSOR_SERVICE)
@@ -219,6 +250,90 @@ class LinkService : Service() {
             try { start(ctx) } catch (_: Exception) { }
         }
         super.onTaskRemoved(rootIntent)
+    }
+
+    // ------------- v2.15.0: live automation event sources -------------
+    // Several triggers used to be noticed only by the ~25-minute
+    // heartbeat poll (or, for charging, solely by the manifest
+    // receiver, which some ROMs throttle). These live sources fire
+    // the same events the instant they happen; the polls stay as
+    // backstops and share state keys so nothing double-fires.
+    private var powerReceiver: BroadcastReceiver? = null
+    private var musicCallback: android.media.AudioManager.AudioPlaybackCallback? = null
+    private var telephonyCallback: android.telephony.TelephonyCallback? = null
+    @Volatile private var lastMusicActive = false
+    @Volatile private var lastDataOn: Boolean? = null
+    @Volatile private var lastPowerAction: String? = null
+    @Volatile private var lastPowerAt = 0L
+
+    private fun registerLiveAutomationSources() {
+        // Charging — dynamic twin of the manifest SystemReceiver,
+        // deduped against it within 3 seconds.
+        try {
+            val pr = object : BroadcastReceiver() {
+                override fun onReceive(c: Context?, i: Intent?) {
+                    val a = i?.action ?: return
+                    val now = System.currentTimeMillis()
+                    if (a == lastPowerAction && now - lastPowerAt < 3000) return
+                    lastPowerAction = a; lastPowerAt = now
+                    Automation.onEvent(applicationContext,
+                        if (a == Intent.ACTION_POWER_CONNECTED) "charging_on"
+                        else "charging_off", JSONObject())
+                }
+            }
+            val f = IntentFilter().apply {
+                addAction(Intent.ACTION_POWER_CONNECTED)
+                addAction(Intent.ACTION_POWER_DISCONNECTED)
+            }
+            registerReceiver(pr, f)
+            powerReceiver = pr
+        } catch (_: Exception) { }
+        // Music start/stop — playback changes are delivered live.
+        try {
+            val am = getSystemService(Context.AUDIO_SERVICE)
+                as android.media.AudioManager
+            lastMusicActive = try { am.isMusicActive } catch (e: Exception) { false }
+            val cb = object : android.media.AudioManager.AudioPlaybackCallback() {
+                override fun onPlaybackConfigChanged(
+                    configs: MutableList<android.media.AudioPlaybackConfiguration>) {
+                    val active = try { am.isMusicActive } catch (e: Exception) { false }
+                    if (active != lastMusicActive) {
+                        lastMusicActive = active
+                        Automation.onEvent(applicationContext,
+                            if (active) "music_started" else "music_stopped",
+                            JSONObject())
+                    }
+                }
+            }
+            am.registerAudioPlaybackCallback(cb,
+                android.os.Handler(android.os.Looper.getMainLooper()))
+            musicCallback = cb
+        } catch (_: Exception) { }
+        // Mobile data on/off — telephony callback (Android 12+).
+        if (android.os.Build.VERSION.SDK_INT >= 31) {
+            try {
+                val tm = getSystemService(Context.TELEPHONY_SERVICE)
+                    as android.telephony.TelephonyManager
+                lastDataOn = tm.dataState ==
+                    android.telephony.TelephonyManager.DATA_CONNECTED
+                val cb = object : android.telephony.TelephonyCallback(),
+                    android.telephony.TelephonyCallback.DataConnectionStateListener {
+                    override fun onDataConnectionStateChanged(state: Int,
+                                                              networkType: Int) {
+                        val on = state ==
+                            android.telephony.TelephonyManager.DATA_CONNECTED
+                        if (lastDataOn != on) {
+                            lastDataOn = on
+                            Automation.onEvent(applicationContext,
+                                if (on) "mobile_data_on" else "mobile_data_off",
+                                JSONObject())
+                        }
+                    }
+                }
+                tm.registerTelephonyCallback(mainExecutor, cb)
+                telephonyCallback = cb
+            } catch (_: Exception) { }
+        }
     }
 
     // ------------- network / ringer event sources (sender side) -------------
@@ -277,15 +392,29 @@ class LinkService : Service() {
                 override fun onReceive(c: Context?, i: Intent?) {
                     val ctx = applicationContext
                     when (i?.action) {
-                        Intent.ACTION_USER_PRESENT -> {
+                        // v2.15.0: USER_PRESENT used to fire "screen_on"
+                        // here, which is wrong twice over — an unlock is
+                        // not a screen-on (Automation's system receiver
+                        // fires screen_unlocked for it), and a screen
+                        // that wakes WITHOUT an unlock fired nothing at
+                        // all. ACTION_SCREEN_ON is the true source.
+                        Intent.ACTION_SCREEN_ON ->
                             Automation.onEvent(ctx, "screen_on", JSONObject())
+                        Intent.ACTION_USER_PRESENT ->
                             getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
                                 .edit().remove("screen_off_since").apply()
-                        }
                         Intent.ACTION_SCREEN_OFF -> {
                             Automation.onEvent(ctx, "screen_off", JSONObject())
                             getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
                                 .edit().putLong("screen_off_since", System.currentTimeMillis()).apply()
+                            // v2.15.0: live screen_locked — the tick poll
+                            // could be ~25 minutes late or miss it.
+                            try {
+                                val km = getSystemService(Context.KEYGUARD_SERVICE)
+                                    as android.app.KeyguardManager
+                                if (km.isKeyguardLocked)
+                                    Automation.onEvent(ctx, "screen_locked", JSONObject())
+                            } catch (_: Exception) { }
                         }
                     }
                     if (!Config.isSender(ctx) || !Config.fwdPresence(ctx)) return
@@ -298,6 +427,7 @@ class LinkService : Service() {
                 }
             }
             val f = IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_USER_PRESENT)
                 addAction(Intent.ACTION_SCREEN_OFF)
             }

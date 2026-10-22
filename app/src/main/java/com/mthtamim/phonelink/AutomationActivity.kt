@@ -344,6 +344,12 @@ class AutomationActivity : LocalizedActivity() {
                     Uri.parse("package:" + packageName))) })
         }
         items.add(Triple(R.string.auto_health_shizuku, ShizukuHelper.granted(), null))
+        // v2.15.0: sms_sent quietly dies without READ_SMS — visible here.
+        items.add(Triple(R.string.auto_health_sms,
+            checkSelfPermission(android.Manifest.permission.READ_SMS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.parse("package:" + packageName))) })
         // v2.14.2: compact — the title line carries the summary, and
         // only the broken items get a row (the full five-row list ate
         // too much of the screen).

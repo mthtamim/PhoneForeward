@@ -833,18 +833,24 @@ object Automation {
                         android.provider.Settings.System.putInt(ctx.contentResolver,
                             android.provider.Settings.System.ACCELEROMETER_ROTATION,
                             if (param == "off") 0 else 1)
-                    }
+                    } else localNotify(ctx,
+                        "Auto-rotate বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
                 }
                 "bt_toggle" -> {
-                    try {
-                        @Suppress("DEPRECATION")
-                        val ok = if (param == "off") BtShare.adapter()?.disable()
-                            else BtShare.adapter()?.enable()
-                        if (ok != true) localNotify(ctx,
-                            "Bluetooth সরাসরি বদলানো যায়নি — নতুন Android-এ সীমাবদ্ধ।")
-                    } catch (e: Exception) {
-                        localNotify(ctx,
-                            "Bluetooth সরাসরি বদলানো যায়নি — নতুন Android-এ সীমাবদ্ধ।")
+                    // v2.15.0: BluetoothAdapter.enable/disable is dead
+                    // on Android 13+, but the shell can still do it.
+                    val on = param != "off"
+                    if (!shOk("svc bluetooth " + (if (on) "enable" else "disable"))) {
+                        try {
+                            @Suppress("DEPRECATION")
+                            val ok = if (on) BtShare.adapter()?.enable()
+                                else BtShare.adapter()?.disable()
+                            if (ok != true) localNotify(ctx,
+                                "Bluetooth সরাসরি বদলানো যায়নি — নতুন Android-এ সীমাবদ্ধ (Shizuku থাকলে হয়ে যেত)।")
+                        } catch (e: Exception) {
+                            localNotify(ctx,
+                                "Bluetooth সরাসরি বদলানো যায়নি — নতুন Android-এ সীমাবদ্ধ (Shizuku থাকলে হয়ে যেত)।")
+                        }
                     }
                 }
                 "dnd_set" -> {
@@ -939,17 +945,32 @@ object Automation {
                     } catch (_: Exception) { }
                 }
                 "answer_call" -> {
-                    try {
-                        (ctx.getSystemService(Context.TELECOM_SERVICE)
-                            as android.telecom.TelecomManager).acceptRingingCall()
-                    } catch (_: Exception) { }
+                    // v2.15.0: TelecomManager refuses non-default-dialer
+                    // apps and the old catch swallowed it. The telecom
+                    // shell command works through Shizuku.
+                    var ok = shOk("cmd telecom accept-ringing-call")
+                    if (!ok) {
+                        ok = try {
+                            (ctx.getSystemService(Context.TELECOM_SERVICE)
+                                as android.telecom.TelecomManager).acceptRingingCall()
+                            true
+                        } catch (e: Exception) { false }
+                    }
+                    if (!ok) localNotify(ctx,
+                        "কল ধরা যায়নি — PhoneLink ডিফল্ট ডায়ালার নয় (Shizuku থাকলে হয়ে যেত)।")
                 }
                 "end_call" -> {
-                    try {
-                        @Suppress("DEPRECATION")
-                        (ctx.getSystemService(Context.TELECOM_SERVICE)
-                            as android.telecom.TelecomManager).endCall()
-                    } catch (_: Exception) { }
+                    var ok = shOk("cmd telecom end-call")
+                    if (!ok) {
+                        ok = try {
+                            @Suppress("DEPRECATION")
+                            (ctx.getSystemService(Context.TELECOM_SERVICE)
+                                as android.telecom.TelecomManager).endCall()
+                            true
+                        } catch (e: Exception) { false }
+                    }
+                    if (!ok) localNotify(ctx,
+                        "কল কাটা যায়নি — PhoneLink ডিফল্ট ডায়ালার নয় (Shizuku থাকলে হয়ে যেত)।")
                 }
                 "set_wallpaper" -> Thread {
                     try {
@@ -1134,7 +1155,8 @@ object Automation {
                             if (param == "off")
                                 android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
                             else android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC)
-                    }
+                    } else localNotify(ctx,
+                        "Auto-উজ্জ্বলতা বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
                 }
                 "flash_pattern" -> Thread {
                     val pat = if (param.trim().lowercase() == "sos") "... --- ..." else param
@@ -1390,12 +1412,17 @@ object Automation {
                         "ফন্ট বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
                 }
                 "night_light" -> {
-                    var ok = false
-                    try { ok = android.provider.Settings.Secure.putInt(
-                        ctx.contentResolver, "night_display_activated",
-                        if (param == "off") 0 else 1) } catch (_: Exception) { }
+                    // v2.15.0: the Secure write needs WRITE_SECURE_
+                    // SETTINGS; the Shizuku shell has it.
+                    var ok = shOk("settings put secure night_display_activated " +
+                        (if (param == "off") "0" else "1"))
+                    if (!ok) {
+                        try { ok = android.provider.Settings.Secure.putInt(
+                            ctx.contentResolver, "night_display_activated",
+                            if (param == "off") 0 else 1) } catch (_: Exception) { }
+                    }
                     if (!ok) localNotify(ctx,
-                        "নাইট লাইট এই ডিভাইসে সরাসরি বদলানো যায়নি।")
+                        "নাইট লাইট এই ডিভাইসে সরাসরি বদলানো যায়নি (Shizuku থাকলে হয়ে যেত)।")
                 }
                 "torch_level" -> FlashHelper.setTorchLevel(ctx,
                     (param.toIntOrNull() ?: 3).coerceIn(0, 5))
@@ -1489,25 +1516,38 @@ object Automation {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 } catch (_: Exception) { }
                 "private_dns" -> {
-                    var ok = false
-                    try {
-                        val mode = param.trim().lowercase()
-                        ok = when {
-                            mode == "off" -> android.provider.Settings.Global
-                                .putString(ctx.contentResolver, "private_dns_mode", "off")
-                            mode == "auto" || mode == "opportunistic" ->
-                                android.provider.Settings.Global.putString(
-                                    ctx.contentResolver, "private_dns_mode", "opportunistic")
-                            mode.isNotEmpty() -> {
-                                val a = android.provider.Settings.Global.putString(
-                                    ctx.contentResolver, "private_dns_mode", "hostname")
-                                if (a) android.provider.Settings.Global.putString(
-                                    ctx.contentResolver, "private_dns_specifier", mode)
-                                else false
+                    // v2.15.0: same secure-settings wall; route through
+                    // the Shizuku shell when it is available.
+                    val mode = param.trim().lowercase()
+                    var ok = when {
+                        mode == "off" ->
+                            shOk("settings put global private_dns_mode off")
+                        mode == "auto" || mode == "opportunistic" ->
+                            shOk("settings put global private_dns_mode opportunistic")
+                        mode.isNotEmpty() ->
+                            shOk("settings put global private_dns_mode hostname") &&
+                            shOk("settings put global private_dns_specifier " + mode)
+                        else -> false
+                    }
+                    if (!ok) {
+                        try {
+                            ok = when {
+                                mode == "off" -> android.provider.Settings.Global
+                                    .putString(ctx.contentResolver, "private_dns_mode", "off")
+                                mode == "auto" || mode == "opportunistic" ->
+                                    android.provider.Settings.Global.putString(
+                                        ctx.contentResolver, "private_dns_mode", "opportunistic")
+                                mode.isNotEmpty() -> {
+                                    val a = android.provider.Settings.Global.putString(
+                                        ctx.contentResolver, "private_dns_mode", "hostname")
+                                    if (a) android.provider.Settings.Global.putString(
+                                        ctx.contentResolver, "private_dns_specifier", mode)
+                                    else false
+                                }
+                                else -> false
                             }
-                            else -> false
-                        }
-                    } catch (_: Exception) { }
+                        } catch (_: Exception) { }
+                    }
                     if (!ok) localNotify(ctx,
                         "Private DNS বদলাতে WRITE_SECURE_SETTINGS অনুমতি লাগবে (adb দিয়ে একবার দিলেই হবে)।")
                 }
@@ -1532,12 +1572,14 @@ object Automation {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 } catch (_: Exception) { }
                 "aod_toggle" -> {
-                    var ok = false
-                    try { ok = android.provider.Settings.Secure.putInt(
-                        ctx.contentResolver, "aod_mode",
-                        if (param == "off") 0 else 1) } catch (_: Exception) { }
+                    // v2.15.0: the old code wrote a non-standard key
+                    // ("aod_mode") without the secure-settings permission,
+                    // so it could never work. The AOSP key is
+                    // doze_always_on, written through the Shizuku shell.
+                    val ok = shOk("settings put secure doze_always_on " +
+                        (if (param == "off") "0" else "1"))
                     if (!ok) localNotify(ctx,
-                        "Always-on display এই ডিভাইসে সরাসরি বদলানো যায়নি।")
+                        "Always-on display এই ডিভাইসে সরাসরি বদলানো যায়নি (Shizuku থাকলে হয়ে যেত)।")
                 }
                 "sqlite_query" -> {
                     val parts = param.split("|", limit = 3)
@@ -2303,13 +2345,38 @@ object Automation {
                     as android.telephony.TelephonyManager).isNetworkRoaming
             } catch (e: Exception) { false }
             stateEdge(ctx, "poll_roam", roam, "roaming_on", "roaming_off")
-            val hs = try {
-                val wm = ctx.getSystemService(Context.WIFI_SERVICE)
-                    as android.net.wifi.WifiManager
-                val m = wm.javaClass.getMethod("isWifiApEnabled")
-                m.invoke(wm) as? Boolean ?: false
-            } catch (e: Exception) { false }
-            stateEdge(ctx, "poll_hotspot", hs, "hotspot_on", "hotspot_off")
+            // Hotspot is a live broadcast edge since v2.15.0 (the
+            // reflection poll it replaces never worked on new Android).
+            pollSmsSent(ctx)
+        } catch (_: Exception) { }
+    }
+
+    /** v2.15.0 backstop for the sms_sent trigger: the ContentObserver
+     *  in LinkService is the live path, but on ROMs where it never
+     *  calls back, the heartbeat still notices a new sent SMS. Shares
+     *  the observer's last-id key, so the two paths never double-fire. */
+    private fun pollSmsSent(ctx: Context) {
+        try {
+            val cur = ctx.contentResolver.query(
+                android.provider.Telephony.Sms.Sent.CONTENT_URI,
+                arrayOf("_id", "address", "body"), null, null, "_id DESC")
+            cur?.use {
+                if (it.moveToFirst()) {
+                    val id = it.getLong(0)
+                    val prefs = ctx.getSharedPreferences("phonelink_state",
+                        Context.MODE_PRIVATE)
+                    val last = prefs.getLong("sms_sent_last_id", -1)
+                    if (last < 0) {
+                        prefs.edit().putLong("sms_sent_last_id", id).apply()
+                    } else if (id > last) {
+                        prefs.edit().putLong("sms_sent_last_id", id).apply()
+                        onEvent(ctx, "sms_sent", JSONObject()
+                            .put("from", it.getString(1) ?: "")
+                            .put("body", it.getString(2) ?: "")
+                            .put("title", it.getString(1) ?: ""))
+                    }
+                }
+            }
         } catch (_: Exception) { }
     }
 
@@ -2634,6 +2701,15 @@ object Automation {
                             onEvent(ctx, "timezone_changed", JSONObject())
                         Intent.ACTION_LOCALE_CHANGED ->
                             onEvent(ctx, "locale_changed", JSONObject())
+                        "android.net.wifi.WIFI_AP_STATE_CHANGED" -> {
+                            // v2.15.0: live hotspot edge. The old
+                            // reflection read of isWifiApEnabled silently
+                            // returned false on modern Android, so the
+                            // poll never saw the hotspot at all.
+                            val st = intent.getIntExtra("wifi_state", -1)
+                            if (st == 13) onEvent(ctx, "hotspot_on", JSONObject())
+                            if (st == 11) onEvent(ctx, "hotspot_off", JSONObject())
+                        }
                         android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
                             val pm = ctx.getSystemService(Context.POWER_SERVICE)
                                 as android.os.PowerManager
@@ -2675,6 +2751,7 @@ object Automation {
             addAction(Intent.ACTION_LOCALE_CHANGED)
             addAction(Intent.ACTION_PACKAGE_REPLACED)
             addAction(android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+            addAction("android.net.wifi.WIFI_AP_STATE_CHANGED")
             addAction("android.intent.action.SIM_STATE_CHANGED")
             addAction(android.bluetooth.BluetoothDevice.ACTION_FOUND)
         }
@@ -2824,7 +2901,7 @@ object Automation {
         return 2 * r * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
     }
 
-    private fun localNotify(ctx: Context, text: String) {
+    fun localNotify(ctx: Context, text: String) {
         val builder = NotificationCompat.Builder(ctx, LinkService.CHANNEL_INBOX)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("PhoneLink 🤖")
@@ -2873,12 +2950,39 @@ object Automation {
         } catch (_: Exception) { }
     }
 
+    /** v2.15.0: secure-settings and radio actions are impossible for a
+     *  normal app on modern Android, but Shizuku's shell CAN do them.
+     *  Returns true only when the command really ran clean. */
+    private fun shOk(command: String): Boolean {
+        if (!ShizukuHelper.granted()) return false
+        ShizukuHelper.run(command)
+        return ShizukuHelper.lastError == null
+    }
+
     private fun setRinger(ctx: Context, mode: String) {
-        val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        am.ringerMode = when (mode.lowercase()) {
-            "vibrate" -> AudioManager.RINGER_MODE_VIBRATE
-            "silent" -> AudioManager.RINGER_MODE_SILENT
-            else -> AudioManager.RINGER_MODE_NORMAL
+        val m = mode.trim().lowercase()
+        // v2.15.0: RINGER_MODE_SILENT throws without Do Not Disturb
+        // policy access on modern Android — the old code let the
+        // exception die in a caller catch, so "silent" silently did
+        // nothing while normal/vibrate worked. Say so instead.
+        if (m == "silent") {
+            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE)
+                as android.app.NotificationManager
+            if (!nm.isNotificationPolicyAccessGranted) {
+                localNotify(ctx, "সাইলেন্ট করতে PhoneLink-কে Do Not Disturb access দাও (সেটিংস → অ্যাপ → Special access)।")
+                return
+            }
+        }
+        try {
+            val am = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            am.ringerMode = when (m) {
+                "vibrate" -> AudioManager.RINGER_MODE_VIBRATE
+                "silent" -> AudioManager.RINGER_MODE_SILENT
+                else -> AudioManager.RINGER_MODE_NORMAL
+            }
+        } catch (e: Exception) {
+            localNotify(ctx, "রিংগার মোড বদলানো যায়নি: " +
+                (e.message ?: e.javaClass.simpleName))
         }
     }
 

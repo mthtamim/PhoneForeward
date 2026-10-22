@@ -1159,4 +1159,5 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="auto_health_all_ok">সব ঠিক আছে</string>
     <string name="auto_health_broken">%1$dটি ঠিক নেই</string>
     <string name="auto_import_file">ফাইল থেকে নাও</string>
+    <string name="auto_health_sms">SMS পড়ার অনুমতি</string>
 </resources>
