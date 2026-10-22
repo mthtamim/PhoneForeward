@@ -18,6 +18,7 @@ import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
 import org.json.JSONObject
+import kotlin.concurrent.thread
 
 /** Type catalogs shared by the list and the editor. */
 object AutoCatalog {
@@ -208,33 +209,60 @@ class AutomationActivity : LocalizedActivity() {
             .show()
     }
 
+    private val importFileLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            thread {
+                val text = try {
+                    contentResolver.openInputStream(uri)?.bufferedReader()
+                        ?.readText().orEmpty()
+                } catch (e: Exception) { "" }
+                runOnUiThread { doImport(text) }
+            }
+        }
+    }
+
+    /** Shared by the paste box and the file picker (v2.14.3). */
+    private fun doImport(raw: String) {
+        val text = raw.trim()
+        if (text.startsWith("{") && text.contains("full-backup")) {
+            val ok = SettingsTransfer.import(this, text)
+            android.widget.Toast.makeText(this,
+                getString(if (ok) R.string.toast_cfg_imported
+                    else R.string.auto_import_failed),
+                android.widget.Toast.LENGTH_SHORT).show()
+        } else {
+            val n = Automation.importJson(this, text)
+            android.widget.Toast.makeText(this,
+                if (n >= 0) getString(R.string.auto_imported, n)
+                else getString(R.string.auto_import_failed),
+                android.widget.Toast.LENGTH_SHORT).show()
+        }
+        renderHealth()
+        render()
+    }
+
     private fun showImport() {
+        // v2.14.3: pasting a long JSON into a one-line box was nearly
+        // unusable — the field is properly multi-line now, and a file
+        // picker does the same import without any copy-paste at all.
         val input = android.widget.EditText(this).apply {
             hint = getString(R.string.auto_import_hint)
             minLines = 4
+            maxLines = 8
+            gravity = android.view.Gravity.TOP or android.view.Gravity.START
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
         }
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(getString(R.string.auto_import))
             .setView(input)
+            .setNeutralButton(getString(R.string.auto_import_file)) { _, _ ->
+                importFileLauncher.launch(
+                    arrayOf("application/json", "text/plain", "*/*"))
+            }
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                val text = input.text.toString().trim()
-                // v2.14.2: a pasted FULL backup restores everything,
-                // not just the rules — route it to the full importer.
-                if (text.startsWith("{") && text.contains("full-backup")) {
-                    val ok = SettingsTransfer.import(this, text)
-                    android.widget.Toast.makeText(this,
-                        getString(if (ok) R.string.toast_cfg_imported
-                            else R.string.auto_import_failed),
-                        android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    val n = Automation.importJson(this, text)
-                    android.widget.Toast.makeText(this,
-                        if (n >= 0) getString(R.string.auto_imported, n)
-                        else getString(R.string.auto_import_failed),
-                        android.widget.Toast.LENGTH_SHORT).show()
-                }
-                renderHealth()
-                render()
+                doImport(input.text.toString())
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
