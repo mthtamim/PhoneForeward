@@ -136,6 +136,94 @@
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
+    <!-- ===== v2.17.2 preview design styles ===== -->
+
+    <!-- Big per-screen title (27sp, like the previews) -->
+    <style name="PL.H1" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">27sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <!-- Uppercase section label above a card group -->
+    <style name="PL.SecTitle" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.05</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <!-- Pill-shaped filled button (editor Save, Grant All) -->
+    <style name="PL.BtnPill" parent="Widget.Material3.Button">
+        <item name="cornerRadius">100dp</item>
+    </style>
+
+    <!-- Pill-shaped ghost button (dark fill, outline stroke) -->
+    <style name="PL.BtnGhost" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">100dp</item>
+        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="strokeColor">?attr/colorOutline</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <!-- Pill-shaped mint-outline button (+ Add Action, Test) -->
+    <style name="PL.BtnMint" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">100dp</item>
+        <item name="strokeColor">?attr/colorPrimary</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+    </style>
+
+    <!-- Small chip-like tonal button (Automation quick tools) -->
+    <style name="PL.BtnChip" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">20dp</item>
+        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:minHeight">40dp</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Tall tile button (Command Hub device toggles) -->
+    <style name="PL.BtnTile" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">22dp</item>
+        <item name="backgroundTint">@color/md_surface</item>
+        <item name="strokeColor">?attr/colorSurfaceVariant</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:minHeight">92dp</item>
+        <item name="android:gravity">start|center_vertical</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <!-- Plain inset text field on the new dark field background -->
+    <style name="PL.FieldPlain" parent="Widget.AppCompat.EditText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_field</item>
+        <item name="android:textSize">14.5sp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <!-- Small pill badge (relay state, permission state chips) -->
+    <style name="PL.Badge" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_pill</item>
+        <item name="android:paddingStart">9dp</item>
+        <item name="android:paddingEnd">9dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:textSize">10.5sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
+    </style>
+
     <!-- Plain rounded search box (Command Hub) -->
     <style name="PL.SearchBox" parent="Widget.AppCompat.EditText">
         <item name="android:layout_width">match_parent</item>

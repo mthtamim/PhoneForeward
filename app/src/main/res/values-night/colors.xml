@@ -1,37 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Dark palette (v2.17: near-black green-tinted, mint primary — the
-     mockup look) -->
+<!-- Dark palette (v2.17.2: the approved preview tokens — deep OLED
+     background #101415, neon emerald accent #10B981, cards
+     #151A1C-#1A2124 with a mint-tinted stroke) -->
 <resources>
-    <color name="md_primary">#2FE8A8</color>
-    <color name="md_onPrimary">#04301E</color>
-    <color name="md_primaryContainer">#0C3A28</color>
+    <color name="md_primary">#10B981</color>
+    <color name="md_onPrimary">#04120B</color>
+    <color name="md_primaryContainer">#14302A</color>
     <color name="md_onPrimaryContainer">#A9F4D4</color>
-    <color name="md_secondary">#93AC9E</color>
+    <color name="md_secondary">#8FA79B</color>
     <color name="md_onSecondary">#0C1F16</color>
-    <color name="md_secondaryContainer">#1B2A22</color>
+    <color name="md_secondaryContainer">#1C2326</color>
     <color name="md_onSecondaryContainer">#DCEEE4</color>
-    <color name="md_background">#070D0A</color>
-    <color name="md_onBackground">#E7F2EB</color>
-    <color name="md_surface">#111A15</color>
-    <color name="md_onSurface">#E7F2EB</color>
-    <color name="md_surfaceVariant">#1D2A22</color>
-    <color name="md_onSurfaceVariant">#93AC9E</color>
-    <color name="md_surfaceContainer">#16211B</color>
-    <color name="md_surfaceContainerHigh">#1F2E26</color>
-    <color name="md_outline">#2C4234</color>
+    <color name="md_background">#101415</color>
+    <color name="md_onBackground">#EAF4EE</color>
+    <color name="md_surface">#171D1F</color>
+    <color name="md_onSurface">#EAF4EE</color>
+    <color name="md_surfaceVariant">#21352C</color>
+    <color name="md_onSurfaceVariant">#8FA79B</color>
+    <color name="md_surfaceContainer">#12181A</color>
+    <color name="md_surfaceContainerHigh">#1A2124</color>
+    <color name="md_outline">#2A3336</color>
     <color name="md_error">#F87171</color>
     <color name="md_onError">#450A0A</color>
-    <color name="md_errorContainer">#450A0A</color>
+    <color name="md_errorContainer">#33151A</color>
 
-    <color name="status_ok">#2FE8A8</color>
+    <color name="status_ok">#2FD68F</color>
     <color name="status_bad">#F87171</color>
-    <color name="pair_code">#FBBF24</color>
-    <color name="divider">#1D2A22</color>
-    <color name="md_btnFill">#1D2A22</color>
+    <color name="pair_code">#F5A623</color>
+    <color name="divider">#21282B</color>
+    <color name="md_btnFill">#1C2326</color>
 
-    <!-- v2.17 design tokens -->
-    <color name="pl_mint">#2FE8A8</color>
-    <color name="nav_active">#2FE8A8</color>
-    <color name="nav_inactive">#7E968A</color>
-    <color name="nav_indicator">#0C3A28</color>
+    <!-- v2.17.2 design tokens -->
+    <color name="pl_mint">#10B981</color>
+    <color name="nav_active">#2FD68F</color>
+    <color name="nav_inactive">#7E938A</color>
+    <color name="nav_indicator">#14382A</color>
 </resources>

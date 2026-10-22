@@ -389,14 +389,12 @@ class AutomationActivity : LocalizedActivity() {
         healthBroken = broken.size
         findViewById<TextView>(R.id.tvHealthTitle).text =
             if (broken.isEmpty())
-                "✅ " + getString(R.string.auto_health_title) + " — " +
-                    getString(R.string.auto_health_all_ok)
+                getString(R.string.auto_health_all_ok)
             else
-                "⚠️ " + getString(R.string.auto_health_title) + " — " +
-                    getString(R.string.auto_health_broken, broken.size)
+                getString(R.string.auto_health_broken, broken.size)
         for ((label, _, action) in broken) {
             box.addView(TextView(this).apply {
-                text = "⚠️ " + getString(label) + getString(R.string.auto_health_fix)
+                text = "• " + getString(label) + getString(R.string.auto_health_fix)
                 setPadding(0, 6, 0, 6)
                 if (action != null) setOnClickListener { action() }
             })
@@ -424,7 +422,7 @@ class AutomationActivity : LocalizedActivity() {
     private fun updateAutoPill(total: Int, active: Int) {
         var text = getString(R.string.auto_pill_fmt, active, total)
         if (healthBroken > 0) {
-            text += " • ⚠️ " + getString(R.string.auto_health_broken, healthBroken)
+            text += " • " + getString(R.string.auto_health_broken, healthBroken)
         }
         findViewById<TextView>(R.id.tvAutoPill).text = text
     }
@@ -449,7 +447,7 @@ class AutomationActivity : LocalizedActivity() {
                 lastCat = cat
                 if (cat.isNotEmpty()) {
                     container.addView(TextView(this).apply {
-                        text = "📁 $cat"
+                        text = cat
                         textSize = 15f
                         setTypeface(typeface, android.graphics.Typeface.BOLD)
                         setPadding(4, 10, 4, 6)
@@ -479,40 +477,86 @@ class AutomationActivity : LocalizedActivity() {
                 }
             })
             row.addView(head)
-            row.addView(TextView(this).apply {
-                text = "⚡ " + AutoCatalog.label(this@AutomationActivity, "t",
-                    trig?.optString("type") ?: "") +
-                    (if (trigList.size > 1) " +${trigList.size - 1}" else "") +
-                    (trig?.optString("param")?.takeIf { it.isNotBlank() }?.let { " — $it" } ?: "")
-                alpha = 0.75f
-            })
+            // v2.17.2: IF / THEN inset boxes, like the preview cards
             val acts = rule.optJSONArray("actions")
             val nActions = acts?.length() ?: 0
             val firstAct = acts?.optJSONObject(0)?.optString("type") ?: ""
-            row.addView(TextView(this).apply {
-                text = "➡️ " + AutoCatalog.label(this@AutomationActivity,
-                    "a", firstAct) +
-                    (if (nActions > 1) " +${nActions - 1}" else "") +
-                    "  •  " + getString(R.string.auto_actions_count, nActions)
-                alpha = 0.75f
+            val flow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, 10, 0, 0) }
+            }
+            fun flowBox(prefixRes: Int, body: String) = TextView(this).apply {
+                text = getString(prefixRes) + " " + body
+                textSize = 13.5f
+                setBackgroundResource(R.drawable.bg_inner_box)
+                setPadding(24, 20, 24, 20)
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            flow.addView(flowBox(R.string.auto_if_label,
+                AutoCatalog.label(this@AutomationActivity, "t",
+                    trig?.optString("type") ?: "") +
+                    (if (trigList.size > 1) " +${trigList.size - 1}" else "") +
+                    (trig?.optString("param")?.takeIf { it.isNotBlank() }
+                        ?.let { " — $it" } ?: "")))
+            flow.addView(TextView(this).apply {
+                text = "➔"
+                textSize = 16f
+                setTextColor(androidx.core.content.ContextCompat.getColor(
+                    this@AutomationActivity, R.color.pl_mint))
+                setPadding(12, 0, 12, 0)
             })
-            val buttons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-            buttons.addView(Button(this).apply {
-                text = getString(R.string.btn_edit)
+            flow.addView(flowBox(R.string.auto_then_label,
+                AutoCatalog.label(this@AutomationActivity, "a", firstAct) +
+                    (if (nActions > 1) " +${nActions - 1}" else "")))
+            row.addView(flow)
+            row.addView(TextView(this).apply {
+                text = getString(R.string.auto_actions_count, nActions)
+                alpha = 0.7f
+                textSize = 12.5f
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(2, 8, 0, 0) }
+            })
+            val buttons = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.END
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, 8, 0, 0) }
+            }
+            fun pillButton(labelRes: Int, mint: Boolean) = Button(this).apply {
+                text = getString(labelRes)
+                textSize = 12.5f
+                setBackgroundResource(R.drawable.bg_pill)
+                setPadding(28, 10, 28, 10)
+                setTextColor(androidx.core.content.ContextCompat.getColor(
+                    this@AutomationActivity,
+                    if (mint) R.color.pl_mint else R.color.md_onSurface))
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(8, 0, 0, 0) }
+            }
+            buttons.addView(pillButton(R.string.btn_edit, false).apply {
                 setOnClickListener {
                     startActivity(Intent(this@AutomationActivity, RuleEditorActivity::class.java)
                         .putExtra("rule_id", rule.optString("id")))
                 }
             })
-            buttons.addView(Button(this).apply {
-                text = getString(R.string.btn_delete)
+            buttons.addView(pillButton(R.string.btn_delete, false).apply {
                 setOnClickListener {
                     Automation.delete(this@AutomationActivity, rule.optString("id"))
                     render()
                 }
             })
-            buttons.addView(Button(this).apply {
-                text = getString(R.string.auto_test)
+            buttons.addView(pillButton(R.string.auto_test, true).apply {
                 setOnClickListener {
                     val data = JSONObject()
                         .put("title", rule.optString("name")).put("body", "test")

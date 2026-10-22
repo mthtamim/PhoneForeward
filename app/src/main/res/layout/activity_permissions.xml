@@ -1,15 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Permissions Manager (v2.17.2, approved preview): Grant All in
+     the header, a gauge fed by the REAL PermChecks counts, one row
+     card per permission family (including a state-only Shizuku row),
+     a privacy note, and diagnostics + done at the bottom. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.google.android.material.appbar.MaterialToolbar
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        app:title="@string/perm_title"
-        app:titleTextAppearance="@style/TextAppearance.Material3.TitleLarge" />
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btnPermBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_back_chip"
+            android:contentDescription="@string/btn_back"
+            android:padding="10dp"
+            android:src="@drawable/ic_arrow_back"
+            android:tint="?attr/colorOnSurface" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPermissions"
+            style="@style/PL.BtnPill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_grant_all" />
+    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
@@ -20,26 +48,107 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
+
+            <TextView
+                style="@style/PL.H1"
+                android:text="@string/perm_title"
+                android:textSize="24sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
+                android:layout_marginTop="6dp"
+                android:layout_marginBottom="14dp"
                 android:text="@string/perm_intro"
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                 android:textColor="?attr/colorOnSurfaceVariant" />
 
-            <!-- Notification access -->
+            <!-- ===== Gauge card ===== -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp"
-            app:strokeColor="?attr/colorSurfaceVariant"
-            app:strokeWidth="1dp">
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <FrameLayout
+                        android:layout_width="104dp"
+                        android:layout_height="104dp">
+
+                        <ProgressBar
+                            android:id="@+id/pbPermGauge"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="104dp"
+                            android:layout_height="104dp"
+                            android:max="100"
+                            android:progressDrawable="@drawable/bg_gauge_ring" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:id="@+id/tvPermGauge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="19sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvPermGaugeActive"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/perm_gauge_active"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="15dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/perm_privileges"
+                            android:textSize="16.5sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvPermGaugeSub"
+                            style="@style/PL.BodySmall"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:id="@+id/tvPermGaugeMark"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Notification access ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -47,12 +156,36 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        style="@style/PL.CardTitle"
-                        android:text="@string/perm_notif_title" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/bg_icon_circle">
+
+                            <ImageView
+                                android:layout_width="23dp"
+                                android:layout_height="23dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_bell" />
+                        </FrameLayout>
+
+                        <TextView
+                            style="@style/PL.CardTitle"
+                            android:layout_width="0dp"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/perm_notif_title" />
+                    </LinearLayout>
 
                     <TextView
                         style="@style/PL.BodySmall"
+                        android:layout_marginTop="8dp"
                         android:text="@string/perm_notif_desc" />
 
                     <LinearLayout
@@ -73,7 +206,7 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnNotifAccess"
-                            style="@style/PL.BtnTonal"
+                            style="@style/PL.BtnChip"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/btn_open_settings" />
@@ -81,16 +214,11 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Runtime permissions -->
+            <!-- ===== Runtime permissions ===== -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp"
-            app:strokeColor="?attr/colorSurfaceVariant"
-            app:strokeWidth="1dp">
+                android:layout_marginBottom="12dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -98,12 +226,36 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        style="@style/PL.CardTitle"
-                        android:text="@string/perm_runtime_title" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/bg_icon_circle">
+
+                            <ImageView
+                                android:layout_width="23dp"
+                                android:layout_height="23dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_msg" />
+                        </FrameLayout>
+
+                        <TextView
+                            style="@style/PL.CardTitle"
+                            android:layout_width="0dp"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/perm_runtime_title" />
+                    </LinearLayout>
 
                     <TextView
                         style="@style/PL.BodySmall"
+                        android:layout_marginTop="8dp"
                         android:text="@string/perm_runtime_desc" />
 
                     <TextView
@@ -113,26 +265,14 @@
                         android:layout_marginTop="10dp"
                         android:lineSpacingMultiplier="1.3"
                         android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPermissions"
-                        style="@style/PL.BtnTonal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="@string/btn_grant" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Battery optimization -->
+            <!-- ===== Battery optimization ===== -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp"
-            app:strokeColor="?attr/colorSurfaceVariant"
-            app:strokeWidth="1dp">
+                android:layout_marginBottom="12dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -140,12 +280,36 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        style="@style/PL.CardTitle"
-                        android:text="@string/perm_battery_title" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:background="@drawable/bg_icon_circle">
+
+                            <ImageView
+                                android:layout_width="23dp"
+                                android:layout_height="23dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_batt" />
+                        </FrameLayout>
+
+                        <TextView
+                            style="@style/PL.CardTitle"
+                            android:layout_width="0dp"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/perm_battery_title" />
+                    </LinearLayout>
 
                     <TextView
                         style="@style/PL.BodySmall"
+                        android:layout_marginTop="8dp"
                         android:text="@string/perm_battery_desc" />
 
                     <LinearLayout
@@ -166,20 +330,102 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnBatteryOpt"
-                            style="@style/PL.BtnTonal"
+                            style="@style/PL.BtnChip"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/btn_open_settings" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Shizuku state (state only — the connect/test
+                 control lives once, in the Relay panel) ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_term" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/perm_shizuku_title"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            style="@style/PL.BodySmall"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/perm_shizuku_desc" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvPermShizukuState"
+                        style="@style/PL.Badge" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== Privacy note ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:padding="16dp"
+                    android:text="@string/perm_note" />
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnPermDone"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:text="@string/btn_done" />
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPermDiag"
+            style="@style/PL.BtnGhost"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="5dp"
+            android:layout_weight="1.2"
+            android:text="@string/perm_diag" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPermDone"
+            style="@style/PL.BtnPill"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="5dp"
+            android:layout_weight="1"
+            android:text="@string/btn_done" />
+    </LinearLayout>
 </LinearLayout>

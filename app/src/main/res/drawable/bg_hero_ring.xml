@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hero battery ring (v2.17.2): the dashboard device card ring,
+     sized for the 118dp preview layout. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="ring" android:innerRadius="47dp" android:thickness="9dp" android:useLevel="false">
+            <solid android:color="?attr/colorSurfaceVariant" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <shape android:shape="ring" android:innerRadius="47dp" android:thickness="9dp" android:useLevel="true">
+            <solid android:color="?attr/colorPrimary" />
+        </shape>
+    </item>
+</layer-list>

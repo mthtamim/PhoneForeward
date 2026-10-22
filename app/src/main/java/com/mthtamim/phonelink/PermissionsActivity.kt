@@ -22,6 +22,12 @@ class PermissionsActivity : LocalizedActivity() {
     private lateinit var tvNotifState: TextView
     private lateinit var tvBatteryState: TextView
     private lateinit var tvRuntimeLines: TextView
+    // v2.17.2 Permissions Manager: gauge + Shizuku state row
+    private lateinit var pbGauge: android.widget.ProgressBar
+    private lateinit var tvGauge: TextView
+    private lateinit var tvGaugeSub: TextView
+    private lateinit var tvGaugeMark: TextView
+    private lateinit var tvShizukuState: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +36,19 @@ class PermissionsActivity : LocalizedActivity() {
         tvNotifState = findViewById(R.id.tvPermNotifState)
         tvBatteryState = findViewById(R.id.tvPermBatteryState)
         tvRuntimeLines = findViewById(R.id.tvPermRuntimeLines)
+        pbGauge = findViewById(R.id.pbPermGauge)
+        tvGauge = findViewById(R.id.tvPermGauge)
+        tvGaugeSub = findViewById(R.id.tvPermGaugeSub)
+        tvGaugeMark = findViewById(R.id.tvPermGaugeMark)
+        tvShizukuState = findViewById(R.id.tvPermShizukuState)
+
+        findViewById<View>(R.id.btnPermBack).setOnClickListener { finish() }
+        findViewById<View>(R.id.btnPermDiag).setOnClickListener {
+            refresh()
+            val total = 2 + PermChecks.runtimeList(this).size
+            val granted = total - PermChecks.missingCount(this)
+            toast(getString(R.string.perm_diag_fmt, granted, total))
+        }
 
         findViewById<View>(R.id.btnNotifAccess).setOnClickListener {
             startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
@@ -82,6 +101,22 @@ class PermissionsActivity : LocalizedActivity() {
         val batteryOk = PermChecks.batteryIgnored(this)
         tvBatteryState.text = getString(if (batteryOk) R.string.status_granted else R.string.status_missing)
         tvBatteryState.setTextColor(if (batteryOk) okColor else badColor)
+
+        // v2.17.2: the gauge is fed by the real PermChecks counts —
+        // notification access + battery exemption + the runtime list.
+        val runtimeNow = PermChecks.runtimeList(this)
+        val total = 2 + runtimeNow.size
+        val granted = (if (notifOk) 1 else 0) + (if (batteryOk) 1 else 0) +
+            runtimeNow.count { it.second }
+        pbGauge.progress = if (total > 0) granted * 100 / total else 0
+        tvGauge.text = getString(R.string.perm_gauge_fmt, granted, total)
+        tvGaugeSub.text = getString(R.string.perm_diag_fmt, granted, total)
+        tvGaugeMark.text = if (granted == total) "✓" else "!"
+        tvGaugeMark.setTextColor(if (granted == total) okColor else badColor)
+        val shizukuOk = ShizukuHelper.granted()
+        tvShizukuState.text = getString(
+            if (shizukuOk) R.string.status_granted else R.string.status_missing)
+        tvShizukuState.setTextColor(if (shizukuOk) okColor else badColor)
 
         val lines = PermChecks.runtimeList(this)
         val sb = SpannableStringBuilder()

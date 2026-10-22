@@ -18,7 +18,6 @@ import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CompoundButton
 import android.widget.EditText
@@ -41,8 +40,12 @@ import kotlin.concurrent.thread
 
 class MainActivity : LocalizedActivity() {
 
-    private lateinit var tvMode: TextView
-    private lateinit var tvRelay: TextView
+    // v2.17.2: relay state is computed once per refresh and
+    // mirrored to the header pill, the Relay screen badge and the
+    // Settings hub tile (the old tvRelay view died with the
+    // dashboard status card).
+    private var relayStateText: CharSequence = ""
+    private var relayStateColor: Int = 0
     private lateinit var tvDelivery: TextView
     private lateinit var tvQueueInfo: TextView
     private lateinit var tvQuietInfo: TextView
@@ -55,15 +58,8 @@ class MainActivity : LocalizedActivity() {
     private lateinit var tvGeoInfo: TextView
     private lateinit var tvRetentionInfo: TextView
     private lateinit var tvStats: TextView
-    private lateinit var tvPermNotif: TextView
-    private lateinit var tvPermSms: TextView
-    private lateinit var tvPermLoc: TextView
-    private lateinit var tvPermBattery: TextView
-    private lateinit var btnFixPerms: Button
     private lateinit var tvPairCode: TextView
-    private lateinit var tvQueue: TextView
     private lateinit var tvSenderSeen: TextView
-    private lateinit var tvPermSummary: TextView
     private lateinit var lvInbox: ListView
     private lateinit var etSearch: EditText
 
@@ -89,6 +85,8 @@ class MainActivity : LocalizedActivity() {
     private lateinit var etHubSearch: EditText
     private var hubCat: String = "ALL"
     private lateinit var tvSetPill: TextView
+    private lateinit var tvRelayState: TextView
+    private lateinit var tvInboxPill: TextView
     private lateinit var tvHubDevice: TextView
     private lateinit var tvHubDeviceSub: TextView
     private lateinit var tvHubRelaySub: TextView
@@ -476,6 +474,8 @@ class MainActivity : LocalizedActivity() {
         bottomNav = findViewById(R.id.bottomNav)
 
         tvConnPill = findViewById(R.id.tvConnPill)
+        tvRelayState = findViewById(R.id.tvRelayState)
+        tvInboxPill = findViewById(R.id.tvInboxPill)
         tvDashDevice = findViewById(R.id.tvDashDevice)
         tvDashDeviceSub = findViewById(R.id.tvDashDeviceSub)
         tvDashWifi = findViewById(R.id.tvDashWifi)
@@ -496,8 +496,6 @@ class MainActivity : LocalizedActivity() {
         tvHubFwd = findViewById(R.id.tvHubFwd)
         tvHubDiag = findViewById(R.id.tvHubDiag)
 
-        tvMode = findViewById(R.id.tvMode)
-        tvRelay = findViewById(R.id.tvRelay)
         tvDelivery = findViewById(R.id.tvDelivery)
         tvQueueInfo = findViewById(R.id.tvQueueInfo)
         tvQuietInfo = findViewById(R.id.tvQuietInfo)
@@ -510,15 +508,8 @@ class MainActivity : LocalizedActivity() {
         tvGeoInfo = findViewById(R.id.tvGeoInfo)
         tvRetentionInfo = findViewById(R.id.tvRetentionInfo)
         tvStats = findViewById(R.id.tvStats)
-        tvPermNotif = findViewById(R.id.tvPermNotif)
-        tvPermSms = findViewById(R.id.tvPermSms)
-        tvPermLoc = findViewById(R.id.tvPermLoc)
-        tvPermBattery = findViewById(R.id.tvPermBattery)
-        btnFixPerms = findViewById(R.id.btnFixPerms)
         tvPairCode = findViewById(R.id.tvPairCode)
-        tvQueue = findViewById(R.id.tvQueue)
         tvSenderSeen = findViewById(R.id.tvSenderSeen)
-        tvPermSummary = findViewById(R.id.tvPermSummary)
         lvInbox = findViewById(R.id.lvInbox)
         etSearch = findViewById(R.id.etSearch)
 
@@ -622,10 +613,6 @@ class MainActivity : LocalizedActivity() {
         }
 
         // ----- permissions entry points -----
-        btnFixPerms.setOnClickListener { startActivity(Intent(this, PermissionsActivity::class.java)) }
-        findViewById<Button>(R.id.btnOpenPerms).setOnClickListener {
-            startActivity(Intent(this, PermissionsActivity::class.java))
-        }
 
         // ----- feature toggles -----
         bindToggle(R.id.swSms, "fwd_sms", Config.fwdSms(this))
@@ -916,7 +903,6 @@ class MainActivity : LocalizedActivity() {
         }
 
         // ----- devices, SOS, new commands (v2.1) -----
-        findViewById<Button>(R.id.btnDevices).setOnClickListener { showDevicesDialog() }
         findViewById<Button>(R.id.btnSos).setOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.sos_title))
@@ -1425,7 +1411,6 @@ class MainActivity : LocalizedActivity() {
     // full-screen sub-screen (overlay) with its own title and back.
 
     private val subGroups = listOf(
-        R.id.groupQuick,
         R.id.panelGeneral, R.id.panelForward, R.id.panelSmart,
         R.id.panelSecurity, R.id.panelRelay, R.id.panelData,
         R.id.panelGroup, R.id.panelFamily
@@ -1523,32 +1508,21 @@ class MainActivity : LocalizedActivity() {
     private fun wireV24() {
         // --- sub-screen navigation (v2.4.1) ---
         findViewById<View>(R.id.btnSubBack).setOnClickListener { closeSubScreen() }
-        findViewById<View>(R.id.btnSettingsTop).setOnClickListener { openSettings() }
         findViewById<View>(R.id.btnSettingsBack).setOnClickListener { closeSettings() }
-        findViewById<Button>(R.id.menuGeneral).setOnClickListener {
+        // v2.17.2: the settings hub tiles are the only entry points
+        // (tileHubRelay/Perms/Security/Data, cardHubForward and
+        // btnHubKeys are wired in wireV217) -- no legacy menu, no
+        // dashboard shortcut boxes: every panel opens from one place.
+        findViewById<View>(R.id.tileHubGeneral).setOnClickListener {
             openSubScreen(R.id.panelGeneral, R.string.cat_general) }
-        findViewById<Button>(R.id.menuForward).setOnClickListener {
-            openSubScreen(R.id.panelForward, R.string.cat_forward) }
-        findViewById<Button>(R.id.menuSmart).setOnClickListener {
+        findViewById<View>(R.id.tileHubSmart).setOnClickListener {
             openSubScreen(R.id.panelSmart, R.string.cat_smart) }
-        findViewById<Button>(R.id.menuSecurity).setOnClickListener {
-            openSubScreen(R.id.panelSecurity, R.string.cat_security) }
-        findViewById<Button>(R.id.menuRelay).setOnClickListener {
-            openSubScreen(R.id.panelRelay, R.string.cat_relay) }
-        findViewById<Button>(R.id.menuData).setOnClickListener {
-            openSubScreen(R.id.panelData, R.string.cat_data) }
-        findViewById<Button>(R.id.menuGroup).setOnClickListener {
+        findViewById<View>(R.id.tileHubGroup).setOnClickListener {
             openSubScreen(R.id.panelGroup, R.string.cat_group) }
-        findViewById<Button>(R.id.menuFamily).setOnClickListener {
+        findViewById<View>(R.id.tileHubFamily).setOnClickListener {
             openSubScreen(R.id.panelFamily, R.string.cat_family) }
-        findViewById<Button>(R.id.menuAutomation).setOnClickListener {
-            startActivity(Intent(this, AutomationActivity::class.java)) }
-        findViewById<View>(R.id.boxRemote).setOnClickListener {
-            bottomNav.selectedItemId = R.id.navRemote }
-        findViewById<View>(R.id.boxQuick).setOnClickListener {
-            openSubScreen(R.id.groupQuick, R.string.btn_menu_quick) }
-        findViewById<View>(R.id.boxAutomation).setOnClickListener {
-            startActivity(Intent(this, AutomationActivity::class.java)) }
+        findViewById<View>(R.id.cardHubPanic).setOnClickListener {
+            openSubScreen(R.id.panelSecurity, R.string.cat_security) }
         // Android Back closes a sub-screen before leaving the app.
         onBackPressedDispatcher.addCallback(this,
             object : androidx.activity.OnBackPressedCallback(true) {
@@ -2749,59 +2723,43 @@ class MainActivity : LocalizedActivity() {
         } catch (_: Exception) { "----" }
     }
 
-    private fun setPerm(tv: TextView, granted: Boolean) {
-        tv.text = getString(if (granted) R.string.status_granted else R.string.status_missing)
-        tv.setTextColor(
-            ContextCompat.getColor(this, if (granted) R.color.status_ok else R.color.status_bad)
-        )
-    }
-
     private fun refreshStatus() {
-        tvMode.text = getString(
-            when {
-                Config.isSender(this) && Config.isReceiver(this) -> R.string.mode_both
-                Config.isSender(this) -> R.string.mode_sender
-                Config.isReceiver(this) -> R.string.mode_receiver
-                else -> R.string.mode_none
-            }
-        )
-        setPerm(tvPermNotif, PermChecks.notifAccess(this))
-        setPerm(tvPermSms, PermChecks.has(this, android.Manifest.permission.RECEIVE_SMS))
-        setPerm(tvPermLoc, PermChecks.has(this, android.Manifest.permission.ACCESS_FINE_LOCATION))
-        setPerm(tvPermBattery, PermChecks.batteryIgnored(this))
-
-        val missing = PermChecks.missingCount(this)
-        btnFixPerms.visibility = if (missing > 0) View.VISIBLE else View.GONE
-        tvPermSummary.text = if (missing == 0) getString(R.string.perm_summary_ok)
-        else getString(R.string.perm_summary_missing, missing)
-
+        // v2.17.2: the old dashboard status card is gone -- mode
+        // lives on the Pairing page, the permission summary on the
+        // Settings hub and the Permissions Manager; refreshStatus
+        // now feeds the relay badge and the hub subtitles only.
         // Relay connection state
         val okAt = Relay.lastRelayOk(this)
         val latency = Relay.lastLatencyMs(this)
         val latencySuffix = if (latency > 0) " • ${latency}ms" else ""
         if (okAt == 0L) {
-            tvRelay.text = getString(R.string.relay_never)
-            tvRelay.setTextColor(ContextCompat.getColor(this, R.color.status_bad))
+            relayStateText = getString(R.string.relay_never)
+            relayStateColor = ContextCompat.getColor(this, R.color.status_bad)
         } else {
             val ageMin = (System.currentTimeMillis() - okAt) / 60000
             if (ageMin < 3) {
-                tvRelay.text = getString(R.string.relay_connected) + latencySuffix
-                tvRelay.setTextColor(ContextCompat.getColor(this, R.color.status_ok))
+                relayStateText = getString(R.string.relay_connected) + latencySuffix
+                relayStateColor = ContextCompat.getColor(this, R.color.status_ok)
             } else {
                 val whenText = when {
                     ageMin < 60 -> getString(R.string.time_mins_ago, ageMin)
                     ageMin < 1440 -> getString(R.string.time_hours_ago, ageMin / 60)
                     else -> getString(R.string.time_days_ago, ageMin / 1440)
                 }
-                tvRelay.text = getString(R.string.relay_last, whenText) + latencySuffix
-                tvRelay.setTextColor(ContextCompat.getColor(this,
-                    if (ageMin < 30) R.color.status_ok else R.color.status_bad))
+                relayStateText = getString(R.string.relay_last, whenText) + latencySuffix
+                relayStateColor = ContextCompat.getColor(this,
+                    if (ageMin < 30) R.color.status_ok else R.color.status_bad)
             }
         }
 
-        // v2.17: toolbar connection pill mirrors the relay state
-        tvConnPill.text = tvRelay.text
-        tvConnPill.setTextColor(tvRelay.currentTextColor)
+        // v2.17: header connection pill mirrors the relay state
+        tvConnPill.text = relayStateText
+        tvConnPill.setTextColor(relayStateColor)
+        // v2.17.2: the Relay screen primary-card badge mirrors it too
+        if (::tvRelayState.isInitialized) {
+            tvRelayState.text = relayStateText
+            tvRelayState.setTextColor(relayStateColor)
+        }
 
         // Delivery state
         val pending = Relay.pendingAckCount(this)
@@ -2846,14 +2804,6 @@ class MainActivity : LocalizedActivity() {
             if (Config.cmdPinIsSet(this)) R.string.pin_state_set else R.string.pin_state_unset)
         tvAdminInfo.text = getString(
             if (AdminReceiver.isActive(this)) R.string.admin_state_on else R.string.admin_state_off)
-
-        val q = Relay.queueSize(this)
-        if (q > 0) {
-            tvQueue.text = getString(R.string.queue_offline, q)
-            tvQueue.visibility = View.VISIBLE
-        } else {
-            tvQueue.visibility = View.GONE
-        }
 
         val seen = Config.lastSenderSeen(this)
         tvSenderSeen.text = if (seen == 0L) getString(R.string.sender_never_seen)
@@ -2907,12 +2857,17 @@ class MainActivity : LocalizedActivity() {
         if (Config.panicActive(this)) {
             lvInbox.adapter = InboxAdapter(this, emptyList(),
                 getString(R.string.inbox_empty))
+            if (::tvInboxPill.isInitialized)
+                tvInboxPill.text = getString(R.string.inbox_pill_fmt, 0)
             return
         }
         lvInbox.adapter = InboxAdapter(this, filteredInbox(),
             getString(R.string.inbox_empty)) { item, action ->
             onInboxAction(item, action)
         }
+        if (::tvInboxPill.isInitialized)
+            tvInboxPill.text = getString(
+                R.string.inbox_pill_fmt, filteredInbox().size)
     }
 
     /** v2.17 inbox quick actions (row buttons in InboxAdapter). */
@@ -2976,6 +2931,11 @@ class MainActivity : LocalizedActivity() {
         findViewById<View>(R.id.cardHubForward).setOnClickListener {
             openSubScreen(R.id.panelForward, R.string.cat_forward) }
         findViewById<Button>(R.id.btnHubKeys).setOnClickListener { openConfigPage() }
+        // v2.17.2: the paired-devices dialog used to hang off the
+        // dashboard status card's Devices button (removed with the
+        // card); it now opens from the hub peer-state line, its
+        // surviving peer control.
+        tvHubPeerState.setOnClickListener { showDevicesDialog() }
         findViewById<View>(R.id.btnConfigBack).setOnClickListener { closeConfigPage() }
     }
 
@@ -2988,8 +2948,8 @@ class MainActivity : LocalizedActivity() {
         val ssid = ownSsid()
         tvDashWifi.text = if (ssid.isNotEmpty()) {
             val band = ownWifiBand()
-            "📶 Wi-Fi • $ssid" + if (band.isNotEmpty()) " • $band" else ""
-        } else "📶 Wi-Fi • —"
+            "Wi-Fi \u2022 $ssid" + if (band.isNotEmpty()) " \u2022 $band" else ""
+        } else "Wi-Fi \u2022 \u2014"
         val lastLoc = History.all(this)
             .firstOrNull { it.type == Relay.TYPE_LOCATION }
         tvDashLoc.text = lastLoc?.let {
@@ -3029,8 +2989,11 @@ class MainActivity : LocalizedActivity() {
         val missing = PermChecks.missingCount(this)
         tvSetPill.text = if (missing == 0) getString(R.string.set_status_ok)
             else getString(R.string.set_status_warn, missing)
-        tvHubPermsSub.text = tvPermSummary.text
-        tvHubRelaySub.text = "${tvRelay.text} • " + getString(
+        val hubMissing = PermChecks.missingCount(this)
+        tvHubPermsSub.text = if (hubMissing == 0)
+            getString(R.string.perm_summary_ok)
+        else getString(R.string.perm_summary_missing, hubMissing)
+        tvHubRelaySub.text = "$relayStateText • " + getString(
             if (Config.tgToken(this).isNotEmpty()) R.string.hub_tg_on
             else R.string.hub_tg_off)
         tvHubSecSub.text = "${tvPinInfo.text} • ${tvAdminInfo.text}"

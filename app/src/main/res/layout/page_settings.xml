@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Settings hub page (v2.17, mockup image 6): status pill, device
-     card, 2x2 hub tiles, forwarding summary and diagnostics on top of
-     the unchanged category menu (which still opens the same panels). -->
+<!-- Settings hub (v2.17.2, approved preview): status pill, device
+     card, the 2x2 hub tiles, a panic card, the forwarding summary,
+     a More tiles grid and diagnostics. The legacy full menu below
+     the hub is REMOVED — every panel it opened is reachable exactly
+     once from a tile or card on this page. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -30,28 +32,23 @@
                 android:tint="?attr/colorOnSurface" />
 
             <TextView
+                style="@style/PL.H1"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:layout_weight="1"
-                android:text="@string/nav_settings"
-                android:textSize="22sp"
-                android:textStyle="bold" />
+                android:text="@string/nav_settings" />
         </LinearLayout>
 
         <TextView
             android:id="@+id/tvSetPill"
             style="@style/PL.Pill"
-            android:layout_marginTop="10dp" />
+            android:layout_marginTop="11dp" />
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/set_device_card"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            style="@style/PL.SecTitle"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/set_device_card" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -64,9 +61,23 @@
                 android:orientation="horizontal"
                 android:padding="16dp">
 
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_circle">
+
+                    <ImageView
+                        android:layout_width="23dp"
+                        android:layout_height="23dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_phone" />
+                </FrameLayout>
+
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -74,21 +85,21 @@
                         android:id="@+id/tvHubDevice"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="16.5sp"
+                        android:textSize="15.5sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvHubDeviceSub"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="3dp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="12.5sp" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnHubKeys"
-                    style="@style/PL.BtnTonal"
+                    style="@style/PL.BtnGhost"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/set_manage_keys" />
@@ -96,13 +107,10 @@
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/set_hub"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            style="@style/PL.SecTitle"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/set_hub" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -113,21 +121,36 @@
                 android:id="@+id/tileHubRelay"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginEnd="6dp"
+                android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="132dp"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_server" />
+                    </FrameLayout>
 
                     <TextView
                         style="@style/PL.TileTitle"
-                        android:textSize="15sp"
-                        android:text="@string/set_relay" />
+                        android:layout_marginTop="9dp"
+                        android:text="@string/set_relay"
+                        android:textSize="15sp" />
 
                     <TextView
                         android:id="@+id/tvHubRelaySub"
@@ -143,21 +166,36 @@
                 android:id="@+id/tileHubPerms"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginStart="6dp"
+                android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="132dp"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_shield_check" />
+                    </FrameLayout>
 
                     <TextView
                         style="@style/PL.TileTitle"
-                        android:textSize="15sp"
-                        android:text="@string/set_perms" />
+                        android:layout_marginTop="9dp"
+                        android:text="@string/set_perms"
+                        android:textSize="15sp" />
 
                     <TextView
                         android:id="@+id/tvHubPermsSub"
@@ -180,21 +218,36 @@
                 android:id="@+id/tileHubSecurity"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginEnd="6dp"
+                android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="132dp"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_lock" />
+                    </FrameLayout>
 
                     <TextView
                         style="@style/PL.TileTitle"
-                        android:textSize="15sp"
-                        android:text="@string/set_security" />
+                        android:layout_marginTop="9dp"
+                        android:text="@string/set_security"
+                        android:textSize="15sp" />
 
                     <TextView
                         android:id="@+id/tvHubSecSub"
@@ -210,21 +263,36 @@
                 android:id="@+id/tileHubData"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:layout_marginStart="6dp"
+                android:layout_weight="1"
                 android:clickable="true"
                 android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:minHeight="132dp"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_db" />
+                    </FrameLayout>
 
                     <TextView
                         style="@style/PL.TileTitle"
-                        android:textSize="15sp"
-                        android:text="@string/set_data" />
+                        android:layout_marginTop="9dp"
+                        android:text="@string/set_data"
+                        android:textSize="15sp" />
 
                     <TextView
                         android:id="@+id/tvHubDataSub"
@@ -237,14 +305,74 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <TextView
+        <!-- ===== Emergency / Panic (opens the Security screen) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardHubPanic"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/set_forwarding"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            app:strokeColor="?attr/colorError"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_circle_red">
+
+                    <ImageView
+                        android:layout_width="23dp"
+                        android:layout_height="23dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_alert_red" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/set_panic_title"
+                        android:textSize="15.5sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/set_panic_sub"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="›"
+                    android:textColor="?attr/colorError"
+                    android:textSize="22sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            style="@style/PL.SecTitle"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/set_forwarding" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardHubForward"
@@ -253,22 +381,215 @@
             android:clickable="true"
             android:focusable="true">
 
-            <TextView
-                android:id="@+id/tvHubFwd"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp"
-                android:textSize="14sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <FrameLayout
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_circle">
+
+                    <ImageView
+                        android:layout_width="23dp"
+                        android:layout_height="23dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_swap" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvHubFwd"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="›"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="22sp" />
+            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
+            style="@style/PL.SecTitle"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/set_more" />
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/set_diag"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/tileHubGeneral"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="104dp"
+                    android:orientation="vertical"
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_sliders" />
+                    </FrameLayout>
+
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/cat_general"
+                        android:textSize="14.5sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/tileHubSmart"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="104dp"
+                    android:orientation="vertical"
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_bulb" />
+                    </FrameLayout>
+
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/cat_smart"
+                        android:textSize="14.5sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/tileHubGroup"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="104dp"
+                    android:orientation="vertical"
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_users" />
+                    </FrameLayout>
+
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/cat_group"
+                        android:textSize="14.5sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/tileHubFamily"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="104dp"
+                    android:orientation="vertical"
+                    android:padding="15dp">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_alert" />
+                    </FrameLayout>
+
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/cat_family"
+                        android:textSize="14.5sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <TextView
+            style="@style/PL.SecTitle"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="10dp"
+            android:text="@string/set_diag" />
 
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -280,96 +601,8 @@
                 android:layout_height="wrap_content"
                 android:padding="16dp"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:textSize="13sp" />
+                android:textSize="12.5sp" />
         </com.google.android.material.card.MaterialCardView>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/set_all_settings"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:id="@+id/settingsMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuGeneral"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_general" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuForward"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_forward" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuSmart"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_smart" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuSecurity"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_security" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuRelay"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_relay" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuAutomation"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_automation" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuGroup"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_group" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuFamily"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_family" />
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/menuData"
-                style="@style/PL.MenuBtn"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="start|center_vertical"
-                android:text="@string/cat_data" />
-        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

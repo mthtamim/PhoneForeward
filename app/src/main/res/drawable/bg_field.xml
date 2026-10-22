@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Plain dark field background (v2.17.2) for the editor and the
+     relay screen: inset fill, outline stroke, 13dp corners. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <corners android:radius="13dp" />
+    <solid android:color="?attr/colorSurfaceContainer" />
+    <stroke android:width="1dp" android:color="?attr/colorOutline" />
+    <padding android:left="14dp" android:top="12dp"
+        android:right="14dp" android:bottom="12dp" />
+</shape>

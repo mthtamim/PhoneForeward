@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Dashboard (v2.17.2, approved preview): hero device card with the
+     battery ring, 2x2 bento tiles, recent activity, and the Quick
+     Send card (moved here from the old sub-screen — one copy only).
+     The legacy 3 shortcut boxes and the old status card are gone:
+     mode and permission summaries live in Settings / Permissions. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -10,78 +15,95 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- ===== Device card (v2.17, mockup image 1) ===== -->
+        <!-- ===== Hero device card ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="12dp"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal"
+                android:padding="20dp">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                    <LinearLayout
-                        android:layout_width="0dp"
+                    <TextView
+                        android:id="@+id/tvDashDevice"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:textSize="21sp"
+                        android:textStyle="bold" />
 
-                        <TextView
-                            android:id="@+id/tvDashDevice"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textSize="20sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvDashDeviceSub"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvDashWifi"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:textSize="14sp" />
-                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/tvDashDeviceSub"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12.5sp" />
 
                     <FrameLayout
-                        android:layout_width="76dp"
-                        android:layout_height="76dp">
+                        android:layout_width="118dp"
+                        android:layout_height="118dp"
+                        android:layout_marginTop="20dp">
 
                         <ProgressBar
                             android:id="@+id/pbDashBattery"
                             style="?android:attr/progressBarStyleHorizontal"
-                            android:layout_width="76dp"
-                            android:layout_height="76dp"
+                            android:layout_width="118dp"
+                            android:layout_height="118dp"
                             android:max="100"
-                            android:progressDrawable="@drawable/bg_battery_ring" />
+                            android:progressDrawable="@drawable/bg_hero_ring" />
 
                         <TextView
                             android:id="@+id/tvDashBatteryPct"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
-                            android:textSize="16sp"
+                            android:textSize="25sp"
                             android:textStyle="bold" />
                     </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_wifi" />
+
+                        <TextView
+                            android:id="@+id/tvDashWifi"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:textSize="13.5sp" />
+                    </LinearLayout>
                 </LinearLayout>
+
+                <ImageView
+                    android:layout_width="86dp"
+                    android:layout_height="150dp"
+                    android:layout_marginStart="8dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_phone_art" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ===== Quick tiles (v2.17) ===== -->
+        <!-- ===== Bento tiles row 1 ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -100,35 +122,36 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="📍"
-                            android:textSize="17sp" />
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_loc" />
+                    </FrameLayout>
 
-                        <TextView
-                            style="@style/PL.TileTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="@string/dash_location" />
-                    </LinearLayout>
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/dash_location" />
 
                     <TextView
                         android:id="@+id/tvDashLoc"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="4dp"
                         android:ellipsize="end"
                         android:maxLines="2"
                         android:textColor="?attr/colorOnSurfaceVariant"
-                        android:textSize="12.5sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -145,37 +168,39 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🔦"
-                            android:textSize="17sp" />
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_flash" />
+                    </FrameLayout>
 
-                        <TextView
-                            style="@style/PL.TileTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="@string/dash_flashlight" />
-                    </LinearLayout>
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/dash_flashlight" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="4dp"
                         android:text="@string/dash_tap_toggle"
                         android:textColor="?attr/colorOnSurfaceVariant"
-                        android:textSize="12.5sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
+        <!-- ===== Bento tiles row 2 ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -195,33 +220,34 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🔔"
-                            android:textSize="17sp" />
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_bell" />
+                    </FrameLayout>
 
-                        <TextView
-                            style="@style/PL.TileTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="@string/dash_ringer" />
-                    </LinearLayout>
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/dash_ringer" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="4dp"
                         android:text="@string/dash_ringer_sub"
                         android:textColor="?attr/colorOnSurfaceVariant"
-                        android:textSize="12.5sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -238,44 +264,44 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="15dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="🎙️"
-                            android:textSize="17sp" />
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_mic" />
+                    </FrameLayout>
 
-                        <TextView
-                            style="@style/PL.TileTitle"
-                            android:layout_width="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="@string/dash_ptt" />
-                    </LinearLayout>
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_marginTop="9dp"
+                        android:text="@string/dash_ptt" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="4dp"
                         android:text="@string/dash_ptt_hint"
                         android:textColor="?attr/colorOnSurfaceVariant"
-                        android:textSize="12.5sp" />
+                        android:textSize="12sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- ===== Recent activity (v2.17) ===== -->
+        <!-- ===== Recent activity ===== -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardDashRecent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="14dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -285,15 +311,37 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    style="@style/PL.TileTitle"
-                    android:text="@string/dash_recent" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_msg" />
+                    </FrameLayout>
+
+                    <TextView
+                        style="@style/PL.TileTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_marginStart="11dp"
+                        android:text="@string/dash_recent" />
+                </LinearLayout>
 
                 <TextView
                     android:id="@+id/tvDashRecent"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="10dp"
                     android:ellipsize="end"
                     android:maxLines="3"
                     android:textColor="?attr/colorOnSurfaceVariant"
@@ -301,296 +349,242 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ===== Top 3 box menus (v2.6.0) ===== -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
-                    android:orientation="horizontal">
-        
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/boxRemote"
-                        android:layout_width="0dp"
-                        android:layout_height="86dp"
-                        android:layout_marginEnd="4dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        app:cardCornerRadius="18dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="?attr/colorSurfaceVariant"
-                        app:strokeWidth="1dp">
-        
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-        
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="🎛️"
-                                android:textSize="24sp" />
-        
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/box_remote"
-                                android:textSize="12.5sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-        
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/boxQuick"
-                        android:layout_width="0dp"
-                        android:layout_height="86dp"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginEnd="4dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        app:cardCornerRadius="18dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="?attr/colorSurfaceVariant"
-                        app:strokeWidth="1dp">
-        
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-        
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="⚡"
-                                android:textSize="24sp" />
-        
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/btn_menu_quick"
-                                android:textSize="12.5sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-        
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/boxAutomation"
-                        android:layout_width="0dp"
-                        android:layout_height="86dp"
-                        android:layout_marginStart="4dp"
-                        android:layout_weight="1"
-                        android:clickable="true"
-                        android:focusable="true"
-                        app:cardBackgroundColor="?attr/colorSurface"
-                        app:cardCornerRadius="18dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="?attr/colorSurfaceVariant"
-                        app:strokeWidth="1dp">
-        
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:orientation="vertical">
-        
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="🤖"
-                                android:textSize="24sp" />
-        
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/box_auto"
-                                android:textSize="12.5sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
-                </LinearLayout>
-
-<TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="8dp"
-            android:text="@string/sec_h_status"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-<!-- ===== Status card ===== -->
+        <!-- ===== Quick Send (one card, moved from the old sub-screen) ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            app:cardBackgroundColor="?attr/colorSurface"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorSurfaceVariant"
-            app:strokeWidth="1dp">
+            android:layout_marginTop="12dp">
 
             <LinearLayout
+                android:id="@+id/groupQuick"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <TextView
-                    style="@style/PL.CardTitle"
-                    android:text="@string/sec_status" />
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="@drawable/bg_icon_circle">
+
+                        <ImageView
+                            android:layout_width="23dp"
+                            android:layout_height="23dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_send" />
+                    </FrameLayout>
 
                     <TextView
-                        style="@style/PL.StatusLabel"
-                        android:text="@string/label_mode" />
-
-                    <TextView
-                        android:id="@+id/tvMode"
-                        style="@style/PL.StatusValue"
-                        android:textColor="?attr/colorOnSurface" />
+                        style="@style/PL.TileTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_marginStart="11dp"
+                        android:text="@string/btn_menu_quick" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp">
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        style="@style/PL.StatusLabel"
-                        android:text="@string/perm_notif_access" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSendClipboard"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_send_clipboard" />
 
-                    <TextView
-                        android:id="@+id/tvPermNotif"
-                        style="@style/PL.StatusValue" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSendFile"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_send_file" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp">
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        style="@style/PL.StatusLabel"
-                        android:text="@string/perm_sms" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVoice"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_voice" />
 
-                    <TextView
-                        android:id="@+id/tvPermSms"
-                        style="@style/PL.StatusValue" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPtt"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_ptt" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp">
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        style="@style/PL.StatusLabel"
-                        android:text="@string/perm_location" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBroadcast"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_broadcast" />
 
-                    <TextView
-                        android:id="@+id/tvPermLoc"
-                        style="@style/PL.StatusValue" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnVoiceCmd"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_voicecmd" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp">
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        style="@style/PL.StatusLabel"
-                        android:text="@string/perm_battery" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSiren"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_siren" />
 
-                    <TextView
-                        android:id="@+id/tvPermBattery"
-                        style="@style/PL.StatusValue" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSchedule"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_schedule" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp">
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
 
-                    <TextView
-                        style="@style/PL.StatusLabel"
-                        android:text="@string/label_relay" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTemplates"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_templates" />
 
-                    <TextView
-                        android:id="@+id/tvRelay"
-                        style="@style/PL.StatusValue" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp">
-
-                    <TextView
-                        style="@style/PL.StatusLabel"
-                        android:text="@string/label_delivery" />
-
-                    <TextView
-                        android:id="@+id/tvDelivery"
-                        style="@style/PL.StatusValue"
-                        android:textColor="?attr/colorOnSurface" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnContactCard"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_contact_card" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnFixPerms"
-                    style="@style/PL.BtnTonal"
+                    android:id="@+id/btnWallpaper"
+                    style="@style/PL.BtnChip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/btn_fix_perms"
-                    android:visibility="gone" />
+                    android:text="@string/btn_wallpaper" />
 
-                <TextView
-                    android:id="@+id/tvQueue"
-                    style="@style/PL.BodySmall"
-                    android:layout_marginTop="8dp"
-                    android:visibility="gone" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/PL.Field"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:hint="@string/hint_my_status">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etMyStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:maxLines="1" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSaveStatus"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_save" />
+                </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDevices"
-                    style="@style/PL.BtnTonal"
+                    android:id="@+id/btnSos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_sos"
+                    android:textColor="#FFFFFF"
+                    app:backgroundTint="@color/status_bad"
+                    app:cornerRadius="100dp" />
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/btn_devices" />
+                    android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/tvPeerStatus"
-                    style="@style/PL.BodySmall"
-                    android:layout_marginTop="6dp" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCheckin"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_checkin" />
 
-                
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnBtShare"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/bt_title" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

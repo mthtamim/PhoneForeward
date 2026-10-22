@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Automation Studio (v2.17.2, approved preview): title + solid
+     Add Rule, status pill, Engine and Sync mini cards, quick-tool
+     chips, then the rule cards (built by AutomationActivity). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -12,192 +15,209 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-<ImageButton
-            android:id="@+id/btnAutoBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_back_chip"
-            android:contentDescription="@string/btn_back"
-            android:padding="10dp"
-            android:src="@drawable/ic_arrow_back"
-            android:tint="?attr/colorOnSurface" />
+            <ImageButton
+                android:id="@+id/btnAutoBack"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_back_chip"
+                android:contentDescription="@string/btn_back"
+                android:padding="10dp"
+                android:src="@drawable/ic_arrow_back"
+                android:tint="?attr/colorOnSurface" />
+
+            <TextView
+                style="@style/PL.H1"
+                android:layout_width="0dp"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:text="@string/auto_studio"
+                android:textSize="22sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAddRule"
+                style="@style/PL.BtnPill"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/auto_add" />
+        </LinearLayout>
 
         <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:gravity="center_vertical"
-            android:text="@string/auto_title"
-            android:textSize="20sp"
-            android:textStyle="bold" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvAutoPill"
-        style="@style/PL.Pill"
-        android:layout_marginTop="10dp" />
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnAddRule"
-        android:layout_width="match_parent"
-        android:layout_marginTop="10dp"
-        android:layout_height="wrap_content"
-        android:text="@string/auto_add" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="vertical">
+            android:id="@+id/tvAutoPill"
+            style="@style/PL.Pill"
+            android:layout_marginTop="12dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal">
+
+            <!-- Engine status card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        style="@style/PL.BodySmall"
+                        android:text="@string/auto_health_title" />
+
+                    <TextView
+                        android:id="@+id/tvHealthTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="14.5sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/healthRows"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/auto_rest_label"
+                            android:textSize="12.5sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRestTime"
+                            style="@style/PL.BtnChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="10s" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Sync and backup card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <Switch
+                        android:id="@+id/swRulesSync"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/auto_rules_sync"
+                        android:textSize="13.5sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAutoBackup"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/auto_backup" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- Quick tools -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAutoQr"
-                style="@style/PL.BtnTonal"
+                style="@style/PL.BtnChip"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
+                android:layout_marginEnd="3dp"
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:text="@string/auto_qr" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAutoLog"
-                style="@style/PL.BtnTonal"
+                style="@style/PL.BtnChip"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:text="@string/auto_log" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAutoVars"
-                style="@style/PL.BtnTonal"
+                style="@style/PL.BtnChip"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:text="@string/auto_vars" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAutoExport"
-                style="@style/PL.BtnTonal"
+                style="@style/PL.BtnChip"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
+                android:layout_marginStart="3dp"
+                android:layout_marginEnd="3dp"
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:text="@string/auto_export" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAutoImport"
-                style="@style/PL.BtnTonal"
+                style="@style/PL.BtnChip"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
+                android:layout_marginStart="3dp"
                 android:layout_weight="1"
                 android:maxLines="1"
                 android:text="@string/auto_import" />
         </LinearLayout>
-    </LinearLayout>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/auto_rest_label" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnRestTime"
-            style="@style/PL.BtnTonal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="10s" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/tvHealthTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/auto_health_title"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:id="@+id/healthRows"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-    </LinearLayout>
+            android:layout_height="0dp"
+            android:layout_marginTop="14dp"
+            android:layout_weight="1">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
-
-        <Switch
-            android:id="@+id/swRulesSync"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/auto_rules_sync" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAutoBackup"
-            style="@style/PL.BtnTonal"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/auto_backup" />
-    </LinearLayout>
-
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginTop="12dp"
-        android:layout_weight="1">
-
-        <LinearLayout
-            android:id="@+id/autoContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-    </ScrollView>
-
+            <LinearLayout
+                android:id="@+id/autoContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
     </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
