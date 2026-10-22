@@ -130,6 +130,7 @@ object AutoCatalog {
 class AutomationActivity : LocalizedActivity() {
 
     private lateinit var container: LinearLayout
+    private var healthBroken = -1
 
     private val scanLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
@@ -281,6 +282,28 @@ class AutomationActivity : LocalizedActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_automation)
         container = findViewById(R.id.autoContainer)
+        // v2.17: same five-tab bar as MainActivity; the other tabs
+        // hand over to MainActivity with a tab extra.
+        val nav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
+            R.id.autoBottomNav)
+        nav.selectedItemId = R.id.navAutomation
+        nav.setOnItemSelectedListener { item ->
+            if (item.itemId == R.id.navAutomation) {
+                return@setOnItemSelectedListener true
+            }
+            val tab = when (item.itemId) {
+                R.id.navInbox -> "inbox"
+                R.id.navRemote -> "remote"
+                R.id.navSettings -> "settings"
+                else -> "home"
+            }
+            startActivity(Intent(this, MainActivity::class.java)
+                .putExtra("tab", tab)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                    Intent.FLAG_ACTIVITY_SINGLE_TOP))
+            finish()
+            true
+        }
         findViewById<Button>(R.id.btnAddRule).setOnClickListener {
             startActivity(Intent(this, RuleEditorActivity::class.java))
         }
@@ -363,6 +386,7 @@ class AutomationActivity : LocalizedActivity() {
         // only the broken items get a row (the full five-row list ate
         // too much of the screen).
         val broken = items.filter { !it.second }
+        healthBroken = broken.size
         findViewById<TextView>(R.id.tvHealthTitle).text =
             if (broken.isEmpty())
                 "✅ " + getString(R.string.auto_health_title) + " — " +
@@ -397,10 +421,20 @@ class AutomationActivity : LocalizedActivity() {
         mode == AppOpsManager.MODE_ALLOWED
     } catch (_: Exception) { false }
 
+    private fun updateAutoPill(total: Int, active: Int) {
+        var text = getString(R.string.auto_pill_fmt, active, total)
+        if (healthBroken > 0) {
+            text += " • ⚠️ " + getString(R.string.auto_health_broken, healthBroken)
+        }
+        findViewById<TextView>(R.id.tvAutoPill).text = text
+    }
+
     private fun render() {
         container.removeAllViews()
         val list = Automation.rules(this)
             .sortedWith(compareBy({ it.optString("cat") }, { it.optString("name") }))
+        updateAutoPill(list.size,
+            list.count { it.optBoolean("enabled", true) })
         if (list.isEmpty()) {
             container.addView(TextView(this).apply {
                 text = getString(R.string.auto_empty)
@@ -452,9 +486,14 @@ class AutomationActivity : LocalizedActivity() {
                     (trig?.optString("param")?.takeIf { it.isNotBlank() }?.let { " — $it" } ?: "")
                 alpha = 0.75f
             })
-            val nActions = rule.optJSONArray("actions")?.length() ?: 0
+            val acts = rule.optJSONArray("actions")
+            val nActions = acts?.length() ?: 0
+            val firstAct = acts?.optJSONObject(0)?.optString("type") ?: ""
             row.addView(TextView(this).apply {
-                text = getString(R.string.auto_actions_count, nActions)
+                text = "➡️ " + AutoCatalog.label(this@AutomationActivity,
+                    "a", firstAct) +
+                    (if (nActions > 1) " +${nActions - 1}" else "") +
+                    "  •  " + getString(R.string.auto_actions_count, nActions)
                 alpha = 0.75f
             })
             val buttons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }

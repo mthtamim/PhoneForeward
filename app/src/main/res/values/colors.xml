@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Light palette (Material 3, sky-blue seed matching the old brand colour) -->
+<!-- Light palette (v2.17: clean mint-tinted neutrals, emerald primary) -->
 <resources>
     <color name="md_primary">#0E9F6E</color>
     <color name="md_onPrimary">#FFFFFF</color>
-    <color name="md_primaryContainer">#DDF3E8</color>
-    <color name="md_onPrimaryContainer">#0A3D29</color>
-    <color name="md_secondary">#55636E</color>
+    <color name="md_primaryContainer">#D9F6E9</color>
+    <color name="md_onPrimaryContainer">#06382A</color>
+    <color name="md_secondary">#52665C</color>
     <color name="md_onSecondary">#FFFFFF</color>
-    <color name="md_secondaryContainer">#E8EEF1</color>
-    <color name="md_onSecondaryContainer">#14232B</color>
-    <color name="md_background">#F2F5F7</color>
-    <color name="md_onBackground">#0F1D24</color>
+    <color name="md_secondaryContainer">#E6EFEA</color>
+    <color name="md_onSecondaryContainer">#12241B</color>
+    <color name="md_background">#F1F6F3</color>
+    <color name="md_onBackground">#0C1F16</color>
     <color name="md_surface">#FFFFFF</color>
-    <color name="md_onSurface">#0F1D24</color>
-    <color name="md_surfaceVariant">#E3EBEF</color>
-    <color name="md_onSurfaceVariant">#5A6B75</color>
-    <color name="md_surfaceContainer">#EDF2F5</color>
-    <color name="md_surfaceContainerHigh">#E0E9EE</color>
-    <color name="md_outline">#B7C6CE</color>
+    <color name="md_onSurface">#0C1F16</color>
+    <color name="md_surfaceVariant">#E1EDE6</color>
+    <color name="md_onSurfaceVariant">#55705F</color>
+    <color name="md_surfaceContainer">#EAF3EE</color>
+    <color name="md_surfaceContainerHigh">#DCEAE2</color>
+    <color name="md_outline">#B9CFC2</color>
     <color name="md_error">#BA1A1A</color>
     <color name="md_onError">#FFFFFF</color>
     <color name="md_errorContainer">#FDECEC</color>
@@ -25,6 +25,12 @@
     <color name="status_ok">#15803D</color>
     <color name="status_bad">#DC2626</color>
     <color name="pair_code">#B45309</color>
-    <color name="divider">#D3DEE4</color>
-    <color name="md_btnFill">#D9E5EC</color>
+    <color name="divider">#D3E2D9</color>
+    <color name="md_btnFill">#DCEFE5</color>
+
+    <!-- v2.17 design tokens -->
+    <color name="pl_mint">#0DBE82</color>
+    <color name="nav_active">#0E9F6E</color>
+    <color name="nav_inactive">#5C7267</color>
+    <color name="nav_indicator">#D9F6E9</color>
 </resources>

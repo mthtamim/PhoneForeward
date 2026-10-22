@@ -71,7 +71,32 @@ class MainActivity : LocalizedActivity() {
     private lateinit var pageInbox: View
     private lateinit var pageSettings: View
     private lateinit var pageConfig: View
+    private lateinit var pageRemote: View
     private var settingsOpen = false
+    private var configOpen = false
+
+    // v2.17 redesign views
+    private lateinit var tvConnPill: TextView
+    private lateinit var tvDashDevice: TextView
+    private lateinit var tvDashDeviceSub: TextView
+    private lateinit var tvDashWifi: TextView
+    private lateinit var pbDashBattery: android.widget.ProgressBar
+    private lateinit var tvDashBatteryPct: TextView
+    private lateinit var tvDashLoc: TextView
+    private lateinit var tvDashRecent: TextView
+    private lateinit var tvHubShizuku: TextView
+    private lateinit var tvHubPeerState: TextView
+    private lateinit var etHubSearch: EditText
+    private var hubCat: String = "ALL"
+    private lateinit var tvSetPill: TextView
+    private lateinit var tvHubDevice: TextView
+    private lateinit var tvHubDeviceSub: TextView
+    private lateinit var tvHubRelaySub: TextView
+    private lateinit var tvHubPermsSub: TextView
+    private lateinit var tvHubSecSub: TextView
+    private lateinit var tvHubDataSub: TextView
+    private lateinit var tvHubFwd: TextView
+    private lateinit var tvHubDiag: TextView
     private lateinit var bottomNav: BottomNavigationView
 
     private var inboxItems: List<History.Item> = emptyList()
@@ -447,7 +472,29 @@ class MainActivity : LocalizedActivity() {
         pageInbox = findViewById(R.id.pageInbox)
         pageSettings = findViewById(R.id.pageSettings)
         pageConfig = findViewById(R.id.pageConfig)
+        pageRemote = findViewById(R.id.pageRemote)
         bottomNav = findViewById(R.id.bottomNav)
+
+        tvConnPill = findViewById(R.id.tvConnPill)
+        tvDashDevice = findViewById(R.id.tvDashDevice)
+        tvDashDeviceSub = findViewById(R.id.tvDashDeviceSub)
+        tvDashWifi = findViewById(R.id.tvDashWifi)
+        pbDashBattery = findViewById(R.id.pbDashBattery)
+        tvDashBatteryPct = findViewById(R.id.tvDashBatteryPct)
+        tvDashLoc = findViewById(R.id.tvDashLoc)
+        tvDashRecent = findViewById(R.id.tvDashRecent)
+        tvHubShizuku = findViewById(R.id.tvHubShizuku)
+        tvHubPeerState = findViewById(R.id.tvHubPeerState)
+        etHubSearch = findViewById(R.id.etHubSearch)
+        tvSetPill = findViewById(R.id.tvSetPill)
+        tvHubDevice = findViewById(R.id.tvHubDevice)
+        tvHubDeviceSub = findViewById(R.id.tvHubDeviceSub)
+        tvHubRelaySub = findViewById(R.id.tvHubRelaySub)
+        tvHubPermsSub = findViewById(R.id.tvHubPermsSub)
+        tvHubSecSub = findViewById(R.id.tvHubSecSub)
+        tvHubDataSub = findViewById(R.id.tvHubDataSub)
+        tvHubFwd = findViewById(R.id.tvHubFwd)
+        tvHubDiag = findViewById(R.id.tvHubDiag)
 
         tvMode = findViewById(R.id.tvMode)
         tvRelay = findViewById(R.id.tvRelay)
@@ -501,13 +548,27 @@ class MainActivity : LocalizedActivity() {
             .getString("blocked_words", ""))
         refreshPairCode()
 
-        // ----- bottom navigation -----
+        // ----- bottom navigation (v2.17: five tabs) -----
         bottomNav.setOnItemSelectedListener { item ->
-            showPage(item.itemId)
-            true
+            if (item.itemId == R.id.navAutomation) {
+                // Automation is its own activity with the same bar.
+                startActivity(Intent(this, AutomationActivity::class.java))
+                false
+            } else {
+                showPage(item.itemId)
+                true
+            }
         }
-        val startTab = savedInstanceState?.getInt("tab", R.id.navHome) ?: R.id.navHome
-        if (startTab != R.id.navHome) bottomNav.selectedItemId = startTab else showPage(R.id.navHome)
+        val validTabs = setOf(R.id.navHome, R.id.navInbox,
+            R.id.navRemote, R.id.navSettings)
+        val startTab = savedInstanceState?.getInt("tab", R.id.navHome)
+            ?: R.id.navHome
+        if (startTab in validTabs && startTab != R.id.navHome) {
+            bottomNav.selectedItemId = startTab
+        } else {
+            showPage(R.id.navHome)
+        }
+        handleTabExtra(intent)
 
         // ----- pairing -----
         findViewById<Button>(R.id.btnApplyCode).setOnClickListener {
@@ -1066,6 +1127,7 @@ class MainActivity : LocalizedActivity() {
             Relay.sendCommand(this, "SUMMARY"); toast(getString(R.string.toast_cmd_summary))
         }
         wireV24()
+        wireV217()
 
         // ----- v2.3 wiring -----
         findViewById<Button>(R.id.btnCmdLock).setOnClickListener {
@@ -1108,6 +1170,24 @@ class MainActivity : LocalizedActivity() {
         for ((id, act) in actButtons) {
             findViewById<Button>(id).setOnClickListener {
                 sendPeerAction(act) }
+        }
+        // ----- v2.17 dashboard tiles -----
+        findViewById<View>(R.id.cardDashFlash).setOnClickListener {
+            sendPeerAction("torch_toggle")
+        }
+        findViewById<View>(R.id.cardDashLoc).setOnClickListener {
+            Relay.sendCommand(this, "LOCATION")
+            toast(getString(R.string.toast_cmd_location))
+        }
+        findViewById<View>(R.id.cardDashRinger).setOnClickListener {
+            showRingerDialog()
+        }
+        findViewById<View>(R.id.cardDashPtt).setOnClickListener {
+            startActivity(Intent(this, VoiceActivity::class.java)
+                .putExtra("ptt", true))
+        }
+        findViewById<View>(R.id.cardDashRecent).setOnClickListener {
+            bottomNav.selectedItemId = R.id.navInbox
         }
         findViewById<Button>(R.id.btnCmdRemote).setOnClickListener { showRemotePanel() }
         findViewById<Button>(R.id.btnMode).setOnClickListener { showModeDialog() }
@@ -1326,6 +1406,8 @@ class MainActivity : LocalizedActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
+        handleTabExtra(intent)
         when (intent.action) {
             android.nfc.NfcAdapter.ACTION_TAG_DISCOVERED,
             android.nfc.NfcAdapter.ACTION_TECH_DISCOVERED,
@@ -1343,7 +1425,7 @@ class MainActivity : LocalizedActivity() {
     // full-screen sub-screen (overlay) with its own title and back.
 
     private val subGroups = listOf(
-        R.id.groupRemote, R.id.groupQuick,
+        R.id.groupQuick,
         R.id.panelGeneral, R.id.panelForward, R.id.panelSmart,
         R.id.panelSecurity, R.id.panelRelay, R.id.panelData,
         R.id.panelGroup, R.id.panelFamily
@@ -1366,24 +1448,19 @@ class MainActivity : LocalizedActivity() {
 
     private fun closeSubScreen() {
         findViewById<View>(R.id.subRoot).visibility = View.GONE
-        if (!settingsOpen) {
+        if (!configOpen) {
             findViewById<View>(R.id.bottomNav).visibility = View.VISIBLE
             findViewById<View>(R.id.toolbar).visibility = View.VISIBLE
         }
     }
 
+    /** v2.17: Settings is a bottom-nav page now, not an overlay. */
     private fun openSettings() {
-        settingsOpen = true
-        findViewById<View>(R.id.settingsRoot).visibility = View.VISIBLE
-        findViewById<View>(R.id.toolbar).visibility = View.GONE
-        findViewById<View>(R.id.bottomNav).visibility = View.GONE
+        bottomNav.selectedItemId = R.id.navSettings
     }
 
     private fun closeSettings() {
-        settingsOpen = false
-        findViewById<View>(R.id.settingsRoot).visibility = View.GONE
-        findViewById<View>(R.id.toolbar).visibility = View.VISIBLE
-        findViewById<View>(R.id.bottomNav).visibility = View.VISIBLE
+        if (settingsOpen) bottomNav.selectedItemId = R.id.navHome
     }
 
     private fun doCheckin() {
@@ -1467,7 +1544,7 @@ class MainActivity : LocalizedActivity() {
         findViewById<Button>(R.id.menuAutomation).setOnClickListener {
             startActivity(Intent(this, AutomationActivity::class.java)) }
         findViewById<View>(R.id.boxRemote).setOnClickListener {
-            openSubScreen(R.id.groupRemote, R.string.btn_menu_remote) }
+            bottomNav.selectedItemId = R.id.navRemote }
         findViewById<View>(R.id.boxQuick).setOnClickListener {
             openSubScreen(R.id.groupQuick, R.string.btn_menu_quick) }
         findViewById<View>(R.id.boxAutomation).setOnClickListener {
@@ -1478,6 +1555,8 @@ class MainActivity : LocalizedActivity() {
                 override fun handleOnBackPressed() {
                     if (subScreenOpen()) {
                         closeSubScreen()
+                    } else if (configOpen) {
+                        closeConfigPage()
                     } else if (settingsOpen) {
                         closeSettings()
                     } else {
@@ -1699,11 +1778,49 @@ class MainActivity : LocalizedActivity() {
     }
 
     private fun showPage(itemId: Int) {
+        configOpen = false
+        pageConfig.visibility = View.GONE
+        settingsOpen = itemId == R.id.navSettings
         pageHome.visibility = if (itemId == R.id.navHome) View.VISIBLE else View.GONE
         pageInbox.visibility = if (itemId == R.id.navInbox) View.VISIBLE else View.GONE
-        pageConfig.visibility = if (itemId == R.id.navConfig) View.VISIBLE else View.GONE
+        pageRemote.visibility = if (itemId == R.id.navRemote) View.VISIBLE else View.GONE
+        pageSettings.visibility = if (itemId == R.id.navSettings) View.VISIBLE else View.GONE
         if (itemId == R.id.navInbox) markInboxSeen()
+        if (itemId == R.id.navRemote) refreshRemoteStates()
         closeSubScreen()
+    }
+
+    /** v2.17: the Automation bottom bar (and other callers) pass a
+     *  tab name; "config" opens the pairing/role page instead. */
+    private fun handleTabExtra(intent: Intent?) {
+        when (intent?.getStringExtra("tab")) {
+            "home" -> bottomNav.selectedItemId = R.id.navHome
+            "inbox" -> bottomNav.selectedItemId = R.id.navInbox
+            "remote" -> bottomNav.selectedItemId = R.id.navRemote
+            "settings" -> bottomNav.selectedItemId = R.id.navSettings
+            "config" -> openConfigPage()
+        }
+    }
+
+    /** v2.17: Pairing & Role (page_config) as a sub-screen over the
+     *  Settings hub, opened from Manage Keys. */
+    private fun openConfigPage() {
+        configOpen = true
+        pageHome.visibility = View.GONE
+        pageInbox.visibility = View.GONE
+        pageRemote.visibility = View.GONE
+        pageSettings.visibility = View.GONE
+        pageConfig.visibility = View.VISIBLE
+        findViewById<View>(R.id.toolbar).visibility = View.GONE
+        findViewById<View>(R.id.bottomNav).visibility = View.GONE
+    }
+
+    private fun closeConfigPage() {
+        configOpen = false
+        pageConfig.visibility = View.GONE
+        findViewById<View>(R.id.toolbar).visibility = View.VISIBLE
+        findViewById<View>(R.id.bottomNav).visibility = View.VISIBLE
+        bottomNav.selectedItemId = R.id.navSettings
     }
 
     private fun bindModeSwitch(id: Int, initial: Boolean, onChange: (Boolean) -> Unit) {
@@ -2682,6 +2799,10 @@ class MainActivity : LocalizedActivity() {
             }
         }
 
+        // v2.17: toolbar connection pill mirrors the relay state
+        tvConnPill.text = tvRelay.text
+        tvConnPill.setTextColor(tvRelay.currentTextColor)
+
         // Delivery state
         val pending = Relay.pendingAckCount(this)
         val ackAt = Relay.lastAckTime(this)
@@ -2746,6 +2867,8 @@ class MainActivity : LocalizedActivity() {
             }
             getString(R.string.sender_last_seen, Config.lastSenderName(this), whenText)
         }
+        refreshDashboard()
+        refreshSettingsHub()
     }
 
     private fun refreshInbox() {
@@ -2786,8 +2909,206 @@ class MainActivity : LocalizedActivity() {
                 getString(R.string.inbox_empty))
             return
         }
-        lvInbox.adapter = InboxAdapter(this, filteredInbox(), getString(R.string.inbox_empty))
+        lvInbox.adapter = InboxAdapter(this, filteredInbox(),
+            getString(R.string.inbox_empty)) { item, action ->
+            onInboxAction(item, action)
+        }
     }
+
+    /** v2.17 inbox quick actions (row buttons in InboxAdapter). */
+    private fun onInboxAction(item: History.Item, action: String) {
+        when (action) {
+            InboxAdapter.ACT_COPY -> copyToClipboard("${item.title}\n${item.body}")
+            InboxAdapter.ACT_COPY_CODE -> {
+                val code = InboxAdapter.extractCode(item)
+                if (code.isNotEmpty()) copyToClipboard(code)
+                else copyToClipboard(item.body)
+            }
+            InboxAdapter.ACT_COPY_NUMBER ->
+                copyToClipboard(item.extra.removePrefix("tel:"))
+            InboxAdapter.ACT_CALL -> {
+                val num = item.extra.removePrefix("tel:")
+                try {
+                    startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$num")))
+                } catch (_: Exception) { copyToClipboard(num) }
+            }
+            InboxAdapter.ACT_REPLY -> {
+                if (item.type == Relay.TYPE_NOTIF &&
+                    item.extra.startsWith("notif:")) {
+                    showNotifReplyDialog(item.extra.removePrefix("notif:"))
+                } else if (item.extra.startsWith("tel:")) {
+                    showReplyDialog(item.extra.removePrefix("tel:"))
+                }
+            }
+        }
+    }
+
+    // ------------- v2.17 redesign wiring -------------
+
+    private fun wireV217() {
+        // Command Hub: search + category chips only change which
+        // command tiles are visible; every button keeps its handler.
+        findViewById<ChipGroup>(R.id.cgHubCats)
+            .setOnCheckedStateChangeListener { _, ids ->
+                hubCat = when (ids.firstOrNull()) {
+                    R.id.chipHubSystem -> "sys"
+                    R.id.chipHubDisplay -> "cam"
+                    R.id.chipHubSecurity -> "sec"
+                    else -> "ALL"
+                }
+                applyHubFilter()
+            }
+        etHubSearch.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) { applyHubFilter() }
+            override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+            override fun onTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
+        })
+
+        // Settings hub tiles -> the same panels/screens as before.
+        findViewById<View>(R.id.tileHubRelay).setOnClickListener {
+            openSubScreen(R.id.panelRelay, R.string.cat_relay) }
+        findViewById<View>(R.id.tileHubPerms).setOnClickListener {
+            startActivity(Intent(this, PermissionsActivity::class.java)) }
+        findViewById<View>(R.id.tileHubSecurity).setOnClickListener {
+            openSubScreen(R.id.panelSecurity, R.string.cat_security) }
+        findViewById<View>(R.id.tileHubData).setOnClickListener {
+            openSubScreen(R.id.panelData, R.string.cat_data) }
+        findViewById<View>(R.id.cardHubForward).setOnClickListener {
+            openSubScreen(R.id.panelForward, R.string.cat_forward) }
+        findViewById<Button>(R.id.btnHubKeys).setOnClickListener { openConfigPage() }
+        findViewById<View>(R.id.btnConfigBack).setOnClickListener { closeConfigPage() }
+    }
+
+    private fun refreshDashboard() {
+        tvDashDevice.text = Config.deviceName(this)
+        tvDashDeviceSub.text = "${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE}"
+        val pct = SystemReceiver.batteryPercent(this)
+        pbDashBattery.progress = pct
+        tvDashBatteryPct.text = "$pct%"
+        val ssid = ownSsid()
+        tvDashWifi.text = if (ssid.isNotEmpty()) {
+            val band = ownWifiBand()
+            "📶 Wi-Fi • $ssid" + if (band.isNotEmpty()) " • $band" else ""
+        } else "📶 Wi-Fi • —"
+        val lastLoc = History.all(this)
+            .firstOrNull { it.type == Relay.TYPE_LOCATION }
+        tvDashLoc.text = lastLoc?.let {
+            (if (it.body.isNotEmpty()) it.body else it.title).take(70)
+        } ?: getString(R.string.dash_loc_none)
+        tvDashRecent.text = if (Config.panicActive(this)) {
+            getString(R.string.dash_recent_empty)
+        } else {
+            val recent = History.all(this).take(3)
+            if (recent.isEmpty()) getString(R.string.dash_recent_empty)
+            else recent.joinToString("\n") {
+                "• ${it.title} — ${it.body.take(42)}"
+            }
+        }
+    }
+
+    private fun refreshRemoteStates() {
+        tvHubShizuku.text = getString(
+            if (ShizukuHelper.granted()) R.string.hub_shizuku_on
+            else R.string.hub_shizuku_off)
+        val peer = Peers.list(this).firstOrNull()
+        tvHubPeerState.text = when {
+            peer == null -> ""
+            else -> buildString {
+                append(peer.name)
+                if (peer.battery >= 0) append(" • 🔋 ${peer.battery}%")
+                if (peer.status.isNotEmpty()) append(" • ${peer.status}")
+            }
+        }
+        applyHubFilter()
+    }
+
+    private fun refreshSettingsHub() {
+        tvHubDevice.text = Config.deviceName(this)
+        tvHubDeviceSub.text =
+            "${Build.MANUFACTURER} ${Build.MODEL} • Android ${Build.VERSION.RELEASE}"
+        val missing = PermChecks.missingCount(this)
+        tvSetPill.text = if (missing == 0) getString(R.string.set_status_ok)
+            else getString(R.string.set_status_warn, missing)
+        tvHubPermsSub.text = tvPermSummary.text
+        tvHubRelaySub.text = "${tvRelay.text} • " + getString(
+            if (Config.tgToken(this).isNotEmpty()) R.string.hub_tg_on
+            else R.string.hub_tg_off)
+        tvHubSecSub.text = "${tvPinInfo.text} • ${tvAdminInfo.text}"
+        tvHubDataSub.text = tvStats.text
+        val fwd = mutableListOf<String>()
+        if (Config.fwdSms(this)) fwd.add(getString(R.string.fwd_sms))
+        if (Config.fwdNotif(this)) fwd.add(getString(R.string.fwd_notif))
+        if (Config.fwdCalls(this)) fwd.add(getString(R.string.fwd_calls))
+        if (Config.fwdBattery(this)) fwd.add(getString(R.string.fwd_battery))
+        if (Config.fwdApps(this)) fwd.add(getString(R.string.fwd_apps))
+        tvHubFwd.text = if (fwd.isEmpty()) getString(R.string.digest_off)
+            else fwd.joinToString(" • ")
+        val ver = try {
+            packageManager.getPackageInfo(packageName, 0).versionName ?: "?"
+        } catch (_: Exception) { "?" }
+        tvHubDiag.text = "PhoneLink v$ver • " +
+            "${Automation.rules(this).size} rules • " +
+            "${History.all(this).size} inbox • " +
+            "${Relay.queueSize(this)} queued"
+    }
+
+    /** Command Hub filter: a tagged command button shows only when
+     *  its category matches the chip and its label matches the
+     *  search text; rows left empty are collapsed. */
+    private fun applyHubFilter() {
+        val q = etHubSearch.text.toString().trim().lowercase()
+        fun walk(v: View) {
+            if (v is android.view.ViewGroup) {
+                for (i in 0 until v.childCount) walk(v.getChildAt(i))
+            }
+            val tag = v.tag as? String
+            if (v is Button && tag != null && tag.startsWith("hub:")) {
+                val cat = tag.removePrefix("hub:")
+                val matchCat = hubCat == "ALL" || cat == hubCat
+                val matchQ = q.isEmpty() ||
+                    v.text.toString().lowercase().contains(q)
+                v.visibility =
+                    if (matchCat && matchQ) View.VISIBLE else View.GONE
+            }
+        }
+        walk(pageRemote)
+        fun collapse(v: View) {
+            if (v is android.view.ViewGroup) {
+                for (i in 0 until v.childCount) collapse(v.getChildAt(i))
+            }
+            if (v is LinearLayout &&
+                v.orientation == LinearLayout.HORIZONTAL) {
+                val kids = (0 until v.childCount).map { v.getChildAt(it) }
+                if (kids.isNotEmpty() &&
+                    kids.all { it.visibility == View.GONE }) {
+                    v.visibility = View.GONE
+                } else if (kids.any { it.visibility == View.VISIBLE }) {
+                    v.visibility = View.VISIBLE
+                }
+            }
+        }
+        collapse(pageRemote)
+    }
+
+    private fun ownSsid(): String = try {
+        val wm = applicationContext.getSystemService(Context.WIFI_SERVICE)
+            as android.net.wifi.WifiManager
+        @Suppress("DEPRECATION")
+        val ssid = wm.connectionInfo?.ssid?.trim('"') ?: ""
+        if (ssid == "<unknown ssid>") "" else ssid
+    } catch (_: Exception) { "" }
+
+    private fun ownWifiBand(): String = try {
+        val wm = applicationContext.getSystemService(Context.WIFI_SERVICE)
+            as android.net.wifi.WifiManager
+        @Suppress("DEPRECATION")
+        val freq = wm.connectionInfo?.frequency ?: 0
+        when {
+            freq >= 4900 -> "5GHz"
+            freq >= 2400 -> "2.4GHz"
+            else -> ""
+        }
+    } catch (_: Exception) { "" }
 
     private fun toast(msg: String) = Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
 }

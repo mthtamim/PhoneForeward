@@ -19,6 +19,7 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardItem"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
@@ -59,6 +60,31 @@
                 android:textStyle="bold" />
 
             <TextView
+                android:id="@+id/tvItemBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:background="@drawable/bg_pill"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvItemAmount"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="19sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/tvItemBody"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -75,6 +101,47 @@
                 android:layout_marginTop="4dp"
                 android:textColor="?attr/colorOnSurfaceVariant"
                 android:textSize="12sp" />
+
+            <LinearLayout
+                android:id="@+id/rowItemActions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/btnItemPrimary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_pill"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="7dp"
+                    android:paddingBottom="7dp"
+                    android:textColor="?attr/colorOnPrimaryContainer"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/btnItemSecondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_search"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:paddingTop="7dp"
+                    android:paddingBottom="7dp"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

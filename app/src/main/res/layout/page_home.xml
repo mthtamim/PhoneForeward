@@ -10,123 +10,413 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        
-                <!-- ===== Top 3 box menus (v2.6.0) ===== -->
+        <!-- ===== Device card (v2.17, mockup image 1) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvDashDevice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="20sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvDashDeviceSub"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvDashWifi"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:layout_width="76dp"
+                        android:layout_height="76dp">
+
+                        <ProgressBar
+                            android:id="@+id/pbDashBattery"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:layout_width="76dp"
+                            android:layout_height="76dp"
+                            android:max="100"
+                            android:progressDrawable="@drawable/bg_battery_ring" />
+
+                        <TextView
+                            android:id="@+id/tvDashBatteryPct"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== Quick tiles (v2.17) ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
             android:orientation="horizontal">
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/boxRemote"
+                android:id="@+id/cardDashLoc"
                 android:layout_width="0dp"
-                android:layout_height="86dp"
-                android:layout_marginEnd="4dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeColor="?attr/colorSurfaceVariant"
-                app:strokeWidth="1dp">
+                android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📍"
+                            android:textSize="17sp" />
+
+                        <TextView
+                            style="@style/PL.TileTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/dash_location" />
+                    </LinearLayout>
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:id="@+id/tvDashLoc"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="🎛️"
-                        android:textSize="24sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/box_remote"
-                        android:textSize="12.5sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="6dp"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12.5sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/boxQuick"
+                android:id="@+id/cardDashFlash"
                 android:layout_width="0dp"
-                android:layout_height="86dp"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeColor="?attr/colorSurfaceVariant"
-                app:strokeWidth="1dp">
+                android:focusable="true">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔦"
+                            android:textSize="17sp" />
+
+                        <TextView
+                            style="@style/PL.TileTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/dash_flashlight" />
+                    </LinearLayout>
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="⚡"
-                        android:textSize="24sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/btn_menu_quick"
-                        android:textSize="12.5sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/boxAutomation"
-                android:layout_width="0dp"
-                android:layout_height="86dp"
-                android:layout_marginStart="4dp"
-                android:layout_weight="1"
-                android:clickable="true"
-                android:focusable="true"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="0dp"
-                app:strokeColor="?attr/colorSurfaceVariant"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🤖"
-                        android:textSize="24sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/box_auto"
-                        android:textSize="12.5sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="6dp"
+                        android:text="@string/dash_tap_toggle"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12.5sp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDashRinger"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔔"
+                            android:textSize="17sp" />
+
+                        <TextView
+                            style="@style/PL.TileTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/dash_ringer" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/dash_ringer_sub"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDashPtt"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🎙️"
+                            android:textSize="17sp" />
+
+                        <TextView
+                            style="@style/PL.TileTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="@string/dash_ptt" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/dash_ptt_hint"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="12.5sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- ===== Recent activity (v2.17) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDashRecent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="14dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.TileTitle"
+                    android:text="@string/dash_recent" />
+
+                <TextView
+                    android:id="@+id/tvDashRecent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="3"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="13.5sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ===== Top 3 box menus (v2.6.0) ===== -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:orientation="horizontal">
+        
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/boxRemote"
+                        android:layout_width="0dp"
+                        android:layout_height="86dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="?attr/colorSurface"
+                        app:cardCornerRadius="18dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="?attr/colorSurfaceVariant"
+                        app:strokeWidth="1dp">
+        
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical">
+        
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🎛️"
+                                android:textSize="24sp" />
+        
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="@string/box_remote"
+                                android:textSize="12.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+        
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/boxQuick"
+                        android:layout_width="0dp"
+                        android:layout_height="86dp"
+                        android:layout_marginStart="4dp"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="?attr/colorSurface"
+                        app:cardCornerRadius="18dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="?attr/colorSurfaceVariant"
+                        app:strokeWidth="1dp">
+        
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical">
+        
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="⚡"
+                                android:textSize="24sp" />
+        
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="@string/btn_menu_quick"
+                                android:textSize="12.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+        
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/boxAutomation"
+                        android:layout_width="0dp"
+                        android:layout_height="86dp"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="?attr/colorSurface"
+                        app:cardCornerRadius="18dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="?attr/colorSurfaceVariant"
+                        app:strokeWidth="1dp">
+        
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical">
+        
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🤖"
+                                android:textSize="24sp" />
+        
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="@string/box_auto"
+                                android:textSize="12.5sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
 
 <TextView
             android:layout_width="match_parent"

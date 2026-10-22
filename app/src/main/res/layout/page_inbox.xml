@@ -19,7 +19,7 @@
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipAll"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:checked="true"
@@ -27,49 +27,49 @@
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipSms"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cat_sms" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipCalls"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cat_calls" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipNotif"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cat_notif" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipBattery"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cat_battery" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipOther"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cat_other" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipStar"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cat_star" />
 
         <com.google.android.material.chip.Chip
             android:id="@+id/chipArchived"
-            style="@style/Widget.Material3.Chip.Filter"
+            style="@style/PL.ChipFilter"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/cat_archived" />

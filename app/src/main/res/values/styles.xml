@@ -4,7 +4,7 @@
 
     <!-- White rounded card, soft border, no heavy shadow -->
     <style name="PL.CardView" parent="Widget.Material3.CardView.Filled">
-        <item name="cardCornerRadius">20dp</item>
+        <item name="cardCornerRadius">22dp</item>
         <item name="cardElevation">0dp</item>
         <item name="strokeWidth">1dp</item>
         <item name="strokeColor">?attr/colorSurfaceVariant</item>
@@ -94,5 +94,59 @@
         <item name="boxCornerRadiusTopEnd">14dp</item>
         <item name="boxCornerRadiusBottomStart">14dp</item>
         <item name="boxCornerRadiusBottomEnd">14dp</item>
+    </style>
+
+    <!-- ===== v2.17 redesign styles ===== -->
+
+    <!-- Pill status badge (connection, Shizuku, hub status) -->
+    <style name="PL.Pill" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_pill</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">5dp</item>
+        <item name="android:paddingBottom">5dp</item>
+        <item name="android:textSize">12.5sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
+    </style>
+
+    <!-- Rounded filter chip (Inbox categories, Command Hub categories) -->
+    <style name="PL.ChipFilter" parent="Widget.Material3.Chip.Filter">
+        <item name="chipCornerRadius">20dp</item>
+    </style>
+
+    <!-- Bottom-nav active pill indicator -->
+    <style name="PL.NavIndicator">
+        <item name="android:color">@color/nav_indicator</item>
+        <item name="shapeAppearance">@style/PL.NavIndicatorShape</item>
+    </style>
+    <style name="PL.NavIndicatorShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Dashboard / hub tile title -->
+    <style name="PL.TileTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <!-- Plain rounded search box (Command Hub) -->
+    <style name="PL.SearchBox" parent="Widget.AppCompat.EditText">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@drawable/bg_search</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
+        <item name="android:textSize">14.5sp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
     </style>
 </resources>
