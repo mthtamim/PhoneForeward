@@ -106,6 +106,15 @@ class A11yService : AccessibilityService() {
                 }
             }
         } catch (_: Exception) { }
+        // v2.16: UI Click trigger — taps on labelled views.
+        try {
+            if (event.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED) {
+                val t = (event.text?.joinToString(" ") ?: "").trim()
+                val d = (event.contentDescription ?: "").toString().trim()
+                if (t.isNotEmpty() || d.isNotEmpty())
+                    Automation.fireUiClick(applicationContext, t, d)
+            }
+        } catch (_: Exception) { }
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED &&
             event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         // v2.9: split-screen edge (checked before the text throttle)

@@ -442,6 +442,118 @@
                                         android:layout_height="wrap_content"
                                         android:text="@string/btn_lost_mode" />
                 </LinearLayout>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/rg_phone_control"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/remote_control_note"
+                    android:textSize="13sp" />
+                <EditText
+                    android:id="@+id/etRemotePkg"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="@string/remote_pkg_hint"
+                    android:inputType="text"
+                    android:textSize="14sp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnActOpenApp"
+                    style="@style/PL.BtnFilled"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/remote_open_app" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActWifi"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_wifi_toggle" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActBt"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_bt_toggle" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActData"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_mobile_data_toggle" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActAirplane"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_airplane_toggle" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActTorch"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_torch_toggle" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActHotspot"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_hotspot_toggle" />
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActDark"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_dark_theme" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActSaver"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:layout_height="wrap_content"
+                        android:text="@string/aa_battery_saver" />
+                </LinearLayout>
             <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -961,6 +1073,14 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_update" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutoUpdate"
+                    style="@style/PL.SwitchRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/sw_auto_update" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swWebInbox"

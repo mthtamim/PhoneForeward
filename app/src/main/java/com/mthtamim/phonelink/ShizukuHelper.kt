@@ -55,6 +55,22 @@ object ShizukuHelper {
     /** A harmless real command, proving the whole shell path works. */
     fun selfTest(): Boolean = run("echo phonelink-ok") == "phonelink-ok"
 
+    /** v2.16: dumpsys battery, trimmed to the useful lines — a
+     *  supplement to BatteryInfo (which needs no root at all). */
+    fun batteryDump(): String {
+        if (!granted()) return ""
+        val out = run("dumpsys battery")
+        if (out.isEmpty() || lastError != null) return ""
+        val keep = listOf("level:", "scale:", "health:", "temperature:",
+            "voltage:", "status:", "present:", "AC powered:",
+            "USB powered:", "Wireless powered:", "Charge counter:",
+            "current now:")
+        val lines = out.lines().map { it.trim() }
+            .filter { l -> keep.any { l.startsWith(it) } }
+        return if (lines.isEmpty()) ""
+            else "Shizuku dumpsys battery:\n" + lines.joinToString("\n")
+    }
+
     /** Shizuku.newProcess is private in API 13.1.5 (verified in the
      *  AAR: private static, (String[], String[], String)), which the
      *  Kotlin compiler refuses to call directly; reach it reflectively. */

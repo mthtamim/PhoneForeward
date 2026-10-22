@@ -51,7 +51,10 @@ object AutoCatalog {
         "bt_near", "bt_far", "sim_changed", "ip_changed", "camera_used",
         "mic_used", "split_screen", "notify_button",
         // v2.10 Shizuku round
-        "mobile_data_on", "mobile_data_off")
+        "mobile_data_on", "mobile_data_off",
+        // v2.16 MacroDroid shortlist round
+        "ui_click", "var_changed", "gps_on", "gps_off", "file_changed",
+        "call_active")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
         "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
@@ -66,7 +69,9 @@ object AutoCatalog {
         "keyguard_locked", "battery_saver", "data_saver", "speed_above",
         "uptime_above", "calendar_busy", "headset_mic", "process_running",
         // v2.10 Shizuku round
-        "mobile_data")
+        "mobile_data",
+        // v2.16 MacroDroid shortlist round
+        "notif_present", "gps_state", "hotspot_state")
     val actions = listOf(
         "notify_peer", "local_notify", "speak_local", "speak_peer", "command_peer",
         "send_sms", "torch", "torch_on", "torch_off", "torch_toggle",
@@ -99,7 +104,11 @@ object AutoCatalog {
         "app_enable", "force_stop", "install_silent", "perm_grant",
         "perm_revoke", "appops_set", "wm_density", "wm_size", "anim_scale",
         "stay_on", "set_time", "set_locale", "shell_tap", "shell_swipe",
-        "shell_input", "shell_key", "shell_to_var")
+        "shell_input", "shell_key", "shell_to_var",
+        // v2.16 MacroDroid shortlist round
+        "hotspot_toggle", "dark_theme", "battery_saver", "gps_toggle",
+        "nfc_toggle", "record_video", "qr_show", "read_file",
+        "clipboard_set", "delete_var", "calc_var", "wait_until")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {

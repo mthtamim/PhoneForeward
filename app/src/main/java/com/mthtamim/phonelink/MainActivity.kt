@@ -1019,6 +1019,11 @@ class MainActivity : LocalizedActivity() {
                 } else toast(getString(R.string.update_latest))
             }
         }
+        val swAutoUpd = findViewById<CompoundButton>(R.id.swAutoUpdate)
+        swAutoUpd.isChecked = Config.autoUpdate(this)
+        swAutoUpd.setOnCheckedChangeListener { _, checked ->
+            Config.setAutoUpdate(this, checked)
+        }
         val swWeb = findViewById<CompoundButton>(R.id.swWebInbox)
         swWeb.isChecked = Config.webInboxOn(this)
         swWeb.setOnCheckedChangeListener { _, checked ->
@@ -1069,6 +1074,40 @@ class MainActivity : LocalizedActivity() {
                     org.json.JSONObject().put("pin", digest))
                 toast(getString(R.string.toast_cmd_lock))
             }
+        }
+        // v2.16: remote phone control — run any automation action
+        // on the peer phone, behind the command PIN. The toggle
+        // buttons send a blank param, so they flip the peer's
+        // current state just like local automation toggles.
+        fun sendPeerAction(act: String, arg: String = "") {
+            askPin { digest ->
+                Relay.sendCommand(this, "ACTION", null,
+                    org.json.JSONObject().put("pin", digest)
+                        .put("act", act).put("arg", arg))
+                toast(getString(R.string.toast_remote_action))
+            }
+        }
+        findViewById<Button>(R.id.btnActOpenApp).setOnClickListener {
+            val pkg = findViewById<android.widget.EditText>(
+                R.id.etRemotePkg).text.toString().trim()
+            if (pkg.isEmpty()) {
+                toast(getString(R.string.remote_pkg_needed))
+                return@setOnClickListener
+            }
+            sendPeerAction("open_app", pkg)
+        }
+        val actButtons = mapOf(
+            R.id.btnActWifi to "wifi_toggle",
+            R.id.btnActBt to "bt_toggle",
+            R.id.btnActData to "mobile_data_toggle",
+            R.id.btnActAirplane to "airplane_toggle",
+            R.id.btnActTorch to "torch_toggle",
+            R.id.btnActHotspot to "hotspot_toggle",
+            R.id.btnActDark to "dark_theme",
+            R.id.btnActSaver to "battery_saver")
+        for ((id, act) in actButtons) {
+            findViewById<Button>(id).setOnClickListener {
+                sendPeerAction(act) }
         }
         findViewById<Button>(R.id.btnCmdRemote).setOnClickListener { showRemotePanel() }
         findViewById<Button>(R.id.btnMode).setOnClickListener { showModeDialog() }

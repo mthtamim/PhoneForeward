@@ -196,11 +196,338 @@ object Automation {
         prefs(ctx).edit().remove("var_$name").putString("var_names", arr.toString()).apply()
     }
 
+
+    // ---------------- v2.16: battery-live, flips, waits, calc ----------------
+
+    /** Flip memory for toggle actions. svc/settings writes apply
+     *  ASYNC, so a quick second run re-read the OLD live state and
+     *  picked the same target again ("শুধু অন হয়, অফ হয় না").
+     *  After WE apply a state we remember it; a blank-param run
+     *  flips from the remembered state while it is fresh (10 min),
+     *  otherwise from the live read. Explicit on/off always wins. */
+    private fun flipTarget(ctx: Context, key: String, param: String,
+                           live: Boolean?): Boolean {
+        val p = param.trim().lowercase()
+        if (p == "off" || p == "0" || p == "false") {
+            noteFlip(ctx, key, false); return false }
+        if (p == "on" || p == "1" || p == "true") {
+            noteFlip(ctx, key, true); return true }
+        val pr = prefs(ctx)
+        val fresh = System.currentTimeMillis() -
+            pr.getLong("flipat_$key", 0) < 10 * 60_000L &&
+            pr.contains("flip_$key")
+        val cur = if (fresh) pr.getBoolean("flip_$key", false)
+            else (live ?: pr.getBoolean("flip_$key", false))
+        val target = !cur
+        noteFlip(ctx, key, target)
+        return target
+    }
+
+    private fun noteFlip(ctx: Context, key: String, v: Boolean) {
+        prefs(ctx).edit().putBoolean("flip_$key", v)
+            .putLong("flipat_$key", System.currentTimeMillis()).apply()
+    }
+
+    fun gpsEnabled(ctx: Context): Boolean = try {
+        val lm = ctx.getSystemService(Context.LOCATION_SERVICE)
+            as android.location.LocationManager
+        if (android.os.Build.VERSION.SDK_INT >= 28) lm.isLocationEnabled
+        else lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER)
+    } catch (_: Exception) { false }
+
+    /** Hotspot state: reflection read where the platform allows it,
+     *  else the state the WIFI_AP broadcast last persisted. */
+    fun hotspotState(ctx: Context): Boolean? {
+        try {
+            val wm = ctx.getSystemService(Context.WIFI_SERVICE)
+                as android.net.wifi.WifiManager
+            val m = wm.javaClass.getMethod("isWifiApEnabled")
+            val v = m.invoke(wm) as? Boolean
+            if (v != null) return v
+        } catch (_: Exception) { }
+        val pr = prefs(ctx)
+        return if (pr.contains("hotspot_state"))
+            pr.getBoolean("hotspot_state", false) else null
+    }
+
+    /** Charging edges from the sticky battery intent — shared by the
+     *  poll and the live battery receiver; the edge flags live in
+     *  prefs, so whichever path runs first consumes the edge. */
+    fun batteryEdges(ctx: Context) {
+        try {
+            val wp = prefs(ctx)
+            val bi = ctx.registerReceiver(null,
+                android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                ?: return
+            val plugged = bi.getIntExtra(
+                android.os.BatteryManager.EXTRA_PLUGGED, 0)
+            val wireless = plugged ==
+                android.os.BatteryManager.BATTERY_PLUGGED_WIRELESS
+            val chargingNow = plugged != 0
+            if (wp.contains("edge_charging")) {
+                val prevC = wp.getBoolean("edge_charging", false)
+                if (chargingNow && !prevC) onEvent(ctx, "charging_on", JSONObject())
+                if (!chargingNow && prevC) onEvent(ctx, "charging_off", JSONObject())
+                if (chargingNow != prevC)
+                    wp.edit().putBoolean("edge_charging", chargingNow).apply()
+            } else wp.edit().putBoolean("edge_charging", chargingNow).apply()
+            if (wp.contains("edge_wireless")) {
+                val prev = wp.getBoolean("edge_wireless", false)
+                if (wireless && !prev) onEvent(ctx, "wireless_charging", JSONObject())
+                if (wireless != prev)
+                    wp.edit().putBoolean("edge_wireless", wireless).apply()
+            } else wp.edit().putBoolean("edge_wireless", wireless).apply()
+        } catch (_: Exception) { }
+    }
+
+    /** Called by LinkService's ACTION_BATTERY_CHANGED receiver the
+     *  moment anything about the battery changes — battery rules
+     *  evaluate IMMEDIATELY, no polling wait. No root, no permission:
+     *  the sticky intent + BatteryManager carry every value. */
+    fun onBatteryChanged(ctx: Context) {
+        if (!Config.automationOn(ctx)) return
+        Thread {
+            try { batteryEdges(ctx); tickBattery(ctx) } catch (_: Exception) { }
+        }.start()
+    }
+
+    /** Battery-family tick rules only. Crossings use arm/disarm
+     *  flags, so running this next to tick() can never double-fire. */
+    fun tickBattery(ctx: Context) {
+        try {
+            val list = rules(ctx).filter { it.optBoolean("enabled", true) }
+            for (rule in list) {
+                for (trig in ruleTriggers(rule)) {
+                    val type = trig.optString("type")
+                    val param = trig.optString("param")
+                    val hit = when (type) {
+                        "battery_below", "battery_above" ->
+                            batteryCrossing(ctx, rule, type, param)
+                        "battery_full" ->
+                            batteryCrossing(ctx, rule, "battery_above", "100")
+                        "battery_temp_above" -> tempCrossing(ctx, rule, param)
+                        else -> false
+                    }
+                    if (hit && constraintsPass(ctx, rule)) {
+                        markFired(ctx, rule.optString("id"),
+                            System.currentTimeMillis())
+                        ruleNameHint = rule.optString("name")
+                        log(ctx, "▶ " + rule.optString("name") + " (" + type + ")")
+                        runActions(ctx, rule, JSONObject(), 0)
+                        break
+                    }
+                }
+            }
+        } catch (_: Exception) { }
+    }
+
+    /** 5-second foreground scan used by LinkService's fast loop, so
+     *  app_launched/app_closed no longer wait for the heartbeat. */
+    fun pollForegroundFast(ctx: Context) {
+        if (!Config.automationOn(ctx)) return
+        try {
+            pollAppUsage(ctx, rules(ctx).filter {
+                it.optBoolean("enabled", true) })
+        } catch (_: Exception) { }
+    }
+
+    /** Folder/file watcher for the file_changed trigger. */
+    private fun pollFileWatch(ctx: Context) {
+        try {
+            val paths = rules(ctx).filter { it.optBoolean("enabled", true) }
+                .flatMap { ruleTriggers(it) }
+                .filter { it.optString("type") == "file_changed" }
+                .map { it.optString("param").trim() }
+                .filter { it.isNotEmpty() }.distinct()
+            if (paths.isEmpty()) return
+            val wp = prefs(ctx)
+            for (path in paths) {
+                val sig = fileSig(java.io.File(path))
+                val key = "fsig_" + path.hashCode()
+                val prev = wp.getString(key, null)
+                if (prev != null && prev != sig) onEvent(ctx, "file_changed",
+                    JSONObject().put("title", path).put("body", sig))
+                if (prev != sig) wp.edit().putString(key, sig).apply()
+            }
+        } catch (_: Exception) { }
+    }
+
+    private fun fileSig(f: java.io.File): String {
+        if (!f.exists()) return "none"
+        if (f.isFile) return "f" + f.length() + ":" + f.lastModified()
+        val kids = f.listFiles() ?: return "empty"
+        return kids.joinToString(",") {
+            it.name + ":" + it.length() + ":" + it.lastModified()
+        }.hashCode().toString()
+    }
+
+    fun fireUiClick(ctx: Context, text: String, desc: String) {
+        if (text.isBlank() && desc.isBlank()) return
+        onEvent(ctx, "ui_click", JSONObject().put("title", text)
+            .put("body", desc).put("app", ""))
+    }
+
+    /** Run ONE automation action directly (remote ACTION command). */
+    fun runSingle(ctx: Context, type: String, param: String) {
+        val rule = JSONObject().put("name", "রিমোট কন্ট্রোল")
+            .put("actions", JSONArray().put(
+                JSONObject().put("type", type).put("param", param)))
+        runActions(ctx, rule, JSONObject(), 0)
+    }
+
+    // ---- wait_until: park a rule until an event arrives ----
+    private fun parseUntil(param: String): Triple<String, String, Long> {
+        val main = param.substringBefore("@").trim()
+        val tmo = param.substringAfter("@", "").trim().toLongOrNull() ?: 60
+        val type = main.substringBefore(":").trim()
+        val p = if (main.contains(":")) main.substringAfter(":").trim() else ""
+        return Triple(type, p, tmo.coerceIn(1, 24 * 60))
+    }
+
+    private fun parkUntil(ctx: Context, rule: JSONObject, idx: Int,
+                          param: String, data: JSONObject) {
+        try {
+            val (type, p, tmo) = parseUntil(param)
+            val arr = try { JSONArray(
+                prefs(ctx).getString("until_waits", "[]")) }
+                catch (e: Exception) { JSONArray() }
+            arr.put(JSONObject().put("rule", rule).put("idx", idx)
+                .put("type", type).put("param", p)
+                .put("deadline", System.currentTimeMillis() + tmo * 60_000)
+                .put("data", data))
+            prefs(ctx).edit().putString("until_waits", arr.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    private fun resumeUntilWaits(ctx: Context, event: String, data: JSONObject) {
+        try {
+            val raw = prefs(ctx).getString("until_waits", "[]") ?: "[]"
+            if (raw == "[]") return
+            val arr = JSONArray(raw)
+            val keep = JSONArray()
+            for (i in 0 until arr.length()) {
+                val w = arr.optJSONObject(i) ?: continue
+                if (w.optString("type") == event &&
+                    triggerParamMatches(ctx, event, w.optString("param"), data)) {
+                    val rule = w.optJSONObject("rule") ?: continue
+                    ruleNameHint = rule.optString("name")
+                    log(ctx, "▶ " + rule.optString("name") + " (wait_until)")
+                    runActions(ctx, rule, data, w.optInt("idx", 0))
+                } else keep.put(w)
+            }
+            prefs(ctx).edit().putString("until_waits", keep.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    private fun resumeUntilExpired(ctx: Context) {
+        try {
+            val raw = prefs(ctx).getString("until_waits", "[]") ?: "[]"
+            if (raw == "[]") return
+            val now = System.currentTimeMillis()
+            val arr = JSONArray(raw)
+            val keep = JSONArray()
+            for (i in 0 until arr.length()) {
+                val w = arr.optJSONObject(i) ?: continue
+                if (w.optLong("deadline") <= now) {
+                    val rule = w.optJSONObject("rule") ?: continue
+                    ruleNameHint = rule.optString("name")
+                    runActions(ctx, rule, w.optJSONObject("data")
+                        ?: JSONObject(), w.optInt("idx", 0))
+                } else keep.put(w)
+            }
+            prefs(ctx).edit().putString("until_waits", keep.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    private fun lastEventMatches(ctx: Context, type: String, param: String,
+                                 since: Long): Boolean {
+        val pr = prefs(ctx)
+        if (pr.getString("lastev_type", "") != type) return false
+        if (pr.getLong("lastev_at", 0) < since) return false
+        if (param.isBlank()) return true
+        val data = try { JSONObject(
+            pr.getString("lastev_data", "{}")) } catch (e: Exception) {
+            JSONObject() }
+        return triggerParamMatches(ctx, type, param, data)
+    }
+
+    /** Tiny arithmetic evaluator for calc_var: + - * / % parentheses,
+     *  {var} references and plain numbers. Returns null on error. */
+    object Calc {
+        fun eval(expr: String, resolve: (String) -> String): Double? {
+            val p = Parser(expr, resolve)
+            val v = p.expr() ?: return null
+            p.skipWs()
+            return if (p.atEnd()) v else null
+        }
+        private class Parser(val s: String, val resolve: (String) -> String) {
+            var i = 0
+            fun atEnd() = i >= s.length
+            fun skipWs() { while (i < s.length && s[i] == ' ') i++ }
+            fun expr(): Double? {
+                var v = term() ?: return null
+                while (true) {
+                    skipWs()
+                    if (i < s.length && (s[i] == '+' || s[i] == '-')) {
+                        val op = s[i++]
+                        val r = term() ?: return null
+                        v = if (op == '+') v + r else v - r
+                    } else return v
+                }
+            }
+            fun term(): Double? {
+                var v = factor() ?: return null
+                while (true) {
+                    skipWs()
+                    if (i < s.length && (s[i] == '*' || s[i] == '/' || s[i] == '%')) {
+                        val op = s[i++]
+                        val r = factor() ?: return null
+                        v = when (op) {
+                            '*' -> v * r
+                            '/' -> if (r == 0.0) return null else v / r
+                            else -> if (r == 0.0) return null else v % r
+                        }
+                    } else return v
+                }
+            }
+            fun factor(): Double? {
+                skipWs()
+                if (i >= s.length) return null
+                if (s[i] == '(') {
+                    i++
+                    val v = expr() ?: return null
+                    skipWs()
+                    if (i >= s.length || s[i] != ')') return null
+                    i++
+                    return v
+                }
+                if (s[i] == '-') { i++; val v = factor() ?: return null; return -v }
+                if (s[i] == '{') {
+                    val j = s.indexOf('}', i)
+                    if (j < 0) return null
+                    val name = s.substring(i + 1, j).trim()
+                    i = j + 1
+                    return resolve(name).toDoubleOrNull() ?: 0.0
+                }
+                val start = i
+                while (i < s.length && (s[i].isDigit() || s[i] == '.')) i++
+                if (start == i) return null
+                return s.substring(start, i).toDoubleOrNull()
+            }
+        }
+    }
+
+    fun fmtNum(v: Double): String =
+        if (v == v.toLong().toDouble()) v.toLong().toString()
+        else String.format(java.util.Locale.US, "%.4f", v)
+            .trimEnd('0').trimEnd('.')
+
     // ---------------- variables ----------------
     fun getVar(ctx: Context, name: String): String =
         prefs(ctx).getString("var_$name", "") ?: ""
 
     fun setVar(ctx: Context, name: String, value: String) {
+        val old = prefs(ctx).getString("var_$name", null)
         val names = varNames(ctx)
         val e = prefs(ctx).edit().putString("var_$name", value)
         if (name !in names) {
@@ -208,6 +535,16 @@ object Automation {
             e.putString("var_names", arr.toString())
         }
         e.apply()
+        if (old != value) onEvent(ctx, "var_changed",
+            JSONObject().put("title", name).put("body", value))
+    }
+
+    /** v2.16: delete_var action + var_changed trigger bookkeeping. */
+    fun removeVar(ctx: Context, name: String) {
+        val names = varNames(ctx).filter { it != name }
+        val arr = JSONArray(); names.forEach { arr.put(it) }
+        prefs(ctx).edit().remove("var_$name")
+            .putString("var_names", arr.toString()).apply()
     }
 
     /** v2.9: a rule may carry several triggers ("trigger" + "triggers[]"). */
@@ -227,6 +564,10 @@ object Automation {
         if (!Config.automationOn(ctx)) return
         Thread {
             try {
+                prefs(ctx).edit().putString("lastev_type", event)
+                    .putLong("lastev_at", System.currentTimeMillis())
+                    .putString("lastev_data", data.toString()).apply()
+                resumeUntilWaits(ctx, event, data)
                 val now = System.currentTimeMillis()
                 for (rule in rules(ctx)) {
                     if (!rule.optBoolean("enabled", true)) continue
@@ -247,7 +588,13 @@ object Automation {
     /** v2.14.1: single entry for app launch/close transitions, shared
      *  by the accessibility live path and the usage-stats poll; the
      *  appstate map guarantees each transition fires exactly once. */
+    private val appEventLock = Any()
+
     fun fireAppEvent(ctx: Context, kind: String, pkg: String) {
+        synchronized(appEventLock) { fireAppEventInner(ctx, kind, pkg) }
+    }
+
+    private fun fireAppEventInner(ctx: Context, kind: String, pkg: String) {
         try {
             val p = prefs(ctx)
             val states = (p.getString("appstate", "") ?: "").split(";")
@@ -272,6 +619,16 @@ object Automation {
     fun checkClipboard(ctx: Context) {
         try {
             val app = ctx.applicationContext
+            val pendingClip = prefs(app).getString("pending_clip", "") ?: ""
+            if (pendingClip.isNotEmpty()) {
+                try {
+                    val cm0 = app.getSystemService(Context.CLIPBOARD_SERVICE)
+                        as android.content.ClipboardManager
+                    cm0.setPrimaryClip(android.content.ClipData
+                        .newPlainText("phonelink", pendingClip))
+                } catch (_: Exception) { }
+                prefs(app).edit().remove("pending_clip").apply()
+            }
             val used = rules(app).any { r ->
                 r.optBoolean("enabled", true) &&
                     ruleTriggers(r).any { it.optString("type") == "clipboard" }
@@ -318,6 +675,7 @@ object Automation {
         if (param.isBlank()) return true
         return when (event) {
             "sms_received", "notif_received", "screen_text", "notif_cleared", "clipboard",
+            "ui_click",
             "sms_sent", "call_outgoing", "call_ended", "qr_scanned",
             "calendar_start", "calendar_end", "rule_toggled",
             "notify_button", "sms_delivered", "screenshot_taken",
@@ -334,6 +692,8 @@ object Automation {
             "orientation_changed" -> data.optString("kind") == param
             "webhook" -> data.optString("title") == param
             "wifi_connected" -> data.optString("ssid").equals(param, true)
+            "var_changed" -> data.optString("title") == param
+            "file_changed" -> data.optString("title") == param
             "activity" -> data.optString("kind") == param
             else -> true
         }
@@ -358,6 +718,11 @@ object Automation {
     private fun constraintOk(ctx: Context, type: String, param: String): Boolean {
         return try {
             when (type) {
+                "notif_present" -> NotifListener.hasNotification(param.trim())
+                "gps_state" -> gpsEnabled(ctx) ==
+                    (param.trim().lowercase() != "off")
+                "hotspot_state" -> (hotspotState(ctx) ?: false) ==
+                    (param.trim().lowercase() != "off")
                 "time_range" -> {
                     val parts = param.split("-")
                     if (parts.size != 2) true else {
@@ -597,6 +962,21 @@ object Automation {
                     try { Thread.sleep(mins * 60_000) } catch (_: Exception) { }
                     i++
                 }
+                "wait_until" -> {
+                    // param: type:param@timeoutMin (timeout default 60)
+                    if (depth == 0) {
+                        parkUntil(ctx, rule, i + 1, param, data)
+                        return SIG_STOP
+                    }
+                    val (etype, eparam, tmo) = parseUntil(param)
+                    val since = System.currentTimeMillis()
+                    val deadline = since + tmo * 60_000
+                    while (System.currentTimeMillis() < deadline) {
+                        if (lastEventMatches(ctx, etype, eparam, since)) break
+                        try { Thread.sleep(2000) } catch (_: Exception) { break }
+                    }
+                    i++
+                }
                 "stop" -> return SIG_STOP
                 "break" -> return if (depth > 0) SIG_BREAK else SIG_STOP
                 "loop_start" -> {
@@ -764,6 +1144,132 @@ object Automation {
                     log(ctx, "⚠ " + ruleNameHint + " (torch_off)")
                 "torch_toggle" -> if (!FlashHelper.toggle(ctx))
                     log(ctx, "⚠ " + ruleNameHint + " (torch_toggle)")
+                // ---- v2.16 MacroDroid shortlist actions ----
+                "hotspot_toggle" -> {
+                    val on = flipTarget(ctx, "hotspot", param, hotspotState(ctx))
+                    if (on) {
+                        val hp = prefs(ctx)
+                        var ssid = hp.getString("ap_ssid", "") ?: ""
+                        var pass = hp.getString("ap_pass", "") ?: ""
+                        val pp = param.trim()
+                        if (pp.contains(",")) {
+                            ssid = pp.substringBefore(",").trim()
+                            pass = pp.substringAfter(",").trim()
+                            hp.edit().putString("ap_ssid", ssid)
+                                .putString("ap_pass", pass).apply()
+                        }
+                        if (ssid.isEmpty()) {
+                            noteFlip(ctx, "hotspot", false)
+                            localNotify(ctx, "Hotspot চালু করতে প্রথমবার param-এ SSID,পাসওয়ার্ড দাও (যেমন MyNet,12345678)। বন্ধ করা param ছাড়াই হয়।")
+                        } else if (!shOk("cmd wifi start-softap " +
+                                shq(ssid) + " " + shq(pass))) {
+                            noteFlip(ctx, "hotspot", false)
+                            localNotify(ctx, "Hotspot চালু হয়নি — Shizuku দরকার।")
+                        } else prefs(ctx).edit()
+                            .putBoolean("hotspot_state", true).apply()
+                    } else {
+                        if (!shOk("cmd wifi stop-softap"))
+                            localNotify(ctx, "Hotspot বন্ধ হয়নি — Shizuku দরকার।")
+                        else prefs(ctx).edit()
+                            .putBoolean("hotspot_state", false).apply()
+                    }
+                }
+                "dark_theme" -> {
+                    val live = (ctx.resources.configuration.uiMode and
+                        android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                        android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    val on = flipTarget(ctx, "dark", param, live)
+                    if (!shOk("cmd uimode night " + if (on) "yes" else "no"))
+                        localNotify(ctx, "Dark theme বদলাতে Shizuku দরকার।")
+                }
+                "battery_saver" -> {
+                    val live = try {
+                        (ctx.getSystemService(Context.POWER_SERVICE)
+                            as android.os.PowerManager).isPowerSaveMode
+                    } catch (e: Exception) { null }
+                    val on = flipTarget(ctx, "bsaver", param, live)
+                    if (!shOk("settings put global low_power " +
+                            if (on) "1" else "0"))
+                        localNotify(ctx, "Battery Saver বদলাতে Shizuku দরকার।")
+                }
+                "gps_toggle" -> {
+                    val on = flipTarget(ctx, "gps", param,
+                        try { gpsEnabled(ctx) } catch (e: Exception) { null })
+                    if (!shOk("settings put secure location_mode " +
+                            if (on) "3" else "0"))
+                        localNotify(ctx, "GPS বদলাতে Shizuku দরকার।")
+                }
+                "nfc_toggle" -> {
+                    val live = try {
+                        android.nfc.NfcAdapter.getDefaultAdapter(ctx)?.isEnabled
+                    } catch (e: Exception) { null }
+                    val on = flipTarget(ctx, "nfc", param, live)
+                    if (!shOk("svc nfc " + if (on) "enable" else "disable"))
+                        localNotify(ctx, "NFC বদলাতে Shizuku দরকার।")
+                }
+                "record_video" -> {
+                    SessionState.snapFront = param.contains("front", true)
+                    SessionState.videoSecs =
+                        (param.filter { it.isDigit() }.toIntOrNull() ?: 10)
+                            .coerceIn(3, 120)
+                    try {
+                        androidx.core.content.ContextCompat
+                            .startForegroundService(ctx,
+                                Intent(ctx, SnapService::class.java))
+                    } catch (_: Exception) { }
+                }
+                "qr_show" -> {
+                    QrShow.text = param
+                    try {
+                        ctx.startActivity(Intent(ctx, QrShowActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { }
+                }
+                "read_file" -> {
+                    val path = param.substringBefore(">").trim()
+                    val vname = param.substringAfter(">", "").trim()
+                        .ifEmpty { "file_result" }
+                    Thread {
+                        try {
+                            val f = java.io.File(path)
+                            val txt = if (f.exists() && f.isFile)
+                                f.readText().take(20000) else ""
+                            if (txt.isEmpty()) localNotify(ctx,
+                                "ফাইল পড়া যায়নি: $path")
+                            else setVar(ctx, vname, txt)
+                        } catch (e: Exception) {
+                            localNotify(ctx, "ফাইল পড়া যায়নি: $path")
+                        }
+                    }.start()
+                }
+                "clipboard_set" -> {
+                    try {
+                        val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE)
+                            as android.content.ClipboardManager
+                        cm.setPrimaryClip(android.content.ClipData
+                            .newPlainText("phonelink", param))
+                    } catch (_: Exception) { }
+                    // Android 10+ ignores background clipboard writes;
+                    // checkClipboard applies this on the next focus.
+                    prefs(ctx).edit().putString("pending_clip", param).apply()
+                }
+                "delete_var" -> {
+                    val name = param.trim()
+                    if (name.isNotEmpty()) {
+                        removeVar(ctx, name)
+                        onEvent(ctx, "var_changed", JSONObject()
+                            .put("title", name).put("body", ""))
+                    }
+                }
+                "calc_var" -> {
+                    val name = param.substringBefore("=").trim()
+                    val expr = param.substringAfter("=", "")
+                    if (name.isNotEmpty() && expr.isNotBlank()) {
+                        val v = Calc.eval(expr) { n -> getVar(ctx, n) }
+                        if (v != null) setVar(ctx, name, fmtNum(v))
+                        else localNotify(ctx, "হিসাব মেলেনি: $expr")
+                    }
+                }
                 "ringer" -> setRinger(ctx, param)
                 "open_app" -> openApp(ctx, param)
                 "http" -> httpCall(param)
@@ -836,7 +1342,7 @@ object Automation {
                         } catch (e: Exception) { true }
                         android.provider.Settings.System.putInt(ctx.contentResolver,
                             android.provider.Settings.System.ACCELEROMETER_ROTATION,
-                            if (toggleTarget(param, cur)) 1 else 0)
+                            if (flipTarget(ctx, "rotate", param, cur)) 1 else 0)
                     } else localNotify(ctx,
                         "Auto-rotate বদলাতে PhoneLink-কে 'সিস্টেম সেটিংস বদলানোর' অনুমতি দাও।")
                 }
@@ -846,7 +1352,7 @@ object Automation {
                     // v2.15.1: a blank param flips the real state.
                     val cur = try { BtShare.adapter()?.isEnabled == true }
                         catch (e: Exception) { false }
-                    val on = toggleTarget(param, cur)
+                    val on = flipTarget(ctx, "bt", param, cur)
                     if (!shOk("svc bluetooth " + (if (on) "enable" else "disable"))) {
                         try {
                             @Suppress("DEPRECATION")
@@ -864,11 +1370,18 @@ object Automation {
                     val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE)
                         as android.app.NotificationManager
                     if (nm.isNotificationPolicyAccessGranted) {
+                        val curF = nm.currentInterruptionFilter
                         nm.setInterruptionFilter(when (param.trim().lowercase()) {
-                            "priority" -> android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                            "priority", "on" -> android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
                             "alarms" -> android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS
                             "none" -> android.app.NotificationManager.INTERRUPTION_FILTER_NONE
-                            else -> android.app.NotificationManager.INTERRUPTION_FILTER_ALL
+                            "off", "all" -> android.app.NotificationManager.INTERRUPTION_FILTER_ALL
+                            // v2.16: blank/toggle flips like every
+                            // other on/off action.
+                            else -> if (curF ==
+                                android.app.NotificationManager.INTERRUPTION_FILTER_ALL)
+                                android.app.NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                                else android.app.NotificationManager.INTERRUPTION_FILTER_ALL
                         })
                     } else localNotify(ctx, "DND বদলাতে Do Not Disturb access দাও।")
                 }
@@ -1165,7 +1678,7 @@ object Automation {
                         } catch (e: Exception) { false }
                         android.provider.Settings.System.putInt(ctx.contentResolver,
                             android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE,
-                            if (toggleTarget(param, cur))
+                            if (flipTarget(ctx, "autobright", param, cur))
                                 android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
                             else android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL)
                     } else localNotify(ctx,
@@ -1202,7 +1715,7 @@ object Automation {
                         android.provider.Settings.Global.getInt(
                             ctx.contentResolver, "airplane_mode_on", 0) == 1
                     } catch (e: Exception) { false }
-                    val on = toggleTarget(param, cur)
+                    val on = flipTarget(ctx, "airplane", param, cur)
                     // v2.14: cmd connectivity is the way that still
                     // works on Android 11+; the old settings+broadcast
                     // trick is ignored by modern Android.
@@ -1216,7 +1729,7 @@ object Automation {
                         android.provider.Settings.Global.getInt(
                             ctx.contentResolver, "mobile_data", 0) == 1
                     } catch (e: Exception) { false }
-                    shAction(ctx, if (toggleTarget(param, cur))
+                    shAction(ctx, if (flipTarget(ctx, "mdata", param, cur))
                         "svc data enable" else "svc data disable")
                 }
                 "wifi_toggle" -> {
@@ -1224,7 +1737,7 @@ object Automation {
                         (ctx.getSystemService(Context.WIFI_SERVICE)
                             as android.net.wifi.WifiManager).isWifiEnabled
                     } catch (e: Exception) { false }
-                    shAction(ctx, if (toggleTarget(param, cur))
+                    shAction(ctx, if (flipTarget(ctx, "wifi", param, cur))
                         "svc wifi enable" else "svc wifi disable")
                 }
                 "shell_screenshot" -> {
@@ -1316,11 +1829,24 @@ object Automation {
                 }
                 "stay_on" -> {
                     val p = param.trim().lowercase()
-                    val v = when (p) {
-                        "off" -> "false"; "usb" -> "usb"; "ac" -> "ac"
-                        else -> "true"
+                    when (p) {
+                        "usb" -> shAction(ctx, "svc power stayon usb")
+                        "ac" -> shAction(ctx, "svc power stayon ac")
+                        "off", "false" -> { noteFlip(ctx, "stay_on", false)
+                            shAction(ctx, "svc power stayon false") }
+                        "on", "true" -> { noteFlip(ctx, "stay_on", true)
+                            shAction(ctx, "svc power stayon true") }
+                        else -> {
+                            val live = try {
+                                android.provider.Settings.Global.getInt(
+                                    ctx.contentResolver,
+                                    "stay_on_while_plugged_in", 0) != 0
+                            } catch (e: Exception) { null }
+                            val on = flipTarget(ctx, "stay_on", "", live)
+                            shAction(ctx, "svc power stayon " +
+                                if (on) "true" else "false")
+                        }
                     }
-                    shAction(ctx, "svc power stayon $v")
                 }
                 "set_time" -> {
                     val parts = param.trim().split(":")
@@ -1446,7 +1972,7 @@ object Automation {
                         android.provider.Settings.Secure.getInt(
                             ctx.contentResolver, "night_display_activated", 0) == 1
                     } catch (e: Exception) { false }
-                    val on = toggleTarget(param, cur)
+                    val on = flipTarget(ctx, "night", param, cur)
                     var ok = shOk("settings put secure night_display_activated " +
                         (if (on) "1" else "0"))
                     if (!ok) {
@@ -1615,7 +2141,7 @@ object Automation {
                             ctx.contentResolver, "doze_always_on", 0) == 1
                     } catch (e: Exception) { false }
                     val ok = shOk("settings put secure doze_always_on " +
-                        (if (toggleTarget(param, cur)) "1" else "0"))
+                        (if (flipTarget(ctx, "aod", param, cur)) "1" else "0"))
                     if (!ok) localNotify(ctx,
                         "Always-on display এই ডিভাইসে সরাসরি বদলানো যায়নি (Shizuku থাকলে হয়ে যেত)।")
                 }
@@ -1818,6 +2344,9 @@ object Automation {
                 android.provider.Settings.Global.getInt(
                     ctx.contentResolver, "mobile_data", 0) == 1
             } catch (e: Exception) { false }, "mobile_data_on", "mobile_data_off")
+            stateEdge(ctx, "poll_gps", try { gpsEnabled(ctx) }
+                catch (e: Exception) { false }, "gps_on", "gps_off")
+            pollFileWatch(ctx)
             val ip = localIp()
             val prevIp = wp.getString("edge_ip", "") ?: ""
             if (prevIp.isNotEmpty() && ip.isNotEmpty() && ip != prevIp)
@@ -1953,6 +2482,7 @@ object Automation {
         Thread {
             try {
                 resumeWaits(ctx)
+                resumeUntilExpired(ctx)
                 val now = System.currentTimeMillis()
                 val list = rules(ctx).filter { it.optBoolean("enabled", true) }
                 for (rule in list) {
@@ -2014,7 +2544,7 @@ object Automation {
     }
 
     /** Fires wifi_connected / wifi_disconnected when the SSID changes. */
-    private fun pollWifi(ctx: Context) {
+    fun pollWifi(ctx: Context) {
         try {
             val ssid = currentSsid(ctx)
             val prev = prefs(ctx).getString("last_ssid", "") ?: ""
@@ -2125,7 +2655,7 @@ object Automation {
         try {
             val usm = ctx.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
             val now = System.currentTimeMillis()
-            val events = usm.queryEvents(now - 35 * 60_000, now) ?: return
+            val events = usm.queryEvents(now - 12 * 60_000, now) ?: return
             val ev = UsageEvents.Event()
             while (events.hasNextEvent()) {
                 events.getNextEvent(ev)
@@ -2759,6 +3289,8 @@ object Automation {
                             val st = intent.getIntExtra("wifi_state", -1)
                             if (st == 13) onEvent(ctx, "hotspot_on", JSONObject())
                             if (st == 11) onEvent(ctx, "hotspot_off", JSONObject())
+                            if (st == 13 || st == 11) prefs(ctx).edit()
+                                .putBoolean("hotspot_state", st == 13).apply()
                         }
                         android.os.PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
                             val pm = ctx.getSystemService(Context.POWER_SERVICE)

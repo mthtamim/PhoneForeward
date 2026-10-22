@@ -1170,4 +1170,53 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="auto_health_broken">%1$d need attention</string>
     <string name="auto_import_file">From file</string>
     <string name="auto_health_sms">SMS read permission</string>
+    <string name="at_ui_click">UI click</string>
+    <string name="ath_ui_click">Text on the tapped item (empty = any)</string>
+    <string name="at_var_changed">Variable changes</string>
+    <string name="ath_var_changed">Variable name (empty = any)</string>
+    <string name="at_gps_on">GPS turns on</string>
+    <string name="ath_gps_on">No value needed</string>
+    <string name="at_gps_off">GPS turns off</string>
+    <string name="ath_gps_off">No value needed</string>
+    <string name="at_file_changed">File or folder changes</string>
+    <string name="ath_file_changed">Full path of the file or folder</string>
+    <string name="at_call_active">Call becomes active</string>
+    <string name="ath_call_active">Call is answered or starts</string>
+    <string name="ac_notif_present">Notification present</string>
+    <string name="ach_notif_present">App package (empty = any app)</string>
+    <string name="ac_gps_state">GPS is</string>
+    <string name="ach_gps_state">on or off</string>
+    <string name="ac_hotspot_state">Hotspot is</string>
+    <string name="ach_hotspot_state">on or off</string>
+    <string name="aa_hotspot_toggle">Hotspot toggle (Shizuku)</string>
+    <string name="aah_hotspot_toggle">SSID,password once; empty flips</string>
+    <string name="aa_dark_theme">Dark theme (Shizuku)</string>
+    <string name="aah_dark_theme">on, off or empty to flip</string>
+    <string name="aa_battery_saver">Battery saver toggle (Shizuku)</string>
+    <string name="aah_battery_saver">on, off or empty to flip</string>
+    <string name="aa_gps_toggle">GPS toggle (Shizuku)</string>
+    <string name="aah_gps_toggle">on, off or empty to flip</string>
+    <string name="aa_nfc_toggle">NFC toggle (Shizuku)</string>
+    <string name="aah_nfc_toggle">on, off or empty to flip</string>
+    <string name="aa_record_video">Record video</string>
+    <string name="aah_record_video">Seconds (3-120); add front for selfie camera</string>
+    <string name="aa_qr_show">Show QR code</string>
+    <string name="aah_qr_show">Text or Wi-Fi payload to encode</string>
+    <string name="aa_read_file">Read file into variable</string>
+    <string name="aah_read_file">path&gt;variable (default file_result)</string>
+    <string name="aa_clipboard_set">Set clipboard</string>
+    <string name="aah_clipboard_set">Text to copy</string>
+    <string name="aa_delete_var">Delete variable</string>
+    <string name="aah_delete_var">Variable name</string>
+    <string name="aa_calc_var">Calculate into variable</string>
+    <string name="aah_calc_var">name=expression, e.g. total={a}+{b}*2</string>
+    <string name="aa_wait_until">Wait until event</string>
+    <string name="aah_wait_until">type:param@timeout in minutes</string>
+    <string name="rg_phone_control">Phone control (command PIN)</string>
+    <string name="remote_control_note">Runs on the OTHER phone. Buttons flip its current state.</string>
+    <string name="remote_pkg_hint">App package, e.g. com.facebook.katana</string>
+    <string name="remote_open_app">Open app</string>
+    <string name="remote_pkg_needed">Type a package name first</string>
+    <string name="toast_remote_action">Sent - runs on the other phone with your PIN</string>
+    <string name="sw_auto_update">Automatic updates (installs new versions by itself)</string>
 </resources>

@@ -29,10 +29,66 @@ class SnapService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         startSnapForeground()
-        takePhoto()
-        // Watchdog: never linger if the camera stack misbehaves.
-        Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 20_000)
+        val vsecs = SessionState.videoSecs
+        if (vsecs > 0) {
+            recordVideo(vsecs)
+            Handler(Looper.getMainLooper()).postDelayed(
+                { stopSelf() }, (vsecs + 20) * 1000L)
+        } else {
+            takePhoto()
+            // Watchdog: never linger if the camera stack misbehaves.
+            Handler(Looper.getMainLooper()).postDelayed({ stopSelf() }, 20_000)
+        }
         return START_NOT_STICKY
+    }
+
+    /** v2.16: record_video action — CameraX Recorder, no audio (so
+     *  no mic permission is needed), saved under Movies/PhoneLink. */
+    private fun recordVideo(secs: Int) {
+        val future = ProcessCameraProvider.getInstance(this)
+        future.addListener({
+            try {
+                val provider = future.get()
+                val recorder = androidx.camera.video.Recorder.Builder()
+                    .setQualitySelector(androidx.camera.video.QualitySelector
+                        .from(androidx.camera.video.Quality.HD))
+                    .build()
+                val videoCapture =
+                    androidx.camera.video.VideoCapture.withOutput(recorder)
+                provider.unbindAll()
+                val selector = if (SessionState.snapFront) {
+                    SessionState.snapFront = false
+                    CameraSelector.DEFAULT_FRONT_CAMERA
+                } else {
+                    CameraSelector.DEFAULT_BACK_CAMERA
+                }
+                provider.bindToLifecycle(this, selector, videoCapture)
+                val dir = File(getExternalFilesDir(
+                    android.os.Environment.DIRECTORY_MOVIES), "PhoneLink")
+                dir.mkdirs()
+                val file = File(dir,
+                    "video_${System.currentTimeMillis()}.mp4")
+                val opts = androidx.camera.video.FileOutputOptions
+                    .Builder(file).build()
+                val recording = videoCapture.output
+                    .prepareRecording(this, opts)
+                    .start(ContextCompat.getMainExecutor(this)) { ev ->
+                        if (ev is androidx.camera.video
+                                .VideoRecordEvent.Finalize) {
+                            SessionState.videoSecs = 0
+                            Automation.localNotify(applicationContext,
+                                "ভিডিও সেভ হয়েছে: " + file.absolutePath)
+                            stopSelf()
+                        }
+                    }
+                Handler(Looper.getMainLooper()).postDelayed({
+                    try { recording.stop() } catch (_: Exception) { }
+                }, secs * 1000L)
+            } catch (_: Exception) {
+                SessionState.videoSecs = 0
+                stopSelf()
+            }
+        }, ContextCompat.getMainExecutor(this))
     }
 
     private fun startSnapForeground() {

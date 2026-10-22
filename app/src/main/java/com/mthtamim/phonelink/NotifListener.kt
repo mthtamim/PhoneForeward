@@ -170,6 +170,16 @@ class NotifListener : NotificationListenerService() {
             } catch (_: Exception) { false }
         }
 
+        /** v2.16: notif_present constraint — is a notification from
+         *  [pkg] (blank = any app) currently on the shade? */
+        fun hasNotification(pkg: String): Boolean {
+            val svc = instance ?: return false
+            return try {
+                svc.activeNotifications.any {
+                    pkg.isEmpty() || it.packageName == pkg }
+            } catch (_: Exception) { false }
+        }
+
         /** Dismisses all of this phone's notifications. */
         fun dismissAll(): Boolean {
             val svc = instance ?: return false

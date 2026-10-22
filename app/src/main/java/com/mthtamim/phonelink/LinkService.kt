@@ -192,6 +192,7 @@ class LinkService : Service() {
             if (Config.isSender(applicationContext)) {
                 cmdThread = thread(name = "pl-cmd") { listenLoop(cmd = true) }
                 heartbeatThread = thread(name = "pl-heartbeat") { heartbeatLoop() }
+                pollThread = thread(name = "pl-poll") { pollLoop() }
             }
             if (Config.lostOn(applicationContext) && !lostRunning) {
                 lostRunning = true
@@ -209,6 +210,17 @@ class LinkService : Service() {
         instance = null
         Lan.stopServer()
         dataThread?.interrupt(); cmdThread?.interrupt(); heartbeatThread?.interrupt()
+        pollThread?.interrupt()
+        try { batteryReceiver?.let { unregisterReceiver(it) } }
+        catch (_: Exception) { }
+        batteryReceiver = null
+        try {
+            wifiCallback?.let {
+                (getSystemService(Context.CONNECTIVITY_SERVICE)
+                    as android.net.ConnectivityManager)
+                    .unregisterNetworkCallback(it) }
+        } catch (_: Exception) { }
+        wifiCallback = null
         unregisterEventSources()
         try {
             mediaObserver?.let { contentResolver.unregisterContentObserver(it) }
@@ -262,6 +274,9 @@ class LinkService : Service() {
     // the same events the instant they happen; the polls stay as
     // backstops and share state keys so nothing double-fires.
     private var powerReceiver: BroadcastReceiver? = null
+    private var batteryReceiver: BroadcastReceiver? = null
+    private var wifiCallback: android.net.ConnectivityManager.NetworkCallback? = null
+    private var pollThread: Thread? = null
     private var musicCallback: android.media.AudioManager.AudioPlaybackCallback? = null
     private var telephonyCallback: android.telephony.TelephonyCallback? = null
     @Volatile private var lastMusicActive = false
@@ -290,6 +305,37 @@ class LinkService : Service() {
             }
             registerReceiver(pr, f)
             powerReceiver = pr
+        } catch (_: Exception) { }
+        // v2.16: EVERY battery change arrives here the moment it
+        // happens — battery triggers evaluate on the spot instead
+        // of waiting for a poll. No root/permission needed.
+        try {
+            val br = object : BroadcastReceiver() {
+                override fun onReceive(c: Context?, i: Intent?) {
+                    Automation.onBatteryChanged(applicationContext)
+                }
+            }
+            registerReceiver(br, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+            batteryReceiver = br
+        } catch (_: Exception) { }
+        // v2.16: instant Wi-Fi connect/disconnect, so specific-SSID
+        // rules fire the moment the network joins (poll is backup).
+        try {
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE)
+                as android.net.ConnectivityManager
+            val req = android.net.NetworkRequest.Builder()
+                .addTransportType(
+                    android.net.NetworkCapabilities.TRANSPORT_WIFI).build()
+            val cb = object : android.net.ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: android.net.Network) {
+                    Automation.pollWifi(applicationContext)
+                }
+                override fun onLost(network: android.net.Network) {
+                    Automation.pollWifi(applicationContext)
+                }
+            }
+            cm.registerNetworkCallback(req, cb)
+            wifiCallback = cb
         } catch (_: Exception) { }
         // Music start/stop — playback changes are delivered live.
         try {
@@ -1223,8 +1269,14 @@ class LinkService : Service() {
         // (Our own commands were already filtered by device id above.)
         when (payload.optString("command")) {
             "LOCATION" -> if (Config.allowLocation(ctx)) LocationHelper.fetchAndSend(ctx)
-            "BATTERY" -> Relay.send(ctx, Relay.TYPE_BATTERY, "ব্যাটারি স্ট্যাটাস",
-                SystemReceiver.batteryStatusText(ctx))
+            "BATTERY" -> {
+                var btext = BatteryInfo.fullText(ctx)
+                if (ShizukuHelper.granted()) {
+                    val dump = ShizukuHelper.batteryDump()
+                    if (dump.isNotEmpty()) btext += "\n" + dump
+                }
+                Relay.send(ctx, Relay.TYPE_BATTERY, "ব্যাটারি স্ট্যাটাস", btext)
+            }
             "RING" -> if (Config.allowRing(ctx)) {
                 RingHelper.start(ctx)
                 Relay.send(ctx, Relay.TYPE_INFO, "রিং বাজছে", "এই ফোনে রিং চালু করা হয়েছে (৪৫ সেকেন্ড)।")
@@ -1322,6 +1374,14 @@ class LinkService : Service() {
                     else "রিমোট LOCK চেষ্টা — admin চালু নেই")
                 if (!ok) Relay.send(ctx, Relay.TYPE_INFO, "লক করা যায়নি",
                     "ওই ফোনে Device admin চালু করা নেই।")
+            }
+            "ACTION" -> if (pinOk(payload)) {
+                val act = payload.optString("act", "")
+                if (act.isNotEmpty()) {
+                    Automation.runSingle(ctx, act, payload.optString("arg", ""))
+                    SecLog.add(ctx, "রিমোট অ্যাকশন: $act")
+                    Relay.send(ctx, Relay.TYPE_INFO, "🎛️ রিমোট অ্যাকশন চলেছে", act)
+                }
             }
             "SET" -> if (pinOk(payload)) {
                 val key = payload.optString("key", "")
@@ -2085,6 +2145,27 @@ class LinkService : Service() {
         }
     }
 
+    /** v2.16: fast poll loop, separate from the presence heartbeat.
+     *  The heartbeat sleeps 25–60 min, and every poll-based trigger
+     *  (battery crossings, app open/close, states) used to starve
+     *  with it — the structural reason whole trigger families
+     *  "didn't work". Foreground edges scan every 5 s; the full
+     *  automation tick runs every ~20 s. */
+    private fun pollLoop() {
+        var n = 0
+        while (running) {
+            try { Thread.sleep(5000) } catch (_: InterruptedException) { return }
+            if (!running) return
+            try { Automation.pollForegroundFast(applicationContext) }
+            catch (_: Exception) { }
+            n++
+            if (n % 4 == 0) {
+                try { Automation.tick(applicationContext) }
+                catch (_: Exception) { }
+            }
+        }
+    }
+
     private fun heartbeatLoop() {
         // First heartbeat shortly after start so the receiver sees us online.
         try { Thread.sleep(8000) } catch (_: InterruptedException) { return }
@@ -2117,6 +2198,9 @@ class LinkService : Service() {
                 checkWeeklyReport()
                 checkCheckin()
                 Automation.tick(hctx)
+                if (System.currentTimeMillis() -
+                    Config.updateLastCheck(hctx) > 24 * 3600_000L)
+                    Update.check(hctx, false)
                 Chunks.requestMissing(hctx)
                 Chunks.cleanupSent(hctx)
                 if (Lan.peerIp(hctx).isEmpty()) Lan.discoverAsync(hctx)

@@ -567,6 +567,11 @@ object Config {
     }
     fun updateLastCheck(ctx: Context): Long = prefs(ctx).getLong("update_last_check", 0L)
     fun setUpdateLastCheck(ctx: Context, v: Long) { prefs(ctx).edit().putLong("update_last_check", v).apply() }
+
+    /** v2.16: auto-update installs new releases by itself
+     *  (Shizuku silent install, else a one-tap installer notice). */
+    fun autoUpdate(ctx: Context): Boolean = prefs(ctx).getBoolean("auto_update", true)
+    fun setAutoUpdate(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("auto_update", v).apply() }
     fun setRulesSyncOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("rules_sync_on", v).apply() }
     fun setAutomationOn(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("automation_on", v).apply() }
 

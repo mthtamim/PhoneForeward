@@ -162,6 +162,9 @@
         <activity
             android:name=".QrActivity"
             android:exported="false" />
+        <activity
+            android:name=".QrShowActivity"
+            android:exported="false" />
 
         <activity
             android:name=".ScanActivity"

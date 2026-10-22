@@ -98,3 +98,73 @@ class SystemReceiver : BroadcastReceiver() {
         }
     }
 }
+
+/** v2.16: EVERY battery value Android exposes without root —
+ *  the sticky ACTION_BATTERY_CHANGED intent plus BatteryManager
+ *  properties (charge/energy counters, current). Tamim asked for
+ *  the plain way first; Shizuku's dumpsys only supplements it. */
+object BatteryInfo {
+    fun fullText(ctx: android.content.Context): String {
+        val sb = StringBuilder()
+        try {
+            val i = ctx.registerReceiver(null, android.content.IntentFilter(
+                android.content.Intent.ACTION_BATTERY_CHANGED))
+            val bm = ctx.getSystemService(android.content.Context.BATTERY_SERVICE)
+                as android.os.BatteryManager
+            val level = i?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = i?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, 100) ?: 100
+            val pct = if (level >= 0) level * 100 / scale.coerceAtLeast(1) else -1
+            sb.append("ব্যাটারি: ").append(if (pct >= 0) "$pct%" else "?")
+            val status = i?.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1) ?: -1
+            sb.append(when (status) {
+                android.os.BatteryManager.BATTERY_STATUS_CHARGING -> " (চার্জ হচ্ছে)"
+                android.os.BatteryManager.BATTERY_STATUS_FULL -> " (ফুল)"
+                android.os.BatteryManager.BATTERY_STATUS_DISCHARGING -> " (চার্জ কমছে)"
+                android.os.BatteryManager.BATTERY_STATUS_NOT_CHARGING -> " (চার্জ হচ্ছে না)"
+                else -> "" })
+            val plugged = i?.getIntExtra(android.os.BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+            val src = when (plugged) {
+                android.os.BatteryManager.BATTERY_PLUGGED_AC -> "AC অ্যাডাপ্টার"
+                android.os.BatteryManager.BATTERY_PLUGGED_USB -> "USB"
+                android.os.BatteryManager.BATTERY_PLUGGED_WIRELESS -> "ওয়্যারলেস"
+                else -> ""
+            }
+            if (src.isNotEmpty()) sb.append("\nউৎস: ").append(src)
+            val temp = i?.getIntExtra(android.os.BatteryManager.EXTRA_TEMPERATURE, -1) ?: -1
+            if (temp > 0) sb.append("\nতাপমাত্রা: ")
+                .append(String.format(java.util.Locale.US, "%.1f°C", temp / 10.0))
+            val volt = i?.getIntExtra(android.os.BatteryManager.EXTRA_VOLTAGE, -1) ?: -1
+            if (volt > 0) sb.append("\nভোল্টেজ: ")
+                .append(String.format(java.util.Locale.US, "%.2fV", volt / 1000.0))
+            val health = i?.getIntExtra(android.os.BatteryManager.EXTRA_HEALTH, -1) ?: -1
+            sb.append("\nস্বাস্থ্য: ").append(when (health) {
+                android.os.BatteryManager.BATTERY_HEALTH_GOOD -> "ভালো"
+                android.os.BatteryManager.BATTERY_HEALTH_OVERHEAT -> "অতিরিক্ত গরম"
+                android.os.BatteryManager.BATTERY_HEALTH_DEAD -> "মৃত"
+                android.os.BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "ওভার-ভোল্টেজ"
+                android.os.BatteryManager.BATTERY_HEALTH_COLD -> "ঠান্ডা"
+                else -> "অজানা" })
+            val tech = i?.getStringExtra(android.os.BatteryManager.EXTRA_TECHNOLOGY) ?: ""
+            if (tech.isNotEmpty()) sb.append("\nপ্রযুক্তি: ").append(tech)
+            fun prop(id: Int): Long = try { bm.getLongProperty(id) }
+                catch (e: Exception) { Long.MIN_VALUE }
+            val charge = prop(android.os.BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
+            if (charge != Long.MIN_VALUE && charge > 0)
+                sb.append("\nঅবশিষ্ট চার্জ: ").append(charge / 1000).append(" mAh")
+            val energy = prop(android.os.BatteryManager.BATTERY_PROPERTY_ENERGY_COUNTER)
+            if (energy != Long.MIN_VALUE && energy > 0)
+                sb.append("\nশক্তি: ").append(
+                    String.format(java.util.Locale.US, "%.2f Wh", energy / 1e9))
+            val current = prop(android.os.BatteryManager.BATTERY_PROPERTY_CURRENT_NOW)
+            if (current != Long.MIN_VALUE && current != 0L)
+                sb.append("\nকারেন্ট: ").append(current / 1000).append(" mA")
+            val remain = try { bm.computeChargeTimeRemaining() }
+                catch (e: Exception) { -1L }
+            if (remain > 0) sb.append("\nফুল হতে বাকি: ")
+                .append(remain / 60000).append(" মিনিট")
+        } catch (e: Exception) {
+            if (sb.isEmpty()) sb.append("ব্যাটারির তথ্য পড়া যায়নি")
+        }
+        return sb.toString()
+    }
+}

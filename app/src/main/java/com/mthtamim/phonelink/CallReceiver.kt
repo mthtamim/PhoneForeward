@@ -60,6 +60,12 @@ class CallReceiver : BroadcastReceiver() {
                             answered = true
                             callStart = System.currentTimeMillis()
                         }
+                        // v2.16: Call Active as a TRIGGER (it used to
+                        // exist only as a constraint).
+                        Automation.onEvent(ctx, "call_active", org.json.JSONObject()
+                            .put("title", Contacts.labelForNumber(ctx,
+                                incomingNumber ?: outgoingNumber))
+                            .put("from", incomingNumber ?: outgoingNumber ?: ""))
                     }
                     TelephonyManager.EXTRA_STATE_IDLE -> {
                         if (lastState == TelephonyManager.EXTRA_STATE_RINGING && !answered) {
