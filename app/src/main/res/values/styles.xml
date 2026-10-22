@@ -118,11 +118,11 @@
     </style>
 
     <!-- Bottom-nav active pill indicator -->
-    <style name="PL.NavIndicator">
+    <style name="PL.NavIndicator" parent="">
         <item name="android:color">@color/nav_indicator</item>
         <item name="shapeAppearance">@style/PL.NavIndicatorShape</item>
     </style>
-    <style name="PL.NavIndicatorShape">
+    <style name="PL.NavIndicatorShape" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
