@@ -1,36 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Light palette (v2.17: clean mint-tinted neutrals, emerald primary) -->
 <resources>
-    <color name="md_primary">#0E9F6E</color>
+    <color name="md_primary">#10b981</color>
     <color name="md_onPrimary">#FFFFFF</color>
-    <color name="md_primaryContainer">#D9F6E9</color>
-    <color name="md_onPrimaryContainer">#06382A</color>
-    <color name="md_secondary">#52665C</color>
+    <color name="md_primaryContainer">#003825</color>
+    <color name="md_onPrimaryContainer">#59d5a0</color>
+    <color name="md_secondary">#10b981</color>
     <color name="md_onSecondary">#FFFFFF</color>
-    <color name="md_secondaryContainer">#E6EFEA</color>
-    <color name="md_onSecondaryContainer">#12241B</color>
-    <color name="md_background">#F1F6F3</color>
-    <color name="md_onBackground">#0C1F16</color>
-    <color name="md_surface">#FFFFFF</color>
-    <color name="md_onSurface">#0C1F16</color>
-    <color name="md_surfaceVariant">#E1EDE6</color>
-    <color name="md_onSurfaceVariant">#55705F</color>
-    <color name="md_surfaceContainer">#EAF3EE</color>
-    <color name="md_surfaceContainerHigh">#DCEAE2</color>
-    <color name="md_outline">#B9CFC2</color>
-    <color name="md_error">#BA1A1A</color>
-    <color name="md_onError">#FFFFFF</color>
-    <color name="md_errorContainer">#FDECEC</color>
+    <color name="md_secondaryContainer">#003825</color>
+    <color name="md_onSecondaryContainer">#59d5a0</color>
+    <color name="md_background">#101415</color>
+    <color name="md_onBackground">#E7F2EB</color>
+    <color name="md_surface">#181C1D</color>
+    <color name="md_onSurface">#E7F2EB</color>
+    <color name="md_surfaceVariant">#24292A</color>
+    <color name="md_onSurfaceVariant">#9CA3AF</color>
+    <color name="md_surfaceContainer">#1C2122</color>
+    <color name="md_surfaceContainerHigh">#24292A</color>
+    <color name="md_outline">#374151</color>
+    <color name="md_error">#F87171</color>
+    <color name="md_onError">#450A0A</color>
+    <color name="md_errorContainer">#450A0A</color>
 
-    <color name="status_ok">#15803D</color>
-    <color name="status_bad">#DC2626</color>
-    <color name="pair_code">#B45309</color>
-    <color name="divider">#D3E2D9</color>
-    <color name="md_btnFill">#DCEFE5</color>
+    <color name="status_ok">#10b981</color>
+    <color name="status_bad">#F87171</color>
+    <color name="pair_code">#FBBF24</color>
+    <color name="divider">#24292A</color>
+    <color name="md_btnFill">#24292A</color>
 
     <!-- v2.17 design tokens -->
-    <color name="pl_mint">#0DBE82</color>
-    <color name="nav_active">#0E9F6E</color>
-    <color name="nav_inactive">#5C7267</color>
-    <color name="nav_indicator">#D9F6E9</color>
+    <color name="pl_mint">#10b981</color>
+    <color name="nav_active">#10b981</color>
+    <color name="nav_inactive">#6B7280</color>
+    <color name="nav_indicator">#1C2122</color>
 </resources>
