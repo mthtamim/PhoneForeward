@@ -52,8 +52,16 @@ object SettingsTransfer {
     }
 
     fun import(ctx: Context, json: String): Boolean {
+        val text = json.trim()
+        // v2.14.2: accept a bare rules array too — users restore through
+        // whichever box they find first, and a format mismatch used to
+        // fail silently in both directions.
+        if (text.startsWith("[")) {
+            return try { Automation.importJson(ctx, text) >= 0 }
+            catch (e: Exception) { false }
+        }
         return try {
-            val root = JSONObject(json)
+            val root = JSONObject(text)
             if (root.optString("kind") == "full-backup") importFull(ctx, root)
             else importLegacy(ctx, root)
         } catch (e: Exception) { false }
@@ -67,7 +75,9 @@ object SettingsTransfer {
         root.optJSONObject("state")?.let {
             restore(ctx, "phonelink_state", it, false) }
         val inbox = root.optString("inbox", "")
-        if (inbox.isNotEmpty()) History.importJson(ctx, inbox)
+        // A damaged inbox must not fail the whole restore.
+        if (inbox.isNotEmpty()) try { History.importJson(ctx, inbox) }
+        catch (_: Exception) { }
         // Re-hook rule watchers, exact alarms and sync from the
         // restored rule set.
         try { Automation.saveAll(ctx, Automation.rules(ctx)) }
@@ -102,10 +112,22 @@ object SettingsTransfer {
 
     /** The v2.4 format: a "cfg" object plus a "rules" string. */
     private fun importLegacy(ctx: Context, root: JSONObject): Boolean {
-        val cfgObj = root.optJSONObject("cfg") ?: return false
+        val cfgObj = root.optJSONObject("cfg")
+        if (cfgObj == null && root.optString("rules", "").isEmpty())
+            return false
         val cfg = ctx.getSharedPreferences("phonelink_cfg",
             Context.MODE_PRIVATE)
         val edit = cfg.edit()
+        if (cfgObj == null) {
+            // Rules-only legacy object: just restore the rules below.
+            val rulesOnly = root.optString("rules", "")
+            if (rulesOnly.isNotEmpty()) {
+                ctx.getSharedPreferences("phonelink_auto", Context.MODE_PRIVATE)
+                    .edit().putString("rules", rulesOnly).apply()
+                Automation.refreshWatchers(ctx)
+            }
+            return rulesOnly.isNotEmpty()
+        }
         val keys = cfgObj.keys()
         while (keys.hasNext()) {
             val k = keys.next()

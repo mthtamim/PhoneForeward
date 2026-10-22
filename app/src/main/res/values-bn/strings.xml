@@ -1156,4 +1156,6 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="auto_health_alarm">হুবহু অ্যালার্ম (সময়ের নিয়ম)</string>
     <string name="auto_health_shizuku">Shizuku (Shell অ্যাকশন)</string>
     <string name="auto_health_fix"> — ঠিক নেই, ছুঁয়ে সেটিংসে যাও</string>
+    <string name="auto_health_all_ok">সব ঠিক আছে</string>
+    <string name="auto_health_broken">%1$dটি ঠিক নেই</string>
 </resources>

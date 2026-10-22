@@ -11,8 +11,8 @@ android {
         applicationId "com.mthtamim.phonelink"
         minSdk 26
         targetSdk 34
-        versionCode 27
-        versionName "2.14.1"
+        versionCode 28
+        versionName "2.14.2"
     }
 
     buildTypes {

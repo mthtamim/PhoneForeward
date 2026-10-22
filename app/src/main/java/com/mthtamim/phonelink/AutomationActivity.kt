@@ -217,11 +217,23 @@ class AutomationActivity : LocalizedActivity() {
             .setTitle(getString(R.string.auto_import))
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                val n = Automation.importJson(this, input.text.toString())
-                android.widget.Toast.makeText(this,
-                    if (n >= 0) getString(R.string.auto_imported, n)
-                    else getString(R.string.auto_import_failed),
-                    android.widget.Toast.LENGTH_SHORT).show()
+                val text = input.text.toString().trim()
+                // v2.14.2: a pasted FULL backup restores everything,
+                // not just the rules — route it to the full importer.
+                if (text.startsWith("{") && text.contains("full-backup")) {
+                    val ok = SettingsTransfer.import(this, text)
+                    android.widget.Toast.makeText(this,
+                        getString(if (ok) R.string.toast_cfg_imported
+                            else R.string.auto_import_failed),
+                        android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    val n = Automation.importJson(this, text)
+                    android.widget.Toast.makeText(this,
+                        if (n >= 0) getString(R.string.auto_imported, n)
+                        else getString(R.string.auto_import_failed),
+                        android.widget.Toast.LENGTH_SHORT).show()
+                }
+                renderHealth()
                 render()
             }
             .setNegativeButton(android.R.string.cancel, null)
@@ -304,12 +316,22 @@ class AutomationActivity : LocalizedActivity() {
                     Uri.parse("package:" + packageName))) })
         }
         items.add(Triple(R.string.auto_health_shizuku, ShizukuHelper.granted(), null))
-        for ((label, ok, action) in items) {
+        // v2.14.2: compact — the title line carries the summary, and
+        // only the broken items get a row (the full five-row list ate
+        // too much of the screen).
+        val broken = items.filter { !it.second }
+        findViewById<TextView>(R.id.tvHealthTitle).text =
+            if (broken.isEmpty())
+                "✅ " + getString(R.string.auto_health_title) + " — " +
+                    getString(R.string.auto_health_all_ok)
+            else
+                "⚠️ " + getString(R.string.auto_health_title) + " — " +
+                    getString(R.string.auto_health_broken, broken.size)
+        for ((label, _, action) in broken) {
             box.addView(TextView(this).apply {
-                text = (if (ok) "✅ " else "⚠️ ") + getString(label) +
-                    (if (ok) "" else getString(R.string.auto_health_fix))
-                setPadding(0, 10, 0, 10)
-                if (!ok && action != null) setOnClickListener { action() }
+                text = "⚠️ " + getString(label) + getString(R.string.auto_health_fix)
+                setPadding(0, 6, 0, 6)
+                if (action != null) setOnClickListener { action() }
             })
         }
     }

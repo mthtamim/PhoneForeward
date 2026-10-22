@@ -1166,4 +1166,6 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="auto_health_alarm">Exact alarms (time rules)</string>
     <string name="auto_health_shizuku">Shizuku (shell actions)</string>
     <string name="auto_health_fix"> — not set, tap to open settings</string>
+    <string name="auto_health_all_ok">all clear</string>
+    <string name="auto_health_broken">%1$d need attention</string>
 </resources>
