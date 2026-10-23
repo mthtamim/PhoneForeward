@@ -4680,5 +4680,15 @@
   "paths": [
    "settings.gradle"
   ]
+ },
+ {
+  "owner": "mthtamim",
+  "repo": "PhoneForeward",
+  "branch": "main",
+  "source_dir": "/home/hatch/workspace/github-push/phonelink",
+  "commit_sha": "a742406c2ed3b3effea605777d81e7f3d43a3f82",
+  "paths": [
+   "app/src/main/res/layout/view_applock.xml"
+  ]
  }
 ]
