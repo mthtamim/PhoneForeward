@@ -84,6 +84,9 @@ class LinkService : Service() {
         if (Config.btReceiveOn(applicationContext)) BtShare.startServer(applicationContext)
         if (Config.automationOn(applicationContext)) WebhookServer.start(applicationContext)
         WebInbox.start(applicationContext)
+        // v2.18 (WS4): the shared MQTT connection follows the same
+        // service lifecycle as the other transports.
+        MqttManager.sync(applicationContext)
         Automation.scheduleTimeRules(applicationContext)
     }
 
@@ -209,6 +212,7 @@ class LinkService : Service() {
         running = false
         instance = null
         Lan.stopServer()
+        MqttManager.stop()
         dataThread?.interrupt(); cmdThread?.interrupt(); heartbeatThread?.interrupt()
         pollThread?.interrupt()
         try { batteryReceiver?.let { unregisterReceiver(it) } }
@@ -454,6 +458,9 @@ class LinkService : Service() {
                                 .edit().remove("screen_off_since").apply()
                         Intent.ACTION_SCREEN_OFF -> {
                             Automation.onEvent(ctx, "screen_off", JSONObject())
+                            // v2.18 App Locker: "until screen off"
+                            // graces end and any cover comes down.
+                            try { AppLocker.onScreenOff(ctx) } catch (_: Exception) { }
                             getSharedPreferences("phonelink_state", Context.MODE_PRIVATE)
                                 .edit().putLong("screen_off_since", System.currentTimeMillis()).apply()
                             // v2.15.0: live screen_locked — the tick poll
@@ -897,6 +904,12 @@ class LinkService : Service() {
         }
         if (type == Relay.TYPE_NOTIF && payload.has("notifKey")) {
             extraStr = "notif:" + payload.optString("notifKey")
+        }
+        // v2.18: App Locker approval requests carry req + package in
+        // the extra field so the inbox row can offer Approve/Deny.
+        if (type == Relay.TYPE_APPLOCK && payload.has("lockpkg")) {
+            extraStr = "applock:" + payload.optString("lockreq", "") +
+                ":" + payload.optString("lockpkg", "")
         }
         val priority = payload.optInt("priority", 0) == 1
         val ringing = payload.optInt("ringing", 0) == 1
@@ -1381,6 +1394,29 @@ class LinkService : Service() {
                     Automation.runSingle(ctx, act, payload.optString("arg", ""))
                     SecLog.add(ctx, "রিমোট অ্যাকশন: $act")
                     Relay.send(ctx, Relay.TYPE_INFO, "🎛️ রিমোট অ্যাকশন চলেছে", act)
+                }
+            }
+            // v2.18 App Locker peer verdicts. Both ride the command
+            // topic and pass the same command-PIN gate as ACTION; a
+            // grant is a one-session grace for that package only.
+            "APPLOCK_GRANT" -> if (pinOk(payload)) {
+                val pkg = payload.optString("pkg", "")
+                if (pkg.isNotEmpty()) {
+                    AppLocker.grantFromPeer(ctx, pkg,
+                        payload.optString("req", ""))
+                    SecLog.add(ctx, "App Locker: পিয়ারের অনুমোদনে আনলক — $pkg")
+                    Relay.send(ctx, Relay.TYPE_INFO,
+                        "🔓 অ্যাপ আনলক অনুমোদিত হয়েছে", pkg)
+                }
+            }
+            "APPLOCK_DENY" -> if (pinOk(payload)) {
+                val pkg = payload.optString("pkg", "")
+                if (pkg.isNotEmpty()) {
+                    AppLocker.denyFromPeer(ctx, pkg,
+                        payload.optString("req", ""))
+                    SecLog.add(ctx, "App Locker: পিয়ারের অনুরোধ নাকচ — $pkg")
+                    Relay.send(ctx, Relay.TYPE_INFO,
+                        "🚫 অ্যাপ আনলকের অনুরোধ নাকচ হয়েছে", pkg)
                 }
             }
             "SET" -> if (pinOk(payload)) {
@@ -2157,6 +2193,10 @@ class LinkService : Service() {
             try { Thread.sleep(5000) } catch (_: InterruptedException) { return }
             if (!running) return
             try { Automation.pollForegroundFast(applicationContext) }
+            catch (_: Exception) { }
+            // v2.18 App Locker: the same 5 s scan is the locker's
+            // fallback enforcement when Accessibility is off.
+            try { AppLocker.pollCheck(applicationContext) }
             catch (_: Exception) { }
             n++
             if (n % 4 == 0) {

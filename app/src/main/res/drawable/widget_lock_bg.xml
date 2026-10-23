@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.18 screen-lock widget tile: v2.17 dark surface (#101415)
+     with a subtle emerald-tinted edge. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <corners android:radius="18dp" />
+    <solid android:color="#101415" />
+    <stroke android:width="1dp" android:color="#223A30" />
+</shape>

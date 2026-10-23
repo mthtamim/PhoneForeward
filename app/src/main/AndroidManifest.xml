@@ -52,6 +52,10 @@
          actions could never work. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
+    <!-- v2.18 App Locker: the lock cover is a TYPE_APPLICATION_OVERLAY
+         window; without this declaration the app never appears in the
+         "display over other apps" list and the grant is impossible. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.ANSWER_PHONE_CALLS" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -73,6 +77,21 @@
 
         <activity
             android:name=".PermissionsActivity"
+            android:exported="false" />
+
+        <!-- v2.18 App Locker: management, full app picker, and the
+             activity-hosted lock screen (fallback + biometric host) -->
+        <activity
+            android:name=".AppLockerActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AppPickerActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".AppLockActivity"
+            android:excludeFromRecents="true"
             android:exported="false" />
 
         <!-- v2.4 screens -->
@@ -240,6 +259,30 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".LockA11yWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_lock_a11y_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_lock_a11y_info" />
+        </receiver>
+
+        <receiver
+            android:name=".LockAdminWidgetProvider"
+            android:exported="false"
+            android:label="@string/widget_lock_admin_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_lock_admin_info" />
         </receiver>
 
         <activity

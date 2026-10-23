@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Permissions Manager (v2.17.4): THE single home for all access.
-     Gauge counts the full set — 12 runtime + 8 special = 20 (fed by
-     PermChecks). One card for runtime lines, one card with a grant
+     Gauge counts the full set — 12 runtime + 9 special = 21 (fed by
+     PermChecks; the Overlay row joined in v2.18 for App Locker).
+     One card for runtime lines, one card with a grant
      row per special access (notification listener, battery, usage,
-     device admin, accessibility, Shizuku, exact alarm, WRITE_SETTINGS),
-     and a contextual card (Bluetooth / mic / calendar / install)
-     whose states are shown but not counted in the gauge. -->
+     device admin, accessibility, Shizuku, exact alarm, WRITE_SETTINGS,
+     overlay), and a contextual card (Bluetooth / mic / calendar /
+     install) whose states are shown but not counted in the gauge. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -194,7 +195,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ===== Special accesses (8 grant rows) ===== -->
+            <!-- ===== Special accesses (9 grant rows) ===== -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -514,6 +515,49 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnPermWrite"
+                            style="@style/PL.BtnChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/btn_open_settings" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <!-- Overlay / draw over other apps (v2.18 App Locker) -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/perm_overlay_title"
+                                android:textSize="14.5sp" />
+
+                            <TextView
+                                style="@style/PL.BodySmall"
+                                android:text="@string/perm_overlay_desc" />
+
+                            <TextView
+                                android:id="@+id/tvPermOverlayState"
+                                style="@style/PL.StatusValue" />
+                        </LinearLayout>
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnPermOverlay"
                             style="@style/PL.BtnChip"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"

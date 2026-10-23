@@ -52,7 +52,11 @@ object AutoCatalog {
         "mobile_data_on", "mobile_data_off",
         // v2.16 MacroDroid shortlist round
         "ui_click", "var_changed", "gps_on", "gps_off", "file_changed",
-        "call_active")
+        "call_active",
+        // v2.18 (WS4)
+        "mqtt_message",
+        // v2.18 App Locker
+        "applock_failed")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
         "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
@@ -74,7 +78,7 @@ object AutoCatalog {
         "notify_peer", "local_notify", "speak_local", "speak_peer", "command_peer",
         "send_sms", "torch", "torch_on", "torch_off", "torch_toggle",
         "ringer", "open_app", "http", "write_file",
-        "set_var", "if_var", "wait", "mode_set", "lost_on", "lost_off", "tap_text",
+        "set_var", "if_var", "if_else", "wait", "mode_set", "lost_on", "lost_off", "tap_text",
         // v2.7 MacroDroid expansion
         "media_control", "volume_set", "brightness_set", "screen_timeout_set",
         "auto_rotate_set", "bt_toggle", "dnd_set", "vibrate", "play_sound",
@@ -106,7 +110,11 @@ object AutoCatalog {
         // v2.16 MacroDroid shortlist round
         "hotspot_toggle", "dark_theme", "battery_saver", "gps_toggle",
         "nfc_toggle", "record_video", "qr_show", "read_file",
-        "clipboard_set", "delete_var", "calc_var", "wait_until")
+        "clipboard_set", "delete_var", "calc_var", "wait_until",
+        // v2.18 (WS4)
+        "mqtt_publish",
+        // v2.18 App Locker
+        "lock_app", "unlock_app")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {

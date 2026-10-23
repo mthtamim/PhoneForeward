@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.18 App Locker management. Same sub-screen pattern as
+     Permissions: back chip header + scrolling PL cards. Grants are
+     NOT given here — the card shows their state and links to
+     Permissions (single home rule). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <ImageButton
+            android:id="@+id/btnLockerBack"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_back_chip"
+            android:contentDescription="@string/btn_back"
+            android:padding="10dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="?attr/colorOnSurface" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/PL.H1"
+                android:text="@string/alk_title" />
+
+            <TextView
+                style="@style/PL.BodySmall"
+                android:text="@string/alk_sub" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="16dp">
+
+            <!-- master + PIN + grant states -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/PL.CardView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swLockerMaster"
+                        style="@style/PL.SwitchRow"
+                        android:text="@string/alk_master" />
+
+                    <TextView
+                        android:id="@+id/tvLockerPinState"
+                        style="@style/PL.BodySmall"
+                        android:layout_marginTop="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLockerPin"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/alk_btn_set_pin"
+                        app:icon="@drawable/ic_lock" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="14dp"
+                        android:layout_marginBottom="6dp"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <TextView
+                        style="@style/PL.CardTitle"
+                        android:text="@string/alk_grants_title" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/PL.StatusLabel"
+                            android:text="@string/alk_overlay_row" />
+
+                        <TextView
+                            android:id="@+id/tvLockerOverlayState"
+                            style="@style/PL.StatusValue" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/PL.StatusLabel"
+                            android:text="@string/alk_a11y_row" />
+
+                        <TextView
+                            android:id="@+id/tvLockerA11yState"
+                            style="@style/PL.StatusValue" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLockerPerms"
+                        style="@style/PL.BtnGhost"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/btn_perms_link"
+                        app:icon="@drawable/ic_shield_check" />
+
+                    <TextView
+                        style="@style/PL.BodySmall"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/alk_note_access" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- locked apps -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/PL.CardView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/PL.CardTitle"
+                        android:text="@string/alk_locked_title" />
+
+                    <TextView
+                        android:id="@+id/tvNoLocked"
+                        style="@style/PL.BodySmall"
+                        android:text="@string/alk_none_locked" />
+
+                    <LinearLayout
+                        android:id="@+id/llLockedApps"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAddApps"
+                        style="@style/PL.BtnMint"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/alk_btn_add_apps"
+                        app:icon="@drawable/ic_grid" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- locker settings -->
+            <com.google.android.material.card.MaterialCardView
+                style="@style/PL.CardView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/PL.CardTitle"
+                        android:text="@string/alk_settings_title" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swLockerBio"
+                        style="@style/PL.SwitchRow"
+                        android:text="@string/alk_bio" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/PL.StatusLabel"
+                            android:text="@string/alk_grace_label" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLockerGrace"
+                            style="@style/PL.BtnChip"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" />
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swLockerPeer"
+                        style="@style/PL.SwitchRow"
+                        android:text="@string/alk_peer" />
+
+                    <TextView
+                        style="@style/PL.BodySmall"
+                        android:text="@string/alk_peer_hint" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swLockerIntruder"
+                        style="@style/PL.SwitchRow"
+                        android:text="@string/alk_intruder" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swLockerProtect"
+                        style="@style/PL.SwitchRow"
+                        android:text="@string/alk_protect" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swLockerNewApps"
+                        style="@style/PL.SwitchRow"
+                        android:text="@string/alk_new_apps" />
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/swLockerDisguise"
+                        style="@style/PL.SwitchRow"
+                        android:text="@string/alk_disguise" />
+
+                    <TextView
+                        style="@style/PL.BodySmall"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/alk_disguise_hint" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

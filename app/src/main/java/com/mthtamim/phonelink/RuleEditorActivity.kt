@@ -66,7 +66,9 @@ class RuleEditorActivity : LocalizedActivity() {
             "volume_up" to R.string.pg_device,
             "battery_saver_on" to R.string.pg_battery,
             "mobile_data_on" to R.string.pg_conn,
-            "ui_click" to R.string.pg_apps)
+            "ui_click" to R.string.pg_apps,
+            "mqtt_message" to R.string.pg_conn,
+            "applock_failed" to R.string.pg_apps)
         "c" -> listOf(
             "time_range" to R.string.pg_time,
             "battery_above" to R.string.pg_battery,
@@ -88,7 +90,8 @@ class RuleEditorActivity : LocalizedActivity() {
             "call_number" to R.string.pg_comm,
             "loop_start" to R.string.pg_flow,
             "reboot_device" to R.string.pg_system,
-            "hotspot_toggle" to R.string.pg_control)
+            "hotspot_toggle" to R.string.pg_control,
+            "lock_app" to R.string.pg_apps)
     }
 
     private fun typesFor(kind: String): List<String> = when (kind) {
@@ -106,6 +109,9 @@ class RuleEditorActivity : LocalizedActivity() {
         var groupRes = R.string.pg_more
         var pendingHeader: PickItem.Header? = null
         for (type in typesFor(kind)) {
+            // v2.18: if_else is added through its dedicated card
+            // button (structured editor), not the raw picker.
+            if (kind == "a" && type == "if_else") continue
             anchors[type]?.let { groupRes = it }
             val label = AutoCatalog.label(this, kind, type)
             if (q.isNotEmpty() && !label.lowercase().contains(q) &&
@@ -253,12 +259,11 @@ class RuleEditorActivity : LocalizedActivity() {
                 text = "×"
                 textSize = 17f
                 setPadding(dp(12), dp(6), dp(4), dp(6))
+                // v2.18: detach from the ACTUAL parent, so rows that
+                // live inside a group / If-Else card remove correctly
+                // too (top-level rows behave exactly as before).
                 setOnClickListener {
-                    when (kind) {
-                        "t" -> trigContainer
-                        "c" -> consContainer
-                        else -> actContainer
-                    }.removeView(root)
+                    (root.parent as? ViewGroup)?.removeView(root)
                 }
             })
             root.addView(line1)
@@ -322,6 +327,33 @@ class RuleEditorActivity : LocalizedActivity() {
         private fun refreshChip() {
             chipType.text = AutoCatalog.label(this@RuleEditorActivity, kind, type)
             etParam.hint = AutoCatalog.hint(this@RuleEditorActivity, kind, type)
+            // v2.18: the App Locker actions take a package name —
+            // tapping the param field opens the installed-apps
+            // picker instead of the keyboard (same treatment the
+            // locker's own screens give package entry).
+            if (kind == "a" && (type == "lock_app" || type == "unlock_app")) {
+                etParam.isFocusable = false
+                etParam.isFocusableInTouchMode = false
+                etParam.setOnClickListener { showAppParamPicker() }
+            } else {
+                etParam.isFocusable = true
+                etParam.isFocusableInTouchMode = true
+                etParam.setOnClickListener(null)
+            }
+        }
+
+        /** Installed-apps list for package-valued action params. */
+        private fun showAppParamPicker() {
+            val apps = AppLocker.launchableApps(this@RuleEditorActivity)
+            if (apps.isEmpty()) return
+            val labels = apps.map { it.label + "\n" + it.pkg }.toTypedArray()
+            AlertDialog.Builder(this@RuleEditorActivity)
+                .setTitle(AutoCatalog.label(this@RuleEditorActivity, kind, type))
+                .setItems(labels) { _, which ->
+                    etParam.setText(apps[which].pkg)
+                }
+                .setNegativeButton(getString(R.string.btn_cancel), null)
+                .show()
         }
 
         private fun refreshCondChip() {
@@ -355,9 +387,260 @@ class RuleEditorActivity : LocalizedActivity() {
         }
     }
 
+    // ---------------- v2.18 (WS3): condition group card ----------------
+
+    /** A condition GROUP: its own AND/OR mode chip and its own list
+     *  of condition rows (one nesting level). Serializes to a single
+     *  constraint item {type:"group", param:"{mode, items}"}; the
+     *  engine evaluates it recursively via evalConstraintList. */
+    private inner class GroupRow {
+        val root = LinearLayout(this@RuleEditorActivity)
+        private val inner = LinearLayout(this@RuleEditorActivity)
+        val rows = mutableListOf<Row>()
+        var modeAny = false
+        private val chipMode = TextView(this@RuleEditorActivity)
+
+        init {
+            root.orientation = LinearLayout.VERTICAL
+            root.setBackgroundResource(R.drawable.bg_row_card)
+            root.setPadding(dp(12), dp(10), dp(12), dp(12))
+            root.layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { setMargins(0, dp(8), 0, 0) }
+            val head = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(R.string.group_title)
+                textSize = 13.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            chipMode.setBackgroundResource(R.drawable.bg_action_ghost)
+            chipMode.setPadding(dp(12), dp(6), dp(12), dp(6))
+            chipMode.textSize = 12.5f
+            chipMode.setOnClickListener {
+                modeAny = !modeAny
+                refreshMode()
+            }
+            head.addView(chipMode)
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = "×"
+                textSize = 17f
+                setPadding(dp(12), dp(6), dp(4), dp(6))
+                setOnClickListener {
+                    (root.parent as? ViewGroup)?.removeView(root)
+                }
+            })
+            root.addView(head)
+            inner.orientation = LinearLayout.VERTICAL
+            root.addView(inner)
+            root.addView(Button(this@RuleEditorActivity).apply {
+                text = getString(R.string.auto_add_constraint)
+                setOnClickListener { addCond("", "", null) }
+            })
+            refreshMode()
+        }
+
+        private fun refreshMode() {
+            chipMode.text = getString(if (modeAny) R.string.auto_cons_any
+                else R.string.auto_cons_all)
+        }
+
+        fun addCond(type: String, param: String, extra: JSONObject?) {
+            val row = Row("c", type.ifEmpty { typesFor("c").first() }, param)
+            rows.add(row)
+            inner.addView(row.root)
+            if (extra != null) row.loadExtra(extra)
+        }
+
+        fun toJson(): JSONObject {
+            val items = JSONArray()
+            for (r in rows) if (r.root.parent != null) items.put(r.toJson())
+            val g = JSONObject()
+                .put("mode", if (modeAny) "any" else "all")
+                .put("items", items)
+            return JSONObject().put("type", "group")
+                .put("param", g.toString())
+        }
+
+        fun load(o: JSONObject) {
+            val g = try { JSONObject(o.optString("param")) }
+                catch (e: Exception) { return }
+            modeAny = g.optString("mode") == "any"
+            refreshMode()
+            val items = g.optJSONArray("items") ?: return
+            for (i in 0 until items.length()) {
+                val c = items.optJSONObject(i) ?: continue
+                if (c.optString("type") == "group") continue // one level
+                addCond(c.optString("type"), c.optString("param"), c)
+            }
+        }
+    }
+
+    // ---------------- v2.18 (WS3): If/Else action card ----------------
+
+    /** The structured If/Else step: a flat condition list (with the
+     *  same AND/OR chip) plus then/else action lists, one level deep.
+     *  Serializes to one action {type:"if_else", param: JSON
+     *  {mode, constraints, then, else}} for the engine interpreter. */
+    private inner class IfElseRow {
+        val root = LinearLayout(this@RuleEditorActivity)
+        val condRows = mutableListOf<Row>()
+        val thenRows = mutableListOf<Row>()
+        val elseRows = mutableListOf<Row>()
+        var modeAny = false
+        private val chipMode = TextView(this@RuleEditorActivity)
+        private val condBox = LinearLayout(this@RuleEditorActivity)
+        private val thenBox = LinearLayout(this@RuleEditorActivity)
+        private val elseBox = LinearLayout(this@RuleEditorActivity)
+
+        init {
+            root.orientation = LinearLayout.VERTICAL
+            root.setBackgroundResource(R.drawable.bg_row_card)
+            root.setPadding(dp(12), dp(10), dp(12), dp(12))
+            root.layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { setMargins(0, dp(8), 0, 0) }
+            val head = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = AutoCatalog.label(this@RuleEditorActivity,
+                    "a", "if_else")
+                textSize = 13.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            chipMode.setBackgroundResource(R.drawable.bg_action_ghost)
+            chipMode.setPadding(dp(12), dp(6), dp(12), dp(6))
+            chipMode.textSize = 12.5f
+            chipMode.setOnClickListener {
+                modeAny = !modeAny
+                refreshMode()
+            }
+            head.addView(chipMode)
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = "×"
+                textSize = 17f
+                setPadding(dp(12), dp(6), dp(4), dp(6))
+                setOnClickListener {
+                    (root.parent as? ViewGroup)?.removeView(root)
+                }
+            })
+            root.addView(head)
+            section(R.string.ifelse_when, condBox) {
+                addCond("", "", null) }
+            section(R.string.ifelse_then, thenBox) {
+                addThen("", "", null) }
+            section(R.string.ifelse_else, elseBox) {
+                addElse("", "", null) }
+            refreshMode()
+        }
+
+        private fun section(labelRes: Int, box: LinearLayout,
+                            onAdd: () -> Unit) {
+            root.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(labelRes)
+                textSize = 12.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(0, dp(10), 0, 0)
+            })
+            box.orientation = LinearLayout.VERTICAL
+            root.addView(box)
+            root.addView(Button(this@RuleEditorActivity).apply {
+                text = getString(
+                    if (box === condBox) R.string.auto_add_constraint
+                    else R.string.auto_add_action)
+                setOnClickListener { onAdd() }
+            })
+        }
+
+        private fun refreshMode() {
+            chipMode.text = getString(if (modeAny) R.string.auto_cons_any
+                else R.string.auto_cons_all)
+        }
+
+        fun addCond(type: String, param: String, extra: JSONObject?) {
+            val row = Row("c", type.ifEmpty { typesFor("c").first() }, param)
+            condRows.add(row)
+            condBox.addView(row.root)
+            if (extra != null) row.loadExtra(extra)
+        }
+
+        fun addThen(type: String, param: String, extra: JSONObject?) {
+            val row = Row("a",
+                type.ifEmpty { typesFor("a").first() }, param)
+            thenRows.add(row)
+            thenBox.addView(row.root)
+            if (extra != null) row.loadExtra(extra)
+        }
+
+        fun addElse(type: String, param: String, extra: JSONObject?) {
+            val row = Row("a",
+                type.ifEmpty { typesFor("a").first() }, param)
+            elseRows.add(row)
+            elseBox.addView(row.root)
+            if (extra != null) row.loadExtra(extra)
+        }
+
+        fun toJson(): JSONObject {
+            val conds = JSONArray()
+            for (r in condRows) if (r.root.parent != null)
+                conds.put(r.toJson())
+            val then = JSONArray()
+            for (r in thenRows) if (r.root.parent != null)
+                then.put(r.toJson())
+            val els = JSONArray()
+            for (r in elseRows) if (r.root.parent != null)
+                els.put(r.toJson())
+            val spec = JSONObject()
+                .put("mode", if (modeAny) "any" else "all")
+                .put("constraints", conds)
+                .put("then", then)
+                .put("else", els)
+            return JSONObject().put("type", "if_else")
+                .put("param", spec.toString())
+        }
+
+        fun load(o: JSONObject) {
+            val spec = try { JSONObject(o.optString("param")) }
+                catch (e: Exception) { return }
+            modeAny = spec.optString("mode") == "any"
+            refreshMode()
+            val conds = spec.optJSONArray("constraints")
+            if (conds != null) for (i in 0 until conds.length()) {
+                val c = conds.optJSONObject(i) ?: continue
+                if (c.optString("type") == "group") continue
+                addCond(c.optString("type"), c.optString("param"), c)
+            }
+            val then = spec.optJSONArray("then")
+            if (then != null) for (i in 0 until then.length()) {
+                val a = then.optJSONObject(i) ?: continue
+                addThen(a.optString("type"), a.optString("param"), a)
+            }
+            val els = spec.optJSONArray("else")
+            if (els != null) for (i in 0 until els.length()) {
+                val a = els.optJSONObject(i) ?: continue
+                addElse(a.optString("type"), a.optString("param"), a)
+            }
+        }
+    }
+
     private val trigRows = mutableListOf<Row>()
     private val consRows = mutableListOf<Row>()
     private val actRows = mutableListOf<Row>()
+    // v2.18: groups live beside the flat constraint rows; action
+    // items (plain rows and If/Else cards) share ONE ordered list so
+    // the saved action sequence matches the visual order exactly.
+    private val consGroups = mutableListOf<GroupRow>()
+    private val actItems = mutableListOf<Any>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -375,8 +658,17 @@ class RuleEditorActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnAddConstraint).setOnClickListener {
             addRow("c", "", "")
         }
+        findViewById<Button>(R.id.btnAddGroup).setOnClickListener {
+            addGroupRow(null)
+        }
         findViewById<Button>(R.id.btnAddAction).setOnClickListener {
             addRow("a", "", "")
+        }
+        findViewById<Button>(R.id.btnAddIfElse).setOnClickListener {
+            addIfElseRow(null)
+        }
+        findViewById<Button>(R.id.btnTraceRule).setOnClickListener {
+            showTrace()
         }
         findViewById<Button>(R.id.btnSaveRule).setOnClickListener { save() }
         findViewById<Button>(R.id.btnTestRule).setOnClickListener {
@@ -403,12 +695,14 @@ class RuleEditorActivity : LocalizedActivity() {
             val cons = existing.optJSONArray("constraints")
             if (cons != null) for (i in 0 until cons.length()) {
                 val c = cons.optJSONObject(i) ?: continue
-                addRow("c", c.optString("type"), c.optString("param"), c)
+                if (c.optString("type") == "group") addGroupRow(c)
+                else addRow("c", c.optString("type"), c.optString("param"), c)
             }
             val acts = existing.optJSONArray("actions")
             if (acts != null) for (i in 0 until acts.length()) {
                 val a = acts.optJSONObject(i) ?: continue
-                addRow("a", a.optString("type"), a.optString("param"), a)
+                if (a.optString("type") == "if_else") addIfElseRow(a)
+                else addRow("a", a.optString("type"), a.optString("param"), a)
             }
             val btnDelete = findViewById<Button>(R.id.btnDeleteRule)
             btnDelete.visibility = View.VISIBLE
@@ -416,9 +710,12 @@ class RuleEditorActivity : LocalizedActivity() {
                 Automation.delete(this, ruleId)
                 finish()
             }
+            val btnHistory = findViewById<Button>(R.id.btnHistoryRule)
+            btnHistory.visibility = View.VISIBLE
+            btnHistory.setOnClickListener { showHistory() }
         }
         if (trigRows.isEmpty()) addRow("t", "time_at", "")
-        if (actRows.isEmpty()) addRow("a", "notify_peer", "")
+        if (actItems.isEmpty()) addRow("a", "notify_peer", "")
         buildCategoryChips(existing?.optString("cat") ?: "")
     }
 
@@ -463,9 +760,83 @@ class RuleEditorActivity : LocalizedActivity() {
         when (kind) {
             "t" -> { trigRows.add(row); trigContainer.addView(row.root) }
             "c" -> { consRows.add(row); consContainer.addView(row.root) }
-            else -> { actRows.add(row); actContainer.addView(row.root) }
+            else -> { actRows.add(row); actItems.add(row)
+                actContainer.addView(row.root) }
         }
         if (extra != null) row.loadExtra(extra)
+    }
+
+    private fun addGroupRow(existing: JSONObject?) {
+        val g = GroupRow()
+        consGroups.add(g)
+        consContainer.addView(g.root)
+        if (existing != null) g.load(existing) else g.addCond("", "", null)
+    }
+
+    private fun addIfElseRow(existing: JSONObject?) {
+        val r = IfElseRow()
+        actItems.add(r)
+        actContainer.addView(r.root)
+        if (existing != null) r.load(existing) else {
+            r.addCond("", "", null)
+            r.addThen("notify_peer", "", null)
+        }
+    }
+
+    /** v2.18 (WS2): the "কেন চলল না" explainer — evaluates the rule
+     *  being edited WITHOUT running it (engine evaluation, off the
+     *  UI thread because live reads can block). */
+    private fun showTrace() {
+        val rule = buildRule()
+        Toast.makeText(this, getString(R.string.trace_running),
+            Toast.LENGTH_SHORT).show()
+        Thread {
+            val lines = Automation.traceRule(this, rule)
+            runOnUiThread {
+                if (isFinishing) return@runOnUiThread
+                AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.trace_title))
+                    .setMessage(lines.joinToString("\n"))
+                    .setPositiveButton(getString(android.R.string.ok), null)
+                    .show()
+            }
+        }.start()
+    }
+
+    /** v2.18 (WS2): previous versions of this rule, newest first;
+     *  tapping one asks, then rolls back (which itself snapshots the
+     *  current version first, so the rollback is undoable). */
+    private fun showHistory() {
+        val hist = Automation.ruleHistory(this, ruleId)
+        if (hist.isEmpty()) {
+            Toast.makeText(this, getString(R.string.history_empty),
+                Toast.LENGTH_SHORT).show()
+            return
+        }
+        val fmt = java.text.SimpleDateFormat("dd MMM yyyy, HH:mm",
+            java.util.Locale.getDefault())
+        val labels = hist.map {
+            fmt.format(java.util.Date(it.first)) }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.history_title))
+            .setItems(labels) { _, which ->
+                AlertDialog.Builder(this)
+                    .setMessage(getString(
+                        R.string.history_confirm, labels[which]))
+                    .setPositiveButton(
+                        getString(R.string.btn_rollback)) { _, _ ->
+                        if (Automation.rollbackRule(this, ruleId, which)) {
+                            Toast.makeText(this,
+                                getString(R.string.history_restored),
+                                Toast.LENGTH_SHORT).show()
+                            finish()
+                        }
+                    }
+                    .setNegativeButton(getString(R.string.btn_cancel), null)
+                    .show()
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
     }
 
     private fun buildRule(): JSONObject {
@@ -493,9 +864,21 @@ class RuleEditorActivity : LocalizedActivity() {
             if (cgConsMode.checkedChipId == R.id.chipConsAny) "any" else "all")
         val cons = JSONArray()
         for (row in consRows) if (row.root.parent != null) cons.put(row.toJson())
+        // v2.18 (WS3): group cards serialize after the flat rows.
+        // Old rules have no groups, so their JSON is unchanged.
+        for (g in consGroups) if (g.root.parent != null) cons.put(g.toJson())
         rule.put("constraints", cons)
         val acts = JSONArray()
-        for (row in actRows) if (row.root.parent != null) acts.put(row.toJson())
+        // v2.18: one ordered pass over rows AND If/Else cards, so the
+        // saved sequence is the visual sequence.
+        for (item in actItems) {
+            when (item) {
+                is Row -> if (item.root.parent != null)
+                    acts.put(item.toJson())
+                is IfElseRow -> if (item.root.parent != null)
+                    acts.put(item.toJson())
+            }
+        }
         rule.put("actions", acts)
         return rule
     }

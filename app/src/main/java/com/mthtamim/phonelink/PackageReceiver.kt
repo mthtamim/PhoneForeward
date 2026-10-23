@@ -9,6 +9,16 @@ import android.content.Intent
 class PackageReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val ctx = context.applicationContext
+        // v2.18 App Locker: auto-lock fresh installs — independent
+        // of the forwarding toggles below (it is a local feature).
+        if (intent.action == Intent.ACTION_PACKAGE_ADDED &&
+            !intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) {
+            val newPkg = intent.data?.schemeSpecificPart
+            if (!newPkg.isNullOrEmpty() && newPkg != ctx.packageName) {
+                try { AppLocker.onPackageAdded(ctx, newPkg) }
+                catch (_: Exception) { }
+            }
+        }
         if (!Config.isSender(ctx) || !Config.fwdApps(ctx)) return
         if (intent.getBooleanExtra(Intent.EXTRA_REPLACING, false)) return
         val pkg = intent.data?.schemeSpecificPart ?: return

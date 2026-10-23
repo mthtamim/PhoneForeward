@@ -17,8 +17,9 @@ import kotlin.concurrent.thread
 
 /**
  * Permission wizard — v2.17.4: the ONE place every access is granted
- * and checked. The gauge counts the full set (12 runtime + 8 special
- * = 20, from PermChecks); contextual permissions (Bluetooth, mic,
+ * and checked. The gauge counts the full set (12 runtime + 9 special
+ * = 21, from PermChecks; the Overlay row joined in v2.18 for the
+ * App Locker); contextual permissions (Bluetooth, mic,
  * calendar, install) show as status lines below, with calendar
  * requested right here (its only grant home) and Bluetooth/mic
  * deep-linking to the screens that request them.
@@ -40,6 +41,7 @@ class PermissionsActivity : LocalizedActivity() {
     private lateinit var tvShizukuState: TextView
     private lateinit var tvExactState: TextView
     private lateinit var tvWriteState: TextView
+    private lateinit var tvOverlayState: TextView
     private lateinit var tvBtState: TextView
     private lateinit var tvMicState: TextView
     private lateinit var tvCalState: TextView
@@ -62,6 +64,7 @@ class PermissionsActivity : LocalizedActivity() {
         tvShizukuState = findViewById(R.id.tvPermShizukuState)
         tvExactState = findViewById(R.id.tvPermExactState)
         tvWriteState = findViewById(R.id.tvPermWriteState)
+        tvOverlayState = findViewById(R.id.tvPermOverlayState)
         tvBtState = findViewById(R.id.tvPermBtState)
         tvMicState = findViewById(R.id.tvPermMicState)
         tvCalState = findViewById(R.id.tvPermCalState)
@@ -181,6 +184,17 @@ class PermissionsActivity : LocalizedActivity() {
                 catch (_: Exception) { }
             }
         }
+        // Overlay — v2.18: the App Locker's cover window grant;
+        // opens this app's "display over other apps" page directly.
+        findViewById<View>(R.id.btnPermOverlay).setOnClickListener {
+            try {
+                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:$packageName")))
+            } catch (_: Exception) {
+                try { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)) }
+                catch (_: Exception) { }
+            }
+        }
         // Contextual rows: Bluetooth and mic are requested by their
         // own feature screens — these buttons are links, not grants.
         findViewById<View>(R.id.btnPermBtOpen).setOnClickListener {
@@ -232,7 +246,7 @@ class PermissionsActivity : LocalizedActivity() {
         val okColor = ContextCompat.getColor(this, R.color.status_ok)
         val badColor = ContextCompat.getColor(this, R.color.status_bad)
 
-        // Gauge: the full 20-item set from PermChecks.
+        // Gauge: the full 21-item set from PermChecks.
         val total = PermChecks.totalCount(this)
         val granted = PermChecks.grantedCount(this)
         pbGauge.progress = if (total > 0) granted * 100 / total else 0
@@ -262,6 +276,7 @@ class PermissionsActivity : LocalizedActivity() {
         setState(tvShizukuState, ShizukuHelper.granted(), okColor, badColor)
         setState(tvExactState, PermChecks.exactAlarmOk(this), okColor, badColor)
         setState(tvWriteState, PermChecks.writeSettingsOk(this), okColor, badColor)
+        setState(tvOverlayState, PermChecks.overlayOk(this), okColor, badColor)
 
         setState(tvBtState, PermChecks.btOk(this), okColor, badColor)
         setState(tvMicState, PermChecks.micOk(this), okColor, badColor)

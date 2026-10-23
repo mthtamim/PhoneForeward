@@ -77,6 +77,8 @@ object Automation {
         if (!applyingRemote && Config.rulesSyncOn(ctx) && newJson.length < 120_000) {
             try { Relay.send(ctx, "RULESYNC", "", newJson) } catch (_: Exception) { }
         }
+        // v2.18 (WS4): the MQTT subscription set follows the rules.
+        try { MqttManager.refreshSubscriptions(ctx) } catch (_: Exception) { }
     }
 
     /** v2.9: replaces the rule set with one received from the peer phone. */
@@ -115,12 +117,69 @@ object Automation {
         val list = rules(ctx)
         val id = rule.optString("id")
         val idx = list.indexOfFirst { it.optString("id") == id }
+        // v2.18 (WS2): snapshot the PREVIOUS version of this rule
+        // before it is replaced, so the editor can roll back.
+        if (idx >= 0) snapshotRule(ctx, list[idx])
         if (idx >= 0) list[idx] = rule else list.add(rule)
         saveAll(ctx, list)
     }
 
     fun delete(ctx: Context, id: String) {
         saveAll(ctx, rules(ctx).filter { it.optString("id") != id })
+        // v2.18 (WS2): a deleted rule takes its version history along.
+        prefs(ctx).edit().remove("rule_history_$id").apply()
+    }
+
+    // ---------------- v2.18 (WS2): per-rule version history ----------------
+    /** Snapshots [old] (the version about to be replaced) into the
+     *  per-rule history, newest first, capped at 5 entries. */
+    private fun snapshotRule(ctx: Context, old: JSONObject) {
+        try {
+            val id = old.optString("id")
+            if (id.isEmpty()) return
+            val key = "rule_history_$id"
+            val arr = try { JSONArray(prefs(ctx).getString(key, "[]")) }
+                catch (e: Exception) { JSONArray() }
+            val next = JSONArray()
+            next.put(JSONObject().put("t", System.currentTimeMillis())
+                .put("rule", old.toString()))
+            for (i in 0 until arr.length()) {
+                if (next.length() >= 5) break
+                arr.optJSONObject(i)?.let { next.put(it) }
+            }
+            prefs(ctx).edit().putString(key, next.toString()).apply()
+        } catch (_: Exception) { }
+    }
+
+    /** (savedAtMillis, ruleJson) pairs for one rule, newest first. */
+    fun ruleHistory(ctx: Context, id: String): List<Pair<Long, JSONObject>> {
+        val out = mutableListOf<Pair<Long, JSONObject>>()
+        try {
+            val arr = JSONArray(prefs(ctx).getString(
+                "rule_history_$id", "[]") ?: "[]")
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val r = try { JSONObject(o.optString("rule")) }
+                    catch (e: Exception) { null } ?: continue
+                out.add(o.optLong("t") to r)
+            }
+        } catch (_: Exception) { }
+        return out
+    }
+
+    /** Restores history entry [index] of rule [id]. The version being
+     *  replaced is itself snapshotted first, so a rollback can be
+     *  undone by rolling back again. */
+    fun rollbackRule(ctx: Context, id: String, index: Int): Boolean {
+        val hist = ruleHistory(ctx, id)
+        val snap = hist.getOrNull(index)?.second ?: return false
+        val list = rules(ctx)
+        val idx = list.indexOfFirst { it.optString("id") == id }
+        if (idx < 0) return false
+        snapshotRule(ctx, list[idx])
+        list[idx] = snap
+        saveAll(ctx, list)
+        return true
     }
 
     fun setEnabled(ctx: Context, id: String, on: Boolean) {
@@ -575,10 +634,18 @@ object Automation {
                         it.optString("type") == event } ?: continue
                     if (!triggerParamMatches(ctx, event, trig.optString("param"), data)) continue
                     if (debounced(ctx, rule.optString("id"), now)) continue
-                    if (!constraintsPass(ctx, rule)) continue
+                    // v2.18 (WS2): the log entry now carries the
+                    // condition verdict, for fires AND for skips, so
+                    // the Log explains "কেন চলল না" after the fact.
+                    if (!constraintsPass(ctx, rule)) {
+                        log(ctx, "⏭ " + rule.optString("name") + " (" + event +
+                            ") — " + verdictSummary(ctx, rule))
+                        continue
+                    }
                     markFired(ctx, rule.optString("id"), now)
                     ruleNameHint = rule.optString("name")
-                    log(ctx, "▶ " + rule.optString("name") + " (" + event + ")")
+                    log(ctx, "▶ " + rule.optString("name") + " (" + event +
+                        ") — " + verdictSummary(ctx, rule))
                     runActions(ctx, rule, data, 0)
                 }
             } catch (e: Exception) { /* automation must never crash the host */ }
@@ -685,7 +752,7 @@ object Automation {
                 hay.contains(param.lowercase())
             }
             "app_launched", "app_closed", "app_installed", "app_removed",
-            "app_updated", "camera_used", "mic_used" ->
+            "app_updated", "camera_used", "mic_used", "applock_failed" ->
                 data.optString("pkg") == param
             "bt_connected", "bt_disconnected", "bt_near", "bt_far" ->
                 data.optString("title").contains(param, ignoreCase = true)
@@ -695,19 +762,63 @@ object Automation {
             "var_changed" -> data.optString("title") == param
             "file_changed" -> data.optString("title") == param
             "activity" -> data.optString("kind") == param
+            // v2.18 (WS4): param = topic filter, optionally
+            // "|payload-contains" appended after a pipe.
+            "mqtt_message" -> mqttTopicMatches(param, data)
             else -> true
         }
+    }
+
+    /** v2.18 (WS4): MQTT topic-filter match (+ and # wildcards) with an
+     *  optional payload-contains suffix after a '|' in the param. */
+    private fun mqttTopicMatches(param: String, data: JSONObject): Boolean {
+        val filter = param.substringBefore("|").trim()
+        val contains = if (param.contains("|"))
+            param.substringAfter("|").trim() else ""
+        val topic = data.optString("topic")
+        if (filter.isNotEmpty() && !mqttFilterMatch(filter, topic)) return false
+        if (contains.isNotEmpty() &&
+            !data.optString("body").contains(contains, ignoreCase = true))
+            return false
+        return true
+    }
+
+    private fun mqttFilterMatch(filter: String, topic: String): Boolean {
+        val f = filter.split("/")
+        val t = topic.split("/")
+        var i = 0
+        while (i < f.size) {
+            if (f[i] == "#") return true
+            if (i >= t.size) return false
+            if (f[i] != "+" && f[i] != t[i]) return false
+            i++
+        }
+        return f.size == t.size
     }
 
     // ---------------- constraints ----------------
     fun constraintsPass(ctx: Context, rule: JSONObject): Boolean {
         val arr = rule.optJSONArray("constraints") ?: return true
-        val any = rule.optString("constraints_mode") == "any"
+        return evalConstraintList(ctx, arr,
+            rule.optString("constraints_mode") == "any")
+    }
+
+    /**
+     * v2.18 (WS3): the ONE constraint-list evaluator — flat lists and
+     * GROUP nodes alike. A group item is
+     * {type:"group", param:"{mode, items:[...]}"} and recurses into
+     * this same function, so the engine, the If/Else action and the
+     * Trace view can never disagree. A pre-v2.18 flat list takes the
+     * exact old path: each item is constraintOk + optional negate,
+     * combined by the list's AND/OR mode.
+     */
+    private fun evalConstraintList(ctx: Context, arr: JSONArray,
+                                   any: Boolean): Boolean {
         var saw = false
         for (i in 0 until arr.length()) {
             val c = arr.optJSONObject(i) ?: continue
             saw = true
-            var ok = constraintOk(ctx, c.optString("type"), c.optString("param"))
+            var ok = evalConstraintItem(ctx, c)
             if (c.optBoolean("negate")) ok = !ok
             if (any && ok) return true
             if (!any && !ok) return false
@@ -715,7 +826,58 @@ object Automation {
         return if (any) !saw else true
     }
 
-    private fun constraintOk(ctx: Context, type: String, param: String): Boolean {
+    /** One constraint item: a group node recurses; anything else is
+     *  judged by constraintOk — the single leaf evaluator. */
+    private fun evalConstraintItem(ctx: Context, c: JSONObject): Boolean {
+        if (c.optString("type") == "group") {
+            val g = try { JSONObject(c.optString("param")) }
+                catch (e: Exception) { return true }
+            val items = g.optJSONArray("items") ?: return true
+            return evalConstraintList(ctx, items, g.optString("mode") == "any")
+        }
+        return constraintOk(ctx, c.optString("type"), c.optString("param"))
+    }
+
+    /** v2.18 (WS2): bounded one-line verdict for the automation log —
+     *  leaf conditions passed/total plus the first failing one's
+     *  observed value. Informational only; the fire/skip decision
+     *  itself always comes from constraintsPass above. */
+    private fun verdictSummary(ctx: Context, rule: JSONObject): String {
+        val arr = rule.optJSONArray("constraints")
+        if (arr == null || arr.length() == 0)
+            return ctx.getString(R.string.verdict_no_cons)
+        var total = 0
+        var passed = 0
+        var firstFail = ""
+        fun walk(a: JSONArray) {
+            for (i in 0 until a.length()) {
+                val c = a.optJSONObject(i) ?: continue
+                if (c.optString("type") == "group") {
+                    val g = try { JSONObject(c.optString("param")) }
+                        catch (e: Exception) { null }
+                    g?.optJSONArray("items")?.let { walk(it) }
+                    continue
+                }
+                total++
+                var ok = constraintOk(ctx, c.optString("type"),
+                    c.optString("param"))
+                if (c.optBoolean("negate")) ok = !ok
+                if (ok) passed++ else if (firstFail.isEmpty())
+                    firstFail = describeConstraint(ctx, c.optString("type"),
+                        c.optString("param"))
+            }
+        }
+        walk(arr)
+        return if (passed == total)
+            ctx.getString(R.string.verdict_all, total)
+        else ctx.getString(R.string.verdict_some, passed, total,
+            firstFail.take(48))
+    }
+
+    /** The single leaf-condition evaluator. Public since v2.18 so the
+     *  Trace view (and only it, via evalConstraintItem) reads verdicts
+     *  from here instead of a forked copy. */
+    fun constraintOk(ctx: Context, type: String, param: String): Boolean {
         return try {
             when (type) {
                 "notif_present" -> NotifListener.hasNotification(param.trim())
@@ -925,6 +1087,292 @@ object Automation {
         return getVar(ctx, param).isNotEmpty()
     }
 
+    // ---------------- v2.18 (WS2): execution trace ----------------
+    /**
+     * Evaluates [rule] WITHOUT running its actions and returns one
+     * readable line per trigger and per condition (✓ / ✗ / •), plus a
+     * final overall line. Every condition verdict comes from
+     * evalConstraintItem → constraintOk (the engine's own evaluator);
+     * the text beside it is describeConstraint's observed value.
+     * Pure-event triggers are reported honestly as event-based.
+     * Runs live reads (location_in can block seconds) — call off the
+     * UI thread.
+     */
+    fun traceRule(ctx: Context, rule: JSONObject): List<String> {
+        val lines = mutableListOf<String>()
+        for (trig in ruleTriggers(rule)) {
+            val type = trig.optString("type")
+            val param = trig.optString("param")
+            val label = AutoCatalog.label(ctx, "t", type)
+            val (verdict, observed) = triggerLive(ctx, type, param)
+            lines.add(when (verdict) {
+                null -> "• " + label + " — " +
+                    ctx.getString(R.string.trace_event_based) +
+                    (if (observed.isNotEmpty()) " ($observed)" else "")
+                true -> "✓ " + label +
+                    (if (observed.isNotEmpty()) " — " + observed else "")
+                false -> "✗ " + label +
+                    (if (observed.isNotEmpty()) " — " + observed else "")
+            })
+        }
+        val arr = rule.optJSONArray("constraints")
+        if (arr == null || arr.length() == 0) {
+            lines.add("✓ " + ctx.getString(R.string.verdict_no_cons))
+        } else {
+            traceConstraintList(ctx, arr, lines, 0)
+        }
+        lines.add("— " + (if (constraintsPass(ctx, rule))
+            ctx.getString(R.string.trace_would_run)
+        else ctx.getString(R.string.trace_would_block)))
+        return lines
+    }
+
+    private fun traceConstraintList(ctx: Context, arr: JSONArray,
+                                    lines: MutableList<String>, depth: Int) {
+        val indent = "  ".repeat(depth)
+        for (i in 0 until arr.length()) {
+            val c = arr.optJSONObject(i) ?: continue
+            val type = c.optString("type")
+            if (type == "group") {
+                val g = try { JSONObject(c.optString("param")) }
+                    catch (e: Exception) { null }
+                val mode = if (g?.optString("mode") == "any")
+                    ctx.getString(R.string.auto_cons_any)
+                else ctx.getString(R.string.auto_cons_all)
+                var ok = evalConstraintItem(ctx, c)
+                if (c.optBoolean("negate")) ok = !ok
+                lines.add(indent + (if (ok) "✓ " else "✗ ") +
+                    ctx.getString(R.string.trace_group, mode))
+                g?.optJSONArray("items")?.let {
+                    traceConstraintList(ctx, it, lines, depth + 1) }
+                continue
+            }
+            var ok = constraintOk(ctx, type, c.optString("param"))
+            if (c.optBoolean("negate")) ok = !ok
+            val label = AutoCatalog.label(ctx, "c", type)
+            val observed = describeConstraint(ctx, type, c.optString("param"))
+            lines.add(indent + (if (ok) "✓ " else "✗ ") + label +
+                (if (observed.isNotEmpty()) " — " + observed else "") +
+                (if (c.optBoolean("negate"))
+                    " " + ctx.getString(R.string.trace_negated) else ""))
+        }
+    }
+
+    /** Observed live value for one leaf condition, as short text
+     *  (e.g. "Battery 74% (needs ≥ 80%)"). Formatting only — the
+     *  verdict always comes from constraintOk. "" when there is no
+     *  useful live reading to show. */
+    private fun describeConstraint(ctx: Context, type: String,
+                                   param: String): String {
+        val p = param.trim()
+        return try {
+            when (type) {
+                "battery_above" -> ctx.getString(R.string.trace_batt_above,
+                    batteryPct(ctx), p)
+                "battery_below" -> ctx.getString(R.string.trace_batt_below,
+                    batteryPct(ctx), p)
+                "battery_temp_above", "battery_temp_below" ->
+                    ctx.getString(R.string.trace_batt_temp,
+                        batteryTempC(ctx).toString(), p)
+                "time_range" -> ctx.getString(R.string.trace_time_range,
+                    SimpleDateFormat("HH:mm", Locale.US).format(Date()), p)
+                "date_range", "day_of_month", "day_of_week" ->
+                    ctx.getString(R.string.trace_today, dayKey(), p)
+                "wifi_ssid" -> ctx.getString(R.string.trace_wifi,
+                    currentSsid(ctx), p)
+                "variable" -> {
+                    val name = p.split(Regex("[<>=]"))[0].trim()
+                    ctx.getString(R.string.trace_var,
+                        name, getVar(ctx, name), p)
+                }
+                "steps_today" -> ctx.getString(R.string.trace_steps,
+                    ctx.getSharedPreferences("phonelink_state",
+                        Context.MODE_PRIVATE).getInt("steps_today", 0), p)
+                "peer_battery_above" -> ctx.getString(
+                    R.string.trace_peer_batt,
+                    Peers.list(ctx).firstOrNull()?.battery ?: -1, p)
+                "foreground_app" -> ctx.getString(R.string.trace_fg_app,
+                    foregroundPkg(ctx), p)
+                "notif_present" -> ctx.getString(R.string.trace_state,
+                    if (NotifListener.hasNotification(p))
+                        ctx.getString(R.string.trace_word_yes)
+                    else ctx.getString(R.string.trace_word_no), p)
+                "location_in" -> if (Config.geoIsSet(ctx))
+                    ctx.getString(R.string.trace_geo_set)
+                else ctx.getString(R.string.trace_geo_unset)
+                "speed_above" -> ctx.getString(R.string.trace_speed,
+                    speedKmh(ctx).toInt().toString(), p)
+                "uptime_above" -> ctx.getString(R.string.trace_uptime,
+                    (android.os.SystemClock.elapsedRealtime() / 60_000)
+                        .toString(), p)
+                "light_below", "light_above" -> ctx.getString(
+                    R.string.trace_light,
+                    prefs(ctx).getFloat("last_lux", -1f).toString(), p)
+                "charging_type" -> {
+                    val bi = ctx.registerReceiver(null,
+                        android.content.IntentFilter(
+                            Intent.ACTION_BATTERY_CHANGED))
+                    val plugged = bi?.getIntExtra(
+                        BatteryManager.EXTRA_PLUGGED, 0) ?: 0
+                    val kind = when (plugged) {
+                        BatteryManager.BATTERY_PLUGGED_AC -> "ac"
+                        BatteryManager.BATTERY_PLUGGED_USB -> "usb"
+                        BatteryManager.BATTERY_PLUGGED_WIRELESS -> "wireless"
+                        else -> "none"
+                    }
+                    ctx.getString(R.string.trace_state, kind, p)
+                }
+                "charging", "screen", "music_playing", "vpn", "roaming",
+                "dark_mode", "dnd", "airplane", "keyguard_locked",
+                "battery_saver", "data_saver", "mobile_data", "gps_state",
+                "hotspot_state", "peer_online", "calendar_busy",
+                "headset_mic", "proximity_near" -> ctx.getString(
+                    R.string.trace_state,
+                    if (constraintOk(ctx, type, "on"))
+                        ctx.getString(R.string.trace_word_on)
+                    else ctx.getString(R.string.trace_word_off), p)
+                else -> ""
+            }
+        } catch (e: Exception) { "" }
+    }
+
+    /** Live state for a trigger, as (verdict, observed text). A null
+     *  verdict means the trigger is event-based and cannot be checked
+     *  now — reported honestly by traceRule, never faked. State
+     *  triggers read the same live sources the engine polls. */
+    private fun triggerLive(ctx: Context, type: String,
+                            param: String): Pair<Boolean?, String> {
+        val p = param.trim()
+        return try {
+            when (type) {
+                "battery_below" ->
+                    (batteryPct(ctx) <= (p.toIntOrNull() ?: 100)) to
+                        ctx.getString(R.string.trace_batt_below,
+                            batteryPct(ctx), p)
+                "battery_above" ->
+                    (batteryPct(ctx) >= (p.toIntOrNull() ?: 0)) to
+                        ctx.getString(R.string.trace_batt_above,
+                            batteryPct(ctx), p)
+                "battery_full" ->
+                    (batteryPct(ctx) >= 100) to ctx.getString(
+                        R.string.trace_batt_above, batteryPct(ctx), "100")
+                "charging_on" -> isCharging(ctx) to ctx.getString(
+                    R.string.trace_state,
+                    if (isCharging(ctx)) ctx.getString(R.string.trace_word_on)
+                    else ctx.getString(R.string.trace_word_off), "")
+                "charging_off" -> (!isCharging(ctx)) to ctx.getString(
+                    R.string.trace_state,
+                    if (isCharging(ctx)) ctx.getString(R.string.trace_word_on)
+                    else ctx.getString(R.string.trace_word_off), "")
+                "wifi_connected" -> {
+                    val ssid = currentSsid(ctx)
+                    (ssid.isNotEmpty() && (p.isEmpty() ||
+                        ssid.equals(p, true))) to
+                        ctx.getString(R.string.trace_wifi, ssid, p)
+                }
+                "wifi_disconnected" ->
+                    (currentSsid(ctx).isEmpty()) to ctx.getString(
+                        R.string.trace_wifi, currentSsid(ctx), p)
+                "screen_on", "screen_off" -> {
+                    val pm = ctx.getSystemService(Context.POWER_SERVICE)
+                        as android.os.PowerManager
+                    val on = pm.isInteractive
+                    ((type == "screen_on") == on) to ctx.getString(
+                        R.string.trace_state,
+                        if (on) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "screen_locked", "screen_unlocked" -> {
+                    val km = ctx.getSystemService(Context.KEYGUARD_SERVICE)
+                        as android.app.KeyguardManager
+                    val locked = km.isKeyguardLocked
+                    ((type == "screen_locked") == locked) to ctx.getString(
+                        R.string.trace_state,
+                        if (locked) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "dnd_on", "dnd_off" -> {
+                    val onState = constraintOk(ctx, "dnd", "on")
+                    ((type == "dnd_on") == onState) to ctx.getString(
+                        R.string.trace_state,
+                        if (onState) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "airplane_on", "airplane_off" -> {
+                    val onState = constraintOk(ctx, "airplane", "on")
+                    ((type == "airplane_on") == onState) to ctx.getString(
+                        R.string.trace_state,
+                        if (onState) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "dark_on", "dark_off" -> {
+                    val onState = isDarkMode(ctx)
+                    ((type == "dark_on") == onState) to ctx.getString(
+                        R.string.trace_state,
+                        if (onState) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "battery_saver_on", "battery_saver_off" -> {
+                    val onState = constraintOk(ctx, "battery_saver", "on")
+                    ((type == "battery_saver_on") == onState) to
+                        ctx.getString(R.string.trace_state,
+                            if (onState) ctx.getString(R.string.trace_word_on)
+                            else ctx.getString(R.string.trace_word_off), "")
+                }
+                "vpn_on", "vpn_off" -> {
+                    val onState = isVpnOn(ctx)
+                    ((type == "vpn_on") == onState) to ctx.getString(
+                        R.string.trace_state,
+                        if (onState) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "gps_on", "gps_off" -> {
+                    val onState = gpsEnabled(ctx)
+                    ((type == "gps_on") == onState) to ctx.getString(
+                        R.string.trace_state,
+                        if (onState) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "hotspot_on", "hotspot_off" -> {
+                    val onState = hotspotState(ctx) ?: false
+                    ((type == "hotspot_on") == onState) to ctx.getString(
+                        R.string.trace_state,
+                        if (onState) ctx.getString(R.string.trace_word_on)
+                        else ctx.getString(R.string.trace_word_off), "")
+                }
+                "mobile_data_on", "mobile_data_off" -> {
+                    val onState = constraintOk(ctx, "mobile_data", "on")
+                    ((type == "mobile_data_on") == onState) to
+                        ctx.getString(R.string.trace_state,
+                            if (onState) ctx.getString(R.string.trace_word_on)
+                            else ctx.getString(R.string.trace_word_off), "")
+                }
+                "music_started", "music_stopped" -> {
+                    val onState = musicActive(ctx)
+                    ((type == "music_started") == onState) to
+                        ctx.getString(R.string.trace_state,
+                            if (onState) ctx.getString(R.string.trace_word_on)
+                            else ctx.getString(R.string.trace_word_off), "")
+                }
+                "peer_online", "peer_offline" -> {
+                    val onState = System.currentTimeMillis() -
+                        Config.lastSenderSeen(ctx) < 75L * 60 * 1000
+                    ((type == "peer_online") == onState) to
+                        ctx.getString(R.string.trace_state,
+                            if (onState) ctx.getString(R.string.trace_word_on)
+                            else ctx.getString(R.string.trace_word_off), "")
+                }
+                "mqtt_message" -> null to ctx.getString(
+                    R.string.trace_mqtt_state,
+                    if (MqttManager.isConnected()) "✓" else "✗", p)
+                "time_at", "time_interval", "date_at", "sunrise",
+                "sunset" -> null to ctx.getString(R.string.trace_time_sched,
+                    p, SimpleDateFormat("HH:mm", Locale.US).format(Date()))
+                else -> null to ""
+            }
+        } catch (e: Exception) { null to "" }
+    }
+
     // ---------------- actions ----------------
     private const val SIG_OK = 0
     private const val SIG_STOP = 1
@@ -1006,6 +1454,37 @@ object Automation {
                         }
                     }
                 }
+                "if_else" -> {
+                    // v2.18 (WS3): structured If/Else step. Its param
+                    // is JSON and is read RAW here — the shared fill()
+                    // at the top of the loop could corrupt quoted
+                    // values inside it. The chosen branch runs through
+                    // execRange itself (on a branch-only rule), so
+                    // branch actions keep fill substitution, their own
+                    // per-action conditions and nested blocks; depth+1
+                    // makes any wait inside a branch sleep inline
+                    // instead of parking against the outer rule.
+                    val spec = try { JSONObject(a.optString("param")) }
+                        catch (e: Exception) { null }
+                    if (spec == null) { i++ } else {
+                        val conds = spec.optJSONArray("constraints")
+                        val pass = conds == null || evalConstraintList(ctx,
+                            filledConstraints(conds, data),
+                            spec.optString("mode") == "any")
+                        val branch = if (pass) spec.optJSONArray("then")
+                            else spec.optJSONArray("else")
+                        if (branch == null || branch.length() == 0) { i++ }
+                        else {
+                            val branchRule = JSONObject()
+                                .put("actions", branch)
+                            val sig = execRange(ctx, branchRule, data,
+                                0, branch.length(), depth + 1)
+                            if (sig == SIG_STOP) return SIG_STOP
+                            if (sig == SIG_BREAK) return SIG_BREAK
+                            i++
+                        }
+                    }
+                }
                 "else" -> {
                     val (_, endIdx) = findElseEnd(arr, i, end)
                     i = if (endIdx >= 0) endIdx + 1 else end
@@ -1059,6 +1538,31 @@ object Automation {
             getVar(ctx, p.substring(4).trim()).toIntOrNull() ?: 0
         else p.toIntOrNull() ?: 0
         return n.coerceIn(0, 200)
+    }
+
+    /** v2.18 (WS3): variable substitution for an If/Else condition
+     *  set, mirroring how execRange fills a per-action cond param
+     *  before judging it. Group params are JSON, so their leaves are
+     *  filled one by one to keep the quoting intact. */
+    private fun filledConstraints(arr: JSONArray, data: JSONObject): JSONArray {
+        val out = JSONArray()
+        for (i in 0 until arr.length()) {
+            val c = arr.optJSONObject(i) ?: continue
+            val copy = JSONObject(c.toString())
+            if (copy.optString("type") == "group") {
+                val g = try { JSONObject(copy.optString("param")) }
+                    catch (e: Exception) { null }
+                val items = g?.optJSONArray("items")
+                if (g != null && items != null) {
+                    g.put("items", filledConstraints(items, data))
+                    copy.put("param", g.toString())
+                }
+            } else {
+                copy.put("param", fill(copy.optString("param"), data))
+            }
+            out.put(copy)
+        }
+        return out
     }
 
     // ---- v2.9 constraint helpers ----
@@ -1272,6 +1776,27 @@ object Automation {
                 }
                 "ringer" -> setRinger(ctx, param)
                 "open_app" -> openApp(ctx, param)
+                // v2.18 App Locker: lock/unlock a package in the
+                // locker's set (safety exclusions always win; the
+                // same pair runs on the peer via the ACTION command).
+                "lock_app" -> {
+                    if (!AppLocker.lockFromAction(ctx, param))
+                        log(ctx, "⚠ " + ruleNameHint +
+                            " (lock_app: " + param.take(40) + ")")
+                }
+                "unlock_app" -> {
+                    if (!AppLocker.unlockFromAction(ctx, param))
+                        log(ctx, "⚠ " + ruleNameHint +
+                            " (unlock_app: " + param.take(40) + ")")
+                }
+                // v2.18 (WS4): publish via the shared MQTT
+                // connection; param = topic|payload|qos|retained
+                // (see MqttManager.publishParam). execRange's fill()
+                // has already substituted {title}/{body}/... in it.
+                "mqtt_publish" -> {
+                    if (!MqttManager.publishParam(ctx, param))
+                        log(ctx, "MQTT publish ব্যর্থ: " + param.take(60))
+                }
                 "http" -> httpCall(param)
                 "write_file" -> writeFile(ctx, param)
                 "set_var" -> {
@@ -2470,8 +2995,20 @@ object Automation {
                 ed.apply()
                 markFired(ctx, id, System.currentTimeMillis())
                 ruleNameHint = rule.optString("name")
-                log(ctx, "▶ " + rule.optString("name") + " (time_at)")
+                log(ctx, "▶ " + rule.optString("name") + " (time_at) — " +
+                    verdictSummary(ctx, rule))
                 runActions(ctx, rule, JSONObject(), 0)
+            } else if (dueParams.isNotEmpty()) {
+                // v2.18 (WS2): time came but conditions failed —
+                // log the skip, throttled to once per 15 min per rule
+                // (the tick path re-checks inside the due window).
+                val last = prefs(ctx).getLong("vlog_$id", 0L)
+                if (System.currentTimeMillis() - last > 15 * 60_000L) {
+                    prefs(ctx).edit().putLong("vlog_$id",
+                        System.currentTimeMillis()).apply()
+                    log(ctx, "⏭ " + rule.optString("name") +
+                        " (time_at) — " + verdictSummary(ctx, rule))
+                }
             }
         } catch (_: Exception) { }
         scheduleTimeRules(ctx)

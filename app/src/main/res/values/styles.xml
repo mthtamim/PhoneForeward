@@ -404,6 +404,24 @@
         <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
     </style>
 
+    <!-- v2.18 App Locker: big round tactile keypad key (explicit
+         parent — dotted-name rule). Colours come from theme attrs,
+         so one definition serves day and night. -->
+    <style name="PL.LockKey" parent="Widget.Material3.Button">
+        <item name="cornerRadius">38dp</item>
+        <item name="backgroundTint">?attr/colorSurfaceContainerHigh</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textSize">25sp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+    </style>
+
     <!-- Plain rounded search box (preview style): filled rounded
          16dp box, leading search icon, no underline, no box outline -->
     <style name="PL.SearchBox" parent="Widget.AppCompat.EditText">

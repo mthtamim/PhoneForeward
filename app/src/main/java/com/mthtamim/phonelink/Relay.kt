@@ -35,6 +35,9 @@ object Relay {
     const val TYPE_CLIP = "CLIP"
     const val TYPE_FILE = "FILE"
     const val TYPE_URGENT = "URGENT"
+    /** v2.18: App Locker peer-approval request (carries lockpkg /
+     *  lockreq fields; the verdict returns on the command topic). */
+    const val TYPE_APPLOCK = "APPLOCK"
 
     fun newId(): String = System.currentTimeMillis().toString() + "-" +
         (1..6).map { "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Random.nextInt(32)] }.joinToString("")
@@ -368,10 +371,11 @@ object Relay {
     private fun enqueue(ctx: Context, payload: JSONObject) {
         try {
             val f = queueFile(ctx)
-            // keep the queue bounded — oldest events are dropped past 300
+            // keep the queue bounded — oldest events are dropped past
+            // the user-set cap (Config.queueLimit, default 300)
             val lines = if (f.exists()) f.readLines().toMutableList() else mutableListOf()
             lines.add(payload.toString())
-            while (lines.size > 300) lines.removeAt(0)
+            while (lines.size > Config.queueLimit(ctx)) lines.removeAt(0)
             f.writeText(lines.joinToString("\n") + "\n")
         } catch (_: Exception) { }
     }
@@ -380,8 +384,12 @@ object Relay {
     fun flushQueue(ctx: Context) {
         val f = queueFile(ctx)
         if (!f.exists()) return
-        val lines = f.readLines().filter { it.isNotBlank() }
-        if (lines.isEmpty()) { f.delete(); return }
+        val all = f.readLines().filter { it.isNotBlank() }
+        if (all.isEmpty()) { f.delete(); return }
+        // enforce the cap at drain time too (the user may have lowered
+        // it since these were queued) — drop the oldest overflow
+        val limit = Config.queueLimit(ctx)
+        val lines = if (all.size > limit) all.subList(all.size - limit, all.size) else all
         val remaining = mutableListOf<String>()
         var sentAll = true
         for (line in lines) {
@@ -414,4 +422,23 @@ object Relay {
 
     @Synchronized
     fun clearQueue(ctx: Context) { try { queueFile(ctx).delete() } catch (_: Exception) { } }
+
+    /** v2.17.5: trim the stored queue to the current Config cap right
+     *  away (drops the oldest), so lowering the limit in Settings takes
+     *  effect immediately instead of at the next enqueue. */
+    @Synchronized
+    fun trimQueueToLimit(ctx: Context) {
+        try {
+            val f = queueFile(ctx)
+            if (!f.exists()) return
+            val limit = Config.queueLimit(ctx)
+            val lines = f.readLines().filter { it.isNotBlank() }.toMutableList()
+            var changed = false
+            while (lines.size > limit) { lines.removeAt(0); changed = true }
+            if (changed) {
+                if (lines.isEmpty()) f.delete()
+                else f.writeText(lines.joinToString("\n") + "\n")
+            }
+        } catch (_: Exception) { }
+    }
 }

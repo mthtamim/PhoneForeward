@@ -11,8 +11,8 @@ android {
         applicationId "com.mthtamim.phonelink"
         minSdk 26
         targetSdk 34
-        versionCode 37
-        versionName "2.17.4"
+        versionCode 39
+        versionName "2.18.0"
     }
 
     buildTypes {
@@ -49,4 +49,11 @@ dependencies {
     implementation "dev.rikka.shizuku:api:13.1.5"
     implementation "dev.rikka.shizuku:provider:13.1.5"
     implementation "com.google.mlkit:text-recognition:16.0.1"
+    // v2.18: MQTT client (WS4). Eclipse Paho mqttv3 1.2.5 — a single
+    // dependency-free pure-Java artifact on Maven Central with a long-
+    // stable API. HiveMQ's client was NOT chosen: its 1.3.x blocking /
+    // async API surface differs per client type and cannot be compile-
+    // verified in this environment, and it drags in Netty/RxJava
+    // transitives. Paho is the safest verifiable coordinate here.
+    implementation "org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5"
 }

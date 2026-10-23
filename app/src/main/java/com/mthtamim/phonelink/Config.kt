@@ -116,6 +116,11 @@ object Config {
     fun geoLng(ctx: Context) = prefs(ctx).getFloat("geo_lng", 0f).toDouble()
     fun geoRadius(ctx: Context) = prefs(ctx).getInt("geo_radius", 200)
     fun setGeoRadius(ctx: Context, v: Int) { prefs(ctx).edit().putInt("geo_radius", v).apply() }
+
+    /** Offline send-queue cap (v2.17.5): oldest queued events are
+     *  dropped past this limit. Default 300 = the pre-v2.17.5 behavior. */
+    fun queueLimit(ctx: Context) = prefs(ctx).getInt("queue_limit", 300)
+    fun setQueueLimit(ctx: Context, v: Int) { prefs(ctx).edit().putInt("queue_limit", v).apply() }
     fun setGeoCenter(ctx: Context, lat: Double, lng: Double) {
         prefs(ctx).edit().putFloat("geo_lat", lat.toFloat()).putFloat("geo_lng", lng.toFloat()).apply()
     }
@@ -203,6 +208,18 @@ object Config {
     }
     fun setTelegram(ctx: Context, token: String, chat: String) {
         prefs(ctx).edit().putString("tg_token", token.trim()).putString("tg_chat", chat.trim()).apply()
+    }
+
+    // ---------- v2.18: MQTT broker (WS4) ----------
+    fun mqttOn(ctx: Context): Boolean = prefs(ctx).getBoolean("mqtt_on", false)
+    fun mqttBroker(ctx: Context): String = prefs(ctx).getString("mqtt_broker", "") ?: ""
+    fun mqttUser(ctx: Context): String = prefs(ctx).getString("mqtt_user", "") ?: ""
+    fun mqttPass(ctx: Context): String = prefs(ctx).getString("mqtt_pass", "") ?: ""
+    fun setMqtt(ctx: Context, on: Boolean, broker: String, user: String, pass: String) {
+        prefs(ctx).edit().putBoolean("mqtt_on", on)
+            .putString("mqtt_broker", broker.trim())
+            .putString("mqtt_user", user.trim())
+            .putString("mqtt_pass", pass).apply()
     }
 
     // ---------- pairing profiles ----------

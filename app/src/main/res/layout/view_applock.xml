@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.18 App Locker lock screen. One layout, two hosts: inflated
+     into the TYPE_APPLICATION_OVERLAY window (primary) and into
+     AppLockActivity (fallback / biometric host). Everything visual
+     is driven by AppLockUi; keypad digits are plain MaterialButtons
+     on the PL.LockKey style, dots are built in code. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/lockRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?attr/colorBackground">
+
+    <LinearLayout
+        android:id="@+id/llLockMain"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingStart="28dp"
+        android:paddingEnd="28dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="28dp">
+
+        <TextView
+            android:id="@+id/tvLockClock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="?attr/colorOnBackground"
+            android:textSize="36sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvLockDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="14sp" />
+
+        <FrameLayout
+            android:layout_width="92dp"
+            android:layout_height="92dp"
+            android:layout_marginTop="30dp"
+            android:background="@drawable/bg_lock_tile">
+
+            <ImageView
+                android:id="@+id/ivLockIcon"
+                android:layout_width="58dp"
+                android:layout_height="58dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null" />
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="6dp"
+                android:background="@drawable/bg_icon_chip"
+                android:contentDescription="@null"
+                android:padding="6dp"
+                android:src="@drawable/ic_lock"
+                app:tint="?attr/colorPrimary" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tvLockAppName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="?attr/colorOnBackground"
+            android:textSize="21sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:text="@string/alk_lock_by"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13.5sp" />
+
+        <TextView
+            android:id="@+id/tvLockMsg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:gravity="center"
+            android:minHeight="20dp"
+            android:text="@string/alk_lock_enter"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/llLockDots"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal" />
+
+        <GridLayout
+            android:id="@+id/glLockPad"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:columnCount="3">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD1"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="1" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD2"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="2" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD3"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="3" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD4"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="4" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD5"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="5" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD6"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="6" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD7"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="7" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD8"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="8" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD9"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="9" />
+
+            <ImageButton
+                android:id="@+id/keyBio"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_lock_key"
+                android:contentDescription="@string/alk_lock_bio"
+                android:padding="24dp"
+                android:src="@drawable/ic_eye"
+                android:visibility="gone"
+                app:tint="?attr/colorPrimary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keyD0"
+                style="@style/PL.LockKey"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:text="0" />
+
+            <ImageButton
+                android:id="@+id/keyDel"
+                android:layout_width="76dp"
+                android:layout_height="76dp"
+                android:layout_margin="6dp"
+                android:background="@drawable/bg_lock_key"
+                android:contentDescription="@string/alk_remove"
+                android:padding="24dp"
+                android:src="@drawable/ic_backspace" />
+        </GridLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLockAskPeer"
+            style="@style/PL.BtnPill"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:text="@string/alk_lock_ask_peer"
+            android:visibility="gone"
+            app:icon="@drawable/ic_users" />
+    </LinearLayout>
+
+    <!-- Disguise cover: a system-style "isn't responding" card shown
+         instead of the PIN UI until its title is long-pressed. -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardLockFake"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginStart="36dp"
+        android:layout_marginEnd="36dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="?attr/colorSurface"
+        app:cardCornerRadius="22dp"
+        app:cardElevation="0dp"
+        app:strokeColor="?attr/colorSurfaceVariant"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <TextView
+                android:id="@+id/tvFakeTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/alk_fake_body"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFakeWait"
+                    style="@style/PL.BtnText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/alk_fake_wait" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFakeClose"
+                    style="@style/PL.BtnText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/alk_fake_close" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

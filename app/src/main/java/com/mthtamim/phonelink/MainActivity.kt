@@ -47,6 +47,11 @@ class MainActivity : LocalizedActivity() {
     private var relayStateColor: Int = 0
     private lateinit var tvDelivery: TextView
     private lateinit var tvQueueInfo: TextView
+    // v2.18: MQTT broker card status + browser-session list.
+    private lateinit var tvMqttStatus: TextView
+    private lateinit var webSessionRows: LinearLayout
+    private lateinit var tvWebSessionsNone: TextView
+    private var lastSessionSig: String? = null
     private lateinit var tvQuietInfo: TextView
     private lateinit var tvDigestInfo: TextView
     private lateinit var tvRoutineInfo: TextView
@@ -504,6 +509,9 @@ class MainActivity : LocalizedActivity() {
 
         tvDelivery = findViewById(R.id.tvDelivery)
         tvQueueInfo = findViewById(R.id.tvQueueInfo)
+        tvMqttStatus = findViewById(R.id.tvMqttStatus)
+        webSessionRows = findViewById(R.id.webSessionRows)
+        tvWebSessionsNone = findViewById(R.id.tvWebSessionsNone)
         tvQuietInfo = findViewById(R.id.tvQuietInfo)
         tvDigestInfo = findViewById(R.id.tvDigestInfo)
         tvRoutineInfo = findViewById(R.id.tvRoutineInfo)
@@ -771,7 +779,28 @@ class MainActivity : LocalizedActivity() {
             showSetPinDialog { }
         }
 
+        // ----- v2.18 app locker (managed on its own screen) -----
+        findViewById<Button>(R.id.btnAppLocker).setOnClickListener {
+            startActivity(Intent(this, AppLockerActivity::class.java))
+        }
+
         // ----- offline queue management -----
+        // v2.17.5: the queue cap is user-settable (was hardcoded 300).
+        val btnQueueLimit = findViewById<Button>(R.id.btnQueueLimit)
+        btnQueueLimit.text = Config.queueLimit(this).toString()
+        btnQueueLimit.setOnClickListener {
+            val options = intArrayOf(300, 500, 1000, 2000, 5000)
+            val labels = options.map { it.toString() }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.queue_limit_label))
+                .setItems(labels) { _, which ->
+                    Config.setQueueLimit(this, options[which])
+                    Relay.trimQueueToLimit(this)
+                    btnQueueLimit.text = options[which].toString()
+                    refreshStatus()
+                }
+                .show()
+        }
         findViewById<Button>(R.id.btnFlushQueue).setOnClickListener {
             thread {
                 Relay.flushQueue(applicationContext)
@@ -1145,6 +1174,49 @@ class MainActivity : LocalizedActivity() {
                 } else toast(getString(R.string.toast_pin_short))
             }
         }
+        // ----- v2.18 (WS1): browser sessions card -----
+        refreshWebSessions()
+        findViewById<Button>(R.id.btnRevokeAllSessions).setOnClickListener {
+            WebInbox.revokeAll(this)
+            refreshWebSessions()
+        }
+        // ----- v2.18 (WS4): MQTT broker card -----
+        val swMqtt = findViewById<CompoundButton>(R.id.swMqtt)
+        val etMqttBroker = findViewById<EditText>(R.id.etMqttBroker)
+        val etMqttUser = findViewById<EditText>(R.id.etMqttUser)
+        val etMqttPass = findViewById<EditText>(R.id.etMqttPass)
+        etMqttBroker.setText(Config.mqttBroker(this))
+        etMqttUser.setText(Config.mqttUser(this))
+        etMqttPass.setText(Config.mqttPass(this))
+        swMqtt.isChecked = Config.mqttOn(this)
+        swMqtt.setOnCheckedChangeListener { _, checked ->
+            Config.setMqtt(this, checked, Config.mqttBroker(this),
+                Config.mqttUser(this), Config.mqttPass(this))
+            MqttManager.restart(this)
+            refreshMqttStatus()
+        }
+        findViewById<Button>(R.id.btnMqttSave).setOnClickListener {
+            Config.setMqtt(this, swMqtt.isChecked,
+                etMqttBroker.text.toString(), etMqttUser.text.toString(),
+                etMqttPass.text.toString())
+            MqttManager.restart(this)
+            refreshMqttStatus()
+            toast(getString(R.string.toast_saved))
+        }
+        findViewById<Button>(R.id.btnMqttTest).setOnClickListener {
+            Config.setMqtt(this, swMqtt.isChecked,
+                etMqttBroker.text.toString(), etMqttUser.text.toString(),
+                etMqttPass.text.toString())
+            tvMqttStatus.text = getString(R.string.mqtt_st_connecting)
+            MqttManager.test(this) { ok, detail ->
+                runOnUiThread {
+                    tvMqttStatus.text = if (ok)
+                        getString(R.string.mqtt_test_ok)
+                    else getString(R.string.mqtt_test_fail, detail)
+                }
+            }
+        }
+        refreshMqttStatus()
         findViewById<Button>(R.id.btnPanicPin).setOnClickListener {
             showTextPrompt(getString(R.string.btn_panic_pin), "") { pin ->
                 if (pin.length >= 4) {
@@ -2769,6 +2841,62 @@ class MainActivity : LocalizedActivity() {
         } catch (_: Exception) { "----" }
     }
 
+    /** v2.18 (WS4): broker card status line from MqttManager. */
+    private fun refreshMqttStatus() {
+        if (!::tvMqttStatus.isInitialized) return
+        tvMqttStatus.text = when (MqttManager.state()) {
+            MqttManager.State.OFF -> getString(R.string.mqtt_st_off)
+            MqttManager.State.CONNECTING ->
+                getString(R.string.mqtt_st_connecting)
+            MqttManager.State.CONNECTED ->
+                getString(R.string.mqtt_st_connected)
+            MqttManager.State.ERROR -> getString(R.string.mqtt_st_error,
+                MqttManager.stateDetail())
+        }
+    }
+
+    /** v2.18 (WS1): the active browser sessions, each with its own
+     *  revoke button. Rebuilt only when the token set changes, so a
+     *  periodic refreshStatus() can call it without disturbing a tap. */
+    private fun refreshWebSessions() {
+        if (!::webSessionRows.isInitialized) return
+        val list = WebInbox.sessions(this)
+        val sig = list.joinToString(",") { it.optString("token") }
+        if (sig == lastSessionSig && webSessionRows.childCount > 0) return
+        lastSessionSig = sig
+        webSessionRows.removeAllViews()
+        tvWebSessionsNone.visibility =
+            if (list.isEmpty()) View.VISIBLE else View.GONE
+        val fmt = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
+        val pad = (6 * resources.displayMetrics.density).toInt()
+        for (s in list) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(0, pad, 0, pad)
+            }
+            row.addView(TextView(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                textSize = 13f
+                text = getString(R.string.web_session_meta,
+                    s.optString("ua").ifEmpty { s.optString("ip") },
+                    s.optString("ip"),
+                    fmt.format(Date(s.optLong("created"))),
+                    fmt.format(Date(s.optLong("last"))))
+            })
+            val token = s.optString("token")
+            row.addView(Button(this).apply {
+                text = getString(R.string.btn_revoke)
+                setOnClickListener {
+                    WebInbox.revoke(this@MainActivity, token)
+                    refreshWebSessions()
+                }
+            })
+            webSessionRows.addView(row)
+        }
+    }
+
     private fun refreshStatus() {
         // v2.17.2: the old dashboard status card is gone -- mode
         // lives on the Pairing page, the permission summary on the
@@ -2822,6 +2950,9 @@ class MainActivity : LocalizedActivity() {
         }
 
         tvQueueInfo.text = getString(R.string.queue_info, Relay.queueSize(this))
+        // v2.18: keep the MQTT status line and session list fresh.
+        refreshMqttStatus()
+        refreshWebSessions()
 
         // Smart-control / data info lines
         tvQuietInfo.text = getString(R.string.quiet_window,
@@ -2956,6 +3087,28 @@ class MainActivity : LocalizedActivity() {
                     showNotifReplyDialog(item.extra.removePrefix("notif:"))
                 } else if (item.extra.startsWith("tel:")) {
                     showReplyDialog(item.extra.removePrefix("tel:"))
+                }
+            }
+            // v2.18: App Locker peer verdicts — the reply rides the
+            // command topic behind the usual command-PIN prompt.
+            InboxAdapter.ACT_APPLOCK_OK, InboxAdapter.ACT_APPLOCK_NO -> {
+                val parts = item.extra.removePrefix("applock:")
+                    .split(":", limit = 2)
+                if (parts.size == 2) {
+                    val req = parts[0]
+                    val pkg = parts[1]
+                    val grant = action == InboxAdapter.ACT_APPLOCK_OK
+                    askPin { digest ->
+                        Relay.sendCommand(this,
+                            if (grant) "APPLOCK_GRANT" else "APPLOCK_DENY",
+                            null,
+                            org.json.JSONObject().put("pin", digest)
+                                .put("pkg", pkg).put("req", req))
+                        SecLog.add(this,
+                            if (grant) "App Locker: আনলক অনুমোদন পাঠানো হয়েছে — $pkg"
+                            else "App Locker: আনলক নাকচ পাঠানো হয়েছে — $pkg")
+                        toast(getString(R.string.toast_cmd_sent))
+                    }
                 }
             }
         }

@@ -939,6 +939,38 @@
                     app:icon="@drawable/ic_lock" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+<!-- v2.18 App Locker: entry card — the locker itself is managed on
+     its own screen (AppLockerActivity); this card is the one door. -->
+<com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/alk_title" />
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:text="@string/alk_sub" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAppLocker"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/alk_open_btn"
+                    app:icon="@drawable/ic_lock" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -1189,6 +1221,103 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+<!-- ===== MQTT broker (v2.18) ===== -->
+<com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_mqtt" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swMqtt"
+                    style="@style/PL.SwitchRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/sw_mqtt_enable" />
+<com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_mqtt_broker">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMqttBroker"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:maxLines="1"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_mqtt_user">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMqttUser"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/PL.Field"
+                    android:hint="@string/hint_mqtt_pass">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMqttPass"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:maxLines="1"
+                        android:textSize="13sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:id="@+id/tvMqttStatus"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="6dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+<com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMqttSave"
+                        style="@style/PL.BtnPill"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_mqtt_save"
+                        app:icon="@drawable/ic_check" /><com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMqttTest"
+                        style="@style/PL.BtnTonal"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:text="@string/btn_mqtt_test"
+                        app:icon="@drawable/ic_refresh" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
 <!-- ===== Offline queue ===== -->
 <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -1212,6 +1341,35 @@
 <TextView
                     android:id="@+id/tvQueueInfo"
                     style="@style/PL.BodySmall" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="8dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/queue_limit_label"
+                        android:textSize="13.5sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnQueueLimit"
+                        style="@style/PL.BtnChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="300"
+                        app:icon="@drawable/ic_db" />
+                </LinearLayout>
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -1559,6 +1717,49 @@
                     android:layout_marginTop="4dp"
                     android:text="@string/btn_web_pin"
                     app:icon="@drawable/ic_lock" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+<!-- ===== Browser sessions (v2.18) ===== -->
+<com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_web_sessions" />
+
+                <TextView
+                    android:id="@+id/tvWebSessionsNone"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/web_sessions_none" />
+
+                <LinearLayout
+                    android:id="@+id/webSessionRows"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRevokeAllSessions"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_revoke_all"
+                    app:icon="@drawable/ic_trash" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

@@ -34,6 +34,8 @@ class InboxAdapter(
         const val ACT_CALL = "call"
         const val ACT_COPY_NUMBER = "copynum"
         const val ACT_REPLY = "reply"
+        const val ACT_APPLOCK_OK = "applock_ok"
+        const val ACT_APPLOCK_NO = "applock_no"
 
         private val AMOUNT_RE =
             Regex("""(?i)(?:tk|৳|bdt)\s*([\d,]+(?:\.\d{1,2})?)""")
@@ -142,6 +144,7 @@ class InboxAdapter(
             Relay.TYPE_CALL -> R.drawable.ic_phone; Relay.TYPE_BATTERY -> R.drawable.ic_batt
             Relay.TYPE_APP -> R.drawable.ic_grid; Relay.TYPE_LOCATION -> R.drawable.ic_loc
             Relay.TYPE_SYSTEM -> R.drawable.ic_settings; Relay.TYPE_TEST -> R.drawable.ic_flask
+            Relay.TYPE_APPLOCK -> R.drawable.ic_lock
             else -> R.drawable.ic_bell
         })
         ivPin.visibility = if (item.pinned) View.VISIBLE else View.GONE
@@ -177,6 +180,12 @@ class InboxAdapter(
         var primary: Pair<String, String>? = null
         var secondary: Pair<String, String>? = null
         when {
+            // v2.18: App Locker approval requests get Approve/Deny.
+            item.type == Relay.TYPE_APPLOCK &&
+                item.extra.startsWith("applock:") -> {
+                primary = ctx.getString(R.string.item_approve) to ACT_APPLOCK_OK
+                secondary = ctx.getString(R.string.item_deny) to ACT_APPLOCK_NO
+            }
             item.type == Relay.TYPE_CALL && hasTel -> {
                 primary = ctx.getString(R.string.item_call_back) to ACT_CALL
                 secondary = ctx.getString(R.string.item_copy_number) to ACT_COPY_NUMBER

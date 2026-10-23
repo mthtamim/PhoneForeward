@@ -16,7 +16,9 @@ import androidx.core.content.ContextCompat
 /** Shared permission-state checks used by the home status card and the wizard.
  *  v2.17.4: the counted set is the FULL access set — 12 runtime
  *  permissions + 8 special (system-settings) accesses = 20 — so the
- *  gauge and missingCount finally mean "everything". */
+ *  gauge and missingCount finally mean "everything".
+ *  v2.18: the App Locker's Overlay grant joins the special list —
+ *  12 runtime + 9 special = 21. */
 object PermChecks {
 
     fun has(ctx: Context, perm: String): Boolean =
@@ -62,6 +64,10 @@ object PermChecks {
     /** WRITE_SETTINGS: this app may modify system settings. */
     fun writeSettingsOk(ctx: Context): Boolean = Settings.System.canWrite(ctx)
 
+    /** SYSTEM_ALERT_WINDOW: this app may draw over other apps
+     *  (the App Locker's cover window). */
+    fun overlayOk(ctx: Context): Boolean = Settings.canDrawOverlays(ctx)
+
     /** (label string res, granted) for each runtime permission line — 12. */
     fun runtimeList(ctx: Context): List<Pair<Int, Boolean>> = listOf(
         R.string.perm_line_sms to has(ctx, Manifest.permission.RECEIVE_SMS),
@@ -86,7 +92,7 @@ object PermChecks {
                 has(ctx, Manifest.permission.POST_NOTIFICATIONS))
     )
 
-    /** (label string res, granted) for the 8 special accesses. */
+    /** (label string res, granted) for the 9 special accesses. */
     fun specialList(ctx: Context): List<Pair<Int, Boolean>> = listOf(
         R.string.perm_notif_title to notifAccess(ctx),
         R.string.perm_battery_title to batteryIgnored(ctx),
@@ -95,7 +101,8 @@ object PermChecks {
         R.string.btn_a11y to a11yEnabled(ctx),
         R.string.perm_shizuku_title to ShizukuHelper.granted(),
         R.string.auto_health_alarm to exactAlarmOk(ctx),
-        R.string.perm_write_title to writeSettingsOk(ctx)
+        R.string.perm_write_title to writeSettingsOk(ctx),
+        R.string.perm_overlay_title to overlayOk(ctx)
     )
 
     /** Runtime permissions that still need requesting (12 incl. READ_SMS). */
@@ -124,7 +131,7 @@ object PermChecks {
         return perms.filter { !has(ctx, it) }.toTypedArray()
     }
 
-    /** The full counted set: 12 runtime + 8 special = 20. */
+    /** The full counted set: 12 runtime + 9 special = 21. */
     fun totalCount(ctx: Context): Int = runtimeList(ctx).size + specialList(ctx).size
 
     fun grantedCount(ctx: Context): Int =

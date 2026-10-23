@@ -87,6 +87,17 @@ class A11yService : AccessibilityService() {
                 }
             }
         } catch (_: Exception) { }
+        // v2.18 App Locker: the instant enforcement path — a locked
+        // app is covered the moment its window surfaces. (The 5 s
+        // usage-stats poll in LinkService covers the A11y-off case.)
+        try {
+            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+                val pkg = event.packageName?.toString() ?: ""
+                if (pkg.isNotEmpty())
+                    AppLocker.onForeground(applicationContext, pkg,
+                        event.className?.toString())
+            }
+        } catch (_: Exception) { }
         // v2.14.1: live app launch/close from window changes. The
         // usage-stats poll in tick() can notice a launch ~25 minutes
         // late (or miss short visits); this is instant, and it shares
@@ -150,7 +161,10 @@ class A11yService : AccessibilityService() {
     companion object {
         @Volatile var instance: A11yService? = null
 
-        /** v2.7: performs a global navigation action (home/back/recents/notifications). */
+        /** v2.7: performs a global navigation action (home/back/recents/notifications).
+         *  v2.18: "lock_screen" joins the same route for the screen-lock
+         *  widget; the lock action itself exists only on API 28+, so on
+         *  API 26/27 it honestly reports failure and the caller falls back. */
         fun globalKey(name: String): Boolean {
             val svc = instance ?: return false
             val action = when (name.lowercase()) {
@@ -159,6 +173,10 @@ class A11yService : AccessibilityService() {
                 "recents" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_RECENTS
                 "notifications" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_NOTIFICATIONS
                 "quick_settings" -> android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_QUICK_SETTINGS
+                "lock_screen" -> if (android.os.Build.VERSION.SDK_INT >=
+                    android.os.Build.VERSION_CODES.P)
+                    android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN
+                    else return false
                 else -> return false
             }
             return try { svc.performGlobalAction(action) } catch (_: Exception) { false }

@@ -193,6 +193,15 @@
                     android:layout_marginTop="10dp"
                     android:text="@string/auto_add_constraint"
                     app:icon="@drawable/ic_plus" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddGroup"
+                    style="@style/PL.BtnGhost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_add_group"
+                    app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -231,6 +240,15 @@
                     android:layout_marginTop="10dp"
                     android:text="@string/auto_add_action"
                     app:icon="@drawable/ic_plus" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddIfElse"
+                    style="@style/PL.BtnGhost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_add_ifelse"
+                    app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -262,6 +280,35 @@
                 android:textColor="?attr/colorError"
                 android:visibility="gone"
                 app:icon="@drawable/ic_trash" />
+        </LinearLayout>
+
+        <!-- ===== v2.18: Trace + version history ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTraceRule"
+                style="@style/PL.BtnGhost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:layout_weight="1"
+                android:text="@string/btn_trace"
+                app:icon="@drawable/ic_search" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnHistoryRule"
+                style="@style/PL.BtnGhost"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_weight="1"
+                android:text="@string/btn_history"
+                android:visibility="gone"
+                app:icon="@drawable/ic_refresh" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
