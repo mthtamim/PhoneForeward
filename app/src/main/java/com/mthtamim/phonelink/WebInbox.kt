@@ -227,11 +227,6 @@ object WebInbox {
                 .firstOrNull { it.startsWith("plsess=") }
                 ?.substringAfter("=") ?: ""
             val out = sock.getOutputStream()
-            fun reply(code: Int, type: String, payload: String,
-                      extra: Map<String, String> = emptyMap()) {
-                replyBytes(code, type, payload.toByteArray(Charsets.UTF_8),
-                    extra)
-            }
             fun replyBytes(code: Int, type: String, bytes: ByteArray,
                            extra: Map<String, String> = emptyMap()) {
                 val sb = StringBuilder()
@@ -246,6 +241,11 @@ object WebInbox {
                 out.write(sb.toString().toByteArray())
                 out.write(bytes)
                 out.flush()
+            }
+            fun reply(code: Int, type: String, payload: String,
+                      extra: Map<String, String> = emptyMap()) {
+                replyBytes(code, type, payload.toByteArray(Charsets.UTF_8),
+                    extra)
             }
             fun redirect(to: String, extra: Map<String, String> = emptyMap()) {
                 reply(302, "text/plain", "",
