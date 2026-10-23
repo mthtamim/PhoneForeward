@@ -319,7 +319,7 @@ class AutomationActivity : LocalizedActivity() {
             startActivity(Intent.createChooser(send, getString(R.string.auto_export)))
         }
         findViewById<Button>(R.id.btnAutoImport).setOnClickListener { showImport() }
-        findViewById<android.widget.Switch>(R.id.swRulesSync).apply {
+        findViewById<android.widget.CompoundButton>(R.id.swRulesSync).apply {
             isChecked = Config.rulesSyncOn(this@AutomationActivity)
             setOnCheckedChangeListener { _, on ->
                 Config.setRulesSyncOn(this@AutomationActivity, on)
@@ -504,8 +504,8 @@ class AutomationActivity : LocalizedActivity() {
                     (trig?.optString("param")?.takeIf { it.isNotBlank() }
                         ?.let { " — $it" } ?: "")))
             flow.addView(TextView(this).apply {
-                text = "➔"
-                textSize = 16f
+                text = "›"
+                textSize = 20f
                 setTextColor(androidx.core.content.ContextCompat.getColor(
                     this@AutomationActivity, R.color.pl_mint))
                 setPadding(12, 0, 12, 0)
@@ -531,11 +531,18 @@ class AutomationActivity : LocalizedActivity() {
                     ViewGroup.LayoutParams.WRAP_CONTENT)
                     .apply { setMargins(0, 8, 0, 0) }
             }
+            // v2.17.3: compact pill buttons in the new system
+            // (14dp radius, ~36dp tall) instead of the old bg_pill.
             fun pillButton(labelRes: Int, mint: Boolean) = Button(this).apply {
                 text = getString(labelRes)
                 textSize = 12.5f
-                setBackgroundResource(R.drawable.bg_pill)
-                setPadding(28, 10, 28, 10)
+                isAllCaps = false
+                minHeight = 0
+                minimumHeight = 0
+                setBackgroundResource(
+                    if (mint) R.drawable.bg_action_pill
+                    else R.drawable.bg_action_ghost)
+                setPadding(40, 30, 40, 30)
                 setTextColor(androidx.core.content.ContextCompat.getColor(
                     this@AutomationActivity,
                     if (mint) R.color.pl_mint else R.color.md_onSurface))

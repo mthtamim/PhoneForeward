@@ -132,7 +132,7 @@ class AppsActivity : LocalizedActivity() {
             view.findViewById<TextView>(R.id.tvAppName).text = e.label
             val limit = Config.usageLimit(this@AppsActivity, e.pkg)
             view.findViewById<TextView>(R.id.tvAppPkg).text =
-                if (limit > 0) "${e.pkg}  •  ⏰ ${limit}m/day" else e.pkg
+                if (limit > 0) "${e.pkg}  •  ${limit}m/day" else e.pkg
             val tvRule = view.findViewById<TextView>(R.id.tvAppRule)
             val rule = AppRules.rule(this@AppsActivity, e.pkg)
             tvRule.text = getString(when (rule) {

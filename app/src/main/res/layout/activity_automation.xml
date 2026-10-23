@@ -44,7 +44,8 @@
                 style="@style/PL.BtnPill"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/auto_add" />
+                android:text="@string/auto_add"
+                app:icon="@drawable/ic_plus" />
         </LinearLayout>
 
         <TextView
@@ -109,7 +110,8 @@
                             style="@style/PL.BtnChip"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="10s" />
+                            android:text="10s"
+                            app:icon="@drawable/ic_clock" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -127,7 +129,8 @@
                     android:orientation="vertical"
                     android:padding="14dp">
 
-                    <Switch
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        style="@style/PL.SwitchRow"
                         android:id="@+id/swRulesSync"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -140,7 +143,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="@string/auto_backup" />
+                        android:text="@string/auto_backup"
+                        app:icon="@drawable/ic_db" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

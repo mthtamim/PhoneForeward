@@ -126,7 +126,7 @@ object WebInbox {
 .card{background:#16211c;border-radius:12px;padding:10px 14px;margin:8px 0}
 small{color:#8fb3a3}input,button{padding:8px;border-radius:8px;border:1px solid #2c4}
 button{background:#0e9f6e;color:#fff;border:none;cursor:pointer}</style></head>
-<body><h2>📥 PhoneLink ইনবক্স</h2>
+<body><h2>PhoneLink ইনবক্স</h2>
 <div><input id="t" placeholder="শিরোনাম" size="24">
 <input id="b" placeholder="বার্তা" size="40">
 <button onclick="send()">পাঠাও</button>

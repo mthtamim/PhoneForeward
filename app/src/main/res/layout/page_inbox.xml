@@ -27,19 +27,17 @@
             style="@style/PL.Pill" />
     </LinearLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/PL.Field"
+    <!-- v2.17.3: preview-style boxed search (filled rounded box +
+         leading search icon) — no more underlined Material field.
+         Same id, same text watcher in MainActivity. -->
+    <EditText
+        android:id="@+id/etSearch"
+        style="@style/PL.SearchBox"
         android:layout_marginTop="12dp"
+        android:drawableStart="@drawable/ic_search"
         android:hint="@string/hint_search"
-        app:endIconMode="clear_text">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etSearch"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text"
-            android:maxLines="1" />
-    </com.google.android.material.textfield.TextInputLayout>
+        android:inputType="text"
+        android:maxLines="1" />
 
     <com.google.android.material.chip.ChipGroup
         android:id="@+id/cgCats"
@@ -129,7 +127,8 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:text="@string/btn_refresh" />
+            android:text="@string/btn_refresh"
+            app:icon="@drawable/ic_refresh" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExportInbox"
@@ -139,7 +138,8 @@
             android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
             android:layout_weight="1"
-            android:text="@string/btn_export_inbox" />
+            android:text="@string/btn_export_inbox"
+            app:icon="@drawable/ic_share" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnClearInbox"
@@ -148,6 +148,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_weight="1"
-            android:text="@string/btn_clear_inbox" />
+            android:text="@string/btn_clear_inbox"
+            app:icon="@drawable/ic_trash" />
     </LinearLayout>
 </LinearLayout>

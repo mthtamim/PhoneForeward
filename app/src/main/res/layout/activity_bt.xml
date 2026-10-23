@@ -86,7 +86,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:text="@string/bt_send_clip" />
+                android:text="@string/bt_send_clip"
+                app:icon="@drawable/ic_copy" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBtFile"
@@ -94,7 +95,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="@string/bt_send_file" />
+                android:text="@string/bt_send_file"
+                app:icon="@drawable/ic_file" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.color.MaterialColors
@@ -94,7 +95,9 @@ class InboxAdapter(
         val v = convertView ?: LayoutInflater.from(ctx)
             .inflate(R.layout.item_inbox, parent, false)
         val card = v.findViewById<MaterialCardView>(R.id.cardItem)
-        val icon = v.findViewById<TextView>(R.id.tvItemIcon)
+        val icon = v.findViewById<ImageView>(R.id.tvItemIcon)
+        val ivPin = v.findViewById<ImageView>(R.id.ivItemPin)
+        val ivStar = v.findViewById<ImageView>(R.id.ivItemStar)
         val title = v.findViewById<TextView>(R.id.tvItemTitle)
         val body = v.findViewById<TextView>(R.id.tvItemBody)
         val meta = v.findViewById<TextView>(R.id.tvItemMeta)
@@ -114,23 +117,36 @@ class InboxAdapter(
             dayView.visibility = View.GONE
         }
         if (item == null) {
-            icon.text = "📭"
+            // v2.17.3: compact empty state — icon + one line only;
+            // body/meta are GONE so the card stays small.
+            icon.setImageResource(R.drawable.ic_inbox)
+            ivPin.visibility = View.GONE
+            ivStar.visibility = View.GONE
             title.text = emptyText
             body.text = ""
+            body.visibility = View.GONE
             meta.text = ""
+            meta.visibility = View.GONE
             badge.visibility = View.GONE
             amount.visibility = View.GONE
             rowActions.visibility = View.GONE
             resetCard(card)
             return v
         }
-        icon.text = when (item.type) {
-            Relay.TYPE_SMS -> "✉️"; Relay.TYPE_NOTIF -> "🔔"; Relay.TYPE_CALL -> "📞"
-            Relay.TYPE_BATTERY -> "🔋"; Relay.TYPE_APP -> "📦"; Relay.TYPE_LOCATION -> "📍"
-            Relay.TYPE_SYSTEM -> "⚙️"; Relay.TYPE_TEST -> "🧪"; else -> "•"
-        }
-        title.text = (if (item.pinned) "📌 " else "") +
-            (if (item.starred) "⭐ " else "") + item.title
+        // v2.17.3: vector icons instead of emoji; pin/star are
+        // small marker icons next to the title, not text prefixes.
+        body.visibility = View.VISIBLE
+        meta.visibility = View.VISIBLE
+        icon.setImageResource(when (item.type) {
+            Relay.TYPE_SMS -> R.drawable.ic_msg; Relay.TYPE_NOTIF -> R.drawable.ic_bell
+            Relay.TYPE_CALL -> R.drawable.ic_phone; Relay.TYPE_BATTERY -> R.drawable.ic_batt
+            Relay.TYPE_APP -> R.drawable.ic_grid; Relay.TYPE_LOCATION -> R.drawable.ic_loc
+            Relay.TYPE_SYSTEM -> R.drawable.ic_settings; Relay.TYPE_TEST -> R.drawable.ic_flask
+            else -> R.drawable.ic_bell
+        })
+        ivPin.visibility = if (item.pinned) View.VISIBLE else View.GONE
+        ivStar.visibility = if (item.starred) View.VISIBLE else View.GONE
+        title.text = item.title
         body.text = item.body
         meta.text = "${item.type} • ${item.from} • ${fmt.format(Date(item.time))}"
 

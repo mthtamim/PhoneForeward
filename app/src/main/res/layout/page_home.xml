@@ -396,21 +396,25 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSendClipboard"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_send_clipboard" />
+                        android:text="@string/btn_send_clipboard"
+                        app:icon="@drawable/ic_tile_clipboard"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSendFile"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_send_file" />
+                        android:text="@string/btn_send_file"
+                        app:icon="@drawable/ic_tile_file"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -421,21 +425,25 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnVoice"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_voice" />
+                        android:text="@string/btn_voice"
+                        app:icon="@drawable/ic_tile_mic"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnPtt"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_ptt" />
+                        android:text="@string/btn_ptt"
+                        app:icon="@drawable/ic_tile_radio"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -446,21 +454,25 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnBroadcast"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_broadcast" />
+                        android:text="@string/btn_broadcast"
+                        app:icon="@drawable/ic_tile_mega"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnVoiceCmd"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_voicecmd" />
+                        android:text="@string/btn_voicecmd"
+                        app:icon="@drawable/ic_tile_wave"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -471,21 +483,25 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSiren"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_siren" />
+                        android:text="@string/btn_siren"
+                        app:icon="@drawable/ic_tile_alert"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnSchedule"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_schedule" />
+                        android:text="@string/btn_schedule"
+                        app:icon="@drawable/ic_tile_calendar"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -496,21 +512,25 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnTemplates"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_templates" />
+                        android:text="@string/btn_templates"
+                        app:icon="@drawable/ic_tile_msg"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnContactCard"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_contact_card" />
+                        android:text="@string/btn_contact_card"
+                        app:icon="@drawable/ic_tile_users"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -519,7 +539,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/btn_wallpaper" />
+                    android:text="@string/btn_wallpaper"
+                    app:icon="@drawable/ic_image" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -548,18 +569,18 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
-                        android:text="@string/btn_save" />
+                        android:text="@string/btn_save"
+                        app:icon="@drawable/ic_check" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSos"
+                    style="@style/PL.BtnDanger"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:text="@string/btn_sos"
-                    android:textColor="#FFFFFF"
-                    app:backgroundTint="@color/status_bad"
-                    app:cornerRadius="100dp" />
+                    app:icon="@drawable/ic_alert" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -569,21 +590,25 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCheckin"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_checkin" />
+                        android:text="@string/btn_checkin"
+                        app:icon="@drawable/ic_tile_check"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnBtShare"
-                        style="@style/PL.BtnChip"
+                        style="@style/PL.BtnTileQs"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/bt_title" />
+                        android:text="@string/bt_title"
+                        app:icon="@drawable/ic_tile_bluetooth"
+                        app:iconTint="@null" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

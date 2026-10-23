@@ -36,6 +36,7 @@
         <EditText
             android:id="@+id/etHubSearch"
             style="@style/PL.SearchBox"
+            android:drawableStart="@drawable/ic_search"
             android:layout_marginTop="12dp"
             android:hint="@string/hub_search_hint"
             android:inputType="text"
@@ -108,7 +109,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/btn_screen_share" />
+                        android:text="@string/btn_screen_share"
+                        app:icon="@drawable/ic_cast" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdSnap"
@@ -118,7 +120,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_snap" />
+                        android:text="@string/cmd_snap"
+                        app:icon="@drawable/ic_camera" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -135,7 +138,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/btn_screenshot_cmd" />
+                        android:text="@string/btn_screenshot_cmd"
+                        app:icon="@drawable/ic_image" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdScreen"
@@ -145,7 +149,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_screen" />
+                        android:text="@string/cmd_screen"
+                        app:icon="@drawable/ic_msg" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -188,7 +193,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="@string/cmd_listen" />
+                    android:text="@string/cmd_listen"
+                    app:icon="@drawable/ic_mic" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -227,7 +233,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
-                        android:text="@string/aa_wifi_toggle" />
+                        android:text="@string/aa_wifi_toggle"
+                        app:icon="@drawable/ic_tile_wifi"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnActBt"
@@ -237,7 +245,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
-                        android:text="@string/aa_bt_toggle" />
+                        android:text="@string/aa_bt_toggle"
+                        app:icon="@drawable/ic_tile_bluetooth"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -254,7 +264,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
-                        android:text="@string/aa_mobile_data_toggle" />
+                        android:text="@string/aa_mobile_data_toggle"
+                        app:icon="@drawable/ic_tile_signal"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnActAirplane"
@@ -264,7 +276,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
-                        android:text="@string/aa_airplane_toggle" />
+                        android:text="@string/aa_airplane_toggle"
+                        app:icon="@drawable/ic_tile_plane"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -281,7 +295,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
-                        android:text="@string/aa_torch_toggle" />
+                        android:text="@string/aa_torch_toggle"
+                        app:icon="@drawable/ic_tile_flash"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnActHotspot"
@@ -291,7 +307,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
-                        android:text="@string/aa_hotspot_toggle" />
+                        android:text="@string/aa_hotspot_toggle"
+                        app:icon="@drawable/ic_tile_signal"
+                        app:iconTint="@null" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -308,7 +326,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="6dp"
-                        android:text="@string/aa_dark_theme" />
+                        android:text="@string/aa_dark_theme"
+                        app:icon="@drawable/ic_tile_moon"
+                        app:iconTint="@null" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnActSaver"
@@ -318,7 +338,9 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="6dp"
-                        android:text="@string/aa_battery_saver" />
+                        android:text="@string/aa_battery_saver"
+                        app:icon="@drawable/ic_tile_batt"
+                        app:iconTint="@null" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -363,7 +385,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
-                        android:text="@string/remote_open_app" />
+                        android:text="@string/remote_open_app"
+                        app:icon="@drawable/ic_grid" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -397,7 +420,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_lock" />
+                        android:text="@string/cmd_lock"
+                        app:icon="@drawable/ic_lock" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdNote"
@@ -407,7 +431,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_note" />
+                        android:text="@string/cmd_note"
+                        app:icon="@drawable/ic_file" />
                 </LinearLayout>
 
                 <TextView
@@ -469,7 +494,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_location" />
+                        android:text="@string/cmd_location"
+                        app:icon="@drawable/ic_loc" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdRing"
@@ -479,7 +505,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_ring" />
+                        android:text="@string/cmd_ring"
+                        app:icon="@drawable/ic_bell" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -496,7 +523,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_stop_ring" />
+                        android:text="@string/cmd_stop_ring"
+                        app:icon="@drawable/ic_bell_off" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdFlashOn"
@@ -506,7 +534,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_flash_on" />
+                        android:text="@string/cmd_flash_on"
+                        app:icon="@drawable/ic_flash" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -523,7 +552,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_flash_off" />
+                        android:text="@string/cmd_flash_off"
+                        app:icon="@drawable/ic_flash" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdBattery"
@@ -533,7 +563,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_battery" />
+                        android:text="@string/cmd_battery"
+                        app:icon="@drawable/ic_batt" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -550,7 +581,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_ping" />
+                        android:text="@string/cmd_ping"
+                        app:icon="@drawable/ic_wave" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdInfo"
@@ -560,7 +592,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_info" />
+                        android:text="@string/cmd_info"
+                        app:icon="@drawable/ic_info" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -577,7 +610,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_summary" />
+                        android:text="@string/cmd_summary"
+                        app:icon="@drawable/ic_calendar" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdStatus"
@@ -587,7 +621,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_status" />
+                        android:text="@string/cmd_status"
+                        app:icon="@drawable/ic_shield_check" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -621,7 +656,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_speak" />
+                        android:text="@string/cmd_speak"
+                        app:icon="@drawable/ic_volume" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdAlarm"
@@ -631,7 +667,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_alarm" />
+                        android:text="@string/cmd_alarm"
+                        app:icon="@drawable/ic_bell" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -643,38 +680,42 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMediaPlay"
                         android:tag="hub:sec"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/PL.BtnIcon"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="⏯" />
+                        android:layout_weight="1" 
+                        android:contentDescription="@string/media_play_pause"
+                        app:icon="@drawable/ic_media_pp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMediaNext"
                         android:tag="hub:sec"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/PL.BtnIcon"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="⏭" />
+                        android:layout_weight="1" 
+                        android:contentDescription="@string/media_next"
+                        app:icon="@drawable/ic_media_next" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMediaVolDown"
                         android:tag="hub:sec"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/PL.BtnIcon"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🔉" />
+                        android:layout_weight="1" 
+                        android:contentDescription="@string/media_vol_down"
+                        app:icon="@drawable/ic_vol_down" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMediaVolUp"
                         android:tag="hub:sec"
-                        style="@style/Widget.Material3.Button.TextButton"
+                        style="@style/PL.BtnIcon"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="🔊" />
+                        android:layout_weight="1" 
+                        android:contentDescription="@string/media_vol_up"
+                        app:icon="@drawable/ic_vol_up" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -684,7 +725,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="@string/cmd_ringer" />
+                    android:text="@string/cmd_ringer"
+                    app:icon="@drawable/ic_bell" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -710,7 +752,8 @@
                     style="@style/PL.BtnChip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/btn_remote_panel" />
+                    android:text="@string/btn_remote_panel"
+                    app:icon="@drawable/ic_term" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -726,7 +769,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/btn_mode" />
+                        android:text="@string/btn_mode"
+                        app:icon="@drawable/ic_sliders" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnLostMode"
@@ -736,7 +780,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/btn_lost_mode" />
+                        android:text="@string/btn_lost_mode"
+                        app:icon="@drawable/ic_alert" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -763,7 +808,8 @@
                     style="@style/PL.BtnChip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/cmd_gallery" />
+                    android:text="@string/cmd_gallery"
+                    app:icon="@drawable/ic_image" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -779,7 +825,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_recent_calls" />
+                        android:text="@string/cmd_recent_calls"
+                        app:icon="@drawable/ic_phone" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdRecentSms"
@@ -789,7 +836,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_recent_sms" />
+                        android:text="@string/cmd_recent_sms"
+                        app:icon="@drawable/ic_msg" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -823,7 +871,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_ls" />
+                        android:text="@string/cmd_ls"
+                        app:icon="@drawable/ic_folder" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdGetFile"
@@ -833,7 +882,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_getfile" />
+                        android:text="@string/cmd_getfile"
+                        app:icon="@drawable/ic_download" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -850,7 +900,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_calllog" />
+                        android:text="@string/cmd_calllog"
+                        app:icon="@drawable/ic_phone" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdContacts"
@@ -860,7 +911,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_contacts" />
+                        android:text="@string/cmd_contacts"
+                        app:icon="@drawable/ic_users" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -877,7 +929,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_usage" />
+                        android:text="@string/cmd_usage"
+                        app:icon="@drawable/ic_chart" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdStorage"
@@ -887,7 +940,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_storage" />
+                        android:text="@string/cmd_storage"
+                        app:icon="@drawable/ic_db" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -904,7 +958,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_nettest" />
+                        android:text="@string/cmd_nettest"
+                        app:icon="@drawable/ic_wifi" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdRestartSvc"
@@ -914,7 +969,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_restart" />
+                        android:text="@string/cmd_restart"
+                        app:icon="@drawable/ic_refresh" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -931,7 +987,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_camrev" />
+                        android:text="@string/cmd_camrev"
+                        app:icon="@drawable/ic_camera" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCmdLiveView"
@@ -941,7 +998,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_liveview" />
+                        android:text="@string/cmd_liveview"
+                        app:icon="@drawable/ic_video" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -958,7 +1016,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_url" />
+                        android:text="@string/cmd_url"
+                        app:icon="@drawable/ic_link" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnFocusGuard"
@@ -968,7 +1027,8 @@
                         android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:text="@string/cmd_focus" />
+                        android:text="@string/cmd_focus"
+                        app:icon="@drawable/ic_shield_check" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

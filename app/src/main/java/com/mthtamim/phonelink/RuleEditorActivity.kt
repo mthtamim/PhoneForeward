@@ -162,9 +162,16 @@ class RuleEditorActivity : LocalizedActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(8), dp(20), dp(4))
         }
+        // v2.17.3: picker search matches the preview search box —
+        // filled rounded box + leading search icon, no underline.
         val search = EditText(this).apply {
             hint = getString(R.string.picker_search_hint)
             setSingleLine()
+            setBackgroundResource(R.drawable.bg_search)
+            setCompoundDrawablesWithIntrinsicBounds(
+                R.drawable.ic_search, 0, 0, 0)
+            compoundDrawablePadding = dp(10)
+            setPadding(dp(16), dp(13), dp(16), dp(13))
         }
         val list = ListView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -229,7 +236,7 @@ class RuleEditorActivity : LocalizedActivity() {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = android.view.Gravity.CENTER_VERTICAL
             }
-            chipType.setBackgroundResource(R.drawable.bg_pill)
+            chipType.setBackgroundResource(R.drawable.bg_action_ghost)
             chipType.setPadding(dp(12), dp(6), dp(12), dp(6))
             chipType.textSize = 13.5f
             chipType.setTypeface(chipType.typeface, android.graphics.Typeface.BOLD)
@@ -243,8 +250,8 @@ class RuleEditorActivity : LocalizedActivity() {
             }
             line1.addView(chipType)
             line1.addView(TextView(this@RuleEditorActivity).apply {
-                text = "✕"
-                textSize = 15f
+                text = "×"
+                textSize = 17f
                 setPadding(dp(12), dp(6), dp(4), dp(6))
                 setOnClickListener {
                     when (kind) {
@@ -282,7 +289,7 @@ class RuleEditorActivity : LocalizedActivity() {
                         .apply { setMargins(0, dp(6), 0, 0) }
                 }
                 val cc = TextView(this@RuleEditorActivity).apply {
-                    setBackgroundResource(R.drawable.bg_pill)
+                    setBackgroundResource(R.drawable.bg_action_ghost)
                     setPadding(dp(12), dp(6), dp(12), dp(6))
                     textSize = 12.5f
                     layoutParams = LinearLayout.LayoutParams(

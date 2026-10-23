@@ -11,35 +11,107 @@
         <item name="cardBackgroundColor">?attr/colorSurface</item>
     </style>
 
+    <!-- ===== v2.17.3 control system: compact sizes everywhere.
+         Action buttons are 48dp-class, radius 14-16dp, text
+         13-14sp, single-line or autosized — never a giant slab. -->
+
     <style name="PL.BtnFilled" parent="Widget.Material3.Button">
-        <item name="cornerRadius">14dp</item>
+        <item name="cornerRadius">15dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
     </style>
 
     <style name="PL.BtnOutlined" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">14dp</item>
+        <item name="cornerRadius">15dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
     </style>
 
     <style name="PL.BtnTonal" parent="Widget.Material3.Button.TonalButton">
-        <item name="cornerRadius">14dp</item>
+        <item name="cornerRadius">15dp</item>
         <item name="backgroundTint">@color/md_btnFill</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
     </style>
 
     <style name="PL.BtnText" parent="Widget.Material3.Button.TextButton">
-        <item name="cornerRadius">14dp</item>
+        <item name="cornerRadius">15dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
     </style>
 
-    <!-- Big menu row (Settings categories, Home menu): white card-like row -->
-    <style name="PL.MenuBtn" parent="Widget.Material3.Button.TonalButton">
-        <item name="cornerRadius">18dp</item>
-        <item name="android:minHeight">62dp</item>
-        <item name="android:paddingStart">20dp</item>
-        <item name="android:paddingEnd">16dp</item>
-        <item name="android:textSize">16sp</item>
-        <item name="backgroundTint">@color/md_surface</item>
+    <!-- Segmented toggle-group button (language / theme pickers) -->
+    <style name="PL.BtnToggle" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">15dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">12.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">12.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+    </style>
+
+    <!-- Danger action (SOS, panic retry): red, compact -->
+    <style name="PL.BtnDanger" parent="Widget.Material3.Button">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/status_bad</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:minHeight">50dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">14.5sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
+    </style>
+
+    <!-- Icon-only compact button (hub media keys) -->
+    <style name="PL.BtnIcon" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/md_btnFill</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
-        <item name="strokeColor">?attr/colorSurfaceVariant</item>
-        <item name="strokeWidth">1dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+        <item name="iconSize">24dp</item>
+        <item name="iconPadding">0dp</item>
+        <item name="iconGravity">textStart</item>
     </style>
 
     <!-- Card section heading inside a page -->
@@ -63,8 +135,9 @@
     <style name="PL.SwitchRow" parent="Widget.Material3.CompoundButton.Switch">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:paddingTop">10dp</item>
-        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textSize">15sp</item>
         <item name="android:textAppearance">@style/TextAppearance.Material3.BodyLarge</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
@@ -114,7 +187,11 @@
 
     <!-- Rounded filter chip (Inbox categories, Command Hub categories) -->
     <style name="PL.ChipFilter" parent="Widget.Material3.Chip.Filter">
-        <item name="chipCornerRadius">20dp</item>
+        <item name="chipCornerRadius">16dp</item>
+        <item name="chipMinHeight">38dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
     </style>
 
     <!-- Bottom-nav active pill indicator -->
@@ -127,13 +204,20 @@
         <item name="cornerSize">50%</item>
     </style>
 
-    <!-- Dashboard / hub tile title -->
+    <!-- Dashboard / hub tile title (autosizes so long BN/EN labels
+         always fit inside their tile instead of wrapping awkwardly) -->
     <style name="PL.TileTitle" parent="TextAppearance.Material3.TitleMedium">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">16sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
     </style>
 
     <!-- ===== v2.17.2 preview design styles ===== -->
@@ -157,47 +241,143 @@
         <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
     </style>
 
-    <!-- Pill-shaped filled button (editor Save, Grant All) -->
+    <!-- Compact filled button (editor Save, Grant All) -->
     <style name="PL.BtnPill" parent="Widget.Material3.Button">
-        <item name="cornerRadius">100dp</item>
+        <item name="cornerRadius">16dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
     </style>
 
-    <!-- Pill-shaped ghost button (dark fill, outline stroke) -->
+    <!-- Compact ghost button (dark fill, outline stroke) -->
     <style name="PL.BtnGhost" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">100dp</item>
+        <item name="cornerRadius">16dp</item>
         <item name="backgroundTint">@color/md_btnFill</item>
         <item name="strokeColor">?attr/colorOutline</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
     </style>
 
-    <!-- Pill-shaped mint-outline button (+ Add Action, Test) -->
+    <!-- Compact mint-outline button (+ Add Action, Listen) -->
     <style name="PL.BtnMint" parent="Widget.Material3.Button.OutlinedButton">
-        <item name="cornerRadius">100dp</item>
+        <item name="cornerRadius">16dp</item>
         <item name="strokeColor">?attr/colorPrimary</item>
         <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
     </style>
 
-    <!-- Small chip-like tonal button (Automation quick tools) -->
+    <!-- Compact chip-like action button: the workhorse of the new
+         system (hub command rows, inbox actions, quick tools) -->
     <style name="PL.BtnChip" parent="Widget.Material3.Button.TonalButton">
-        <item name="cornerRadius">20dp</item>
+        <item name="cornerRadius">15dp</item>
         <item name="backgroundTint">@color/md_btnFill</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
-        <item name="android:minHeight">40dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
         <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">6dp</item>
     </style>
 
-    <!-- Tall tile button (Command Hub device toggles) -->
+    <!-- Icon tile button (Command Hub device toggles): circle icon
+         on top, label below, equal grid cells -->
     <style name="PL.BtnTile" parent="Widget.Material3.Button.TonalButton">
-        <item name="cornerRadius">22dp</item>
+        <item name="cornerRadius">16dp</item>
         <item name="backgroundTint">@color/md_surface</item>
         <item name="strokeColor">?attr/colorSurfaceVariant</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
-        <item name="android:minHeight">92dp</item>
-        <item name="android:gravity">start|center_vertical</item>
-        <item name="android:paddingStart">16dp</item>
-        <item name="android:paddingEnd">12dp</item>
-        <item name="android:textSize">15sp</item>
+        <item name="android:minHeight">98dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconGravity">top</item>
+        <item name="iconSize">40dp</item>
+        <item name="iconPadding">5dp</item>
+    </style>
+
+    <!-- Icon tile button, Quick Send grid size -->
+    <style name="PL.BtnTileQs" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="strokeColor">?attr/colorSurfaceVariant</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:minHeight">88dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconGravity">top</item>
+        <item name="iconSize">40dp</item>
+        <item name="iconPadding">4dp</item>
     </style>
 
     <!-- Plain inset text field on the new dark field background -->
@@ -224,15 +404,18 @@
         <item name="android:textColor">?attr/colorOnPrimaryContainer</item>
     </style>
 
-    <!-- Plain rounded search box (Command Hub) -->
+    <!-- Plain rounded search box (preview style): filled rounded
+         16dp box, leading search icon, no underline, no box outline -->
     <style name="PL.SearchBox" parent="Widget.AppCompat.EditText">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@drawable/bg_search</item>
+        <item name="android:drawablePadding">10dp</item>
+        <item name="android:maxLines">1</item>
         <item name="android:paddingStart">16dp</item>
         <item name="android:paddingEnd">16dp</item>
-        <item name="android:paddingTop">12dp</item>
-        <item name="android:paddingBottom">12dp</item>
+        <item name="android:paddingTop">13dp</item>
+        <item name="android:paddingBottom">13dp</item>
         <item name="android:textSize">14.5sp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>

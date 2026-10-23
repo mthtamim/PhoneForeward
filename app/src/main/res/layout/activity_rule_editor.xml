@@ -47,7 +47,8 @@
                 style="@style/PL.BtnPill"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/auto_save" />
+                android:text="@string/auto_save"
+                app:icon="@drawable/ic_check" />
         </LinearLayout>
 
         <!-- ===== Name and category ===== -->
@@ -129,7 +130,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="@string/auto_add_trigger" />
+                    android:text="@string/auto_add_trigger"
+                    app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -189,7 +191,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="@string/auto_add_constraint" />
+                    android:text="@string/auto_add_constraint"
+                    app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -226,7 +229,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="@string/auto_add_action" />
+                    android:text="@string/auto_add_action"
+                    app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -244,7 +248,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="5dp"
                 android:layout_weight="1"
-                android:text="@string/ed_test_rule" />
+                android:text="@string/ed_test_rule"
+                app:icon="@drawable/ic_check" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDeleteRule"
@@ -255,7 +260,8 @@
                 android:layout_weight="1"
                 android:text="@string/ed_delete_rule"
                 android:textColor="?attr/colorError"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:icon="@drawable/ic_trash" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

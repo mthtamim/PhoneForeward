@@ -102,7 +102,7 @@ object BatteryHist {
                 if (p > max) max = p
                 last = p
             }
-            "🔋 $min% – $max% (এখন $last%)"
+            "$min% – $max% (এখন $last%)"
         } catch (e: Exception) { null }
     }
 }

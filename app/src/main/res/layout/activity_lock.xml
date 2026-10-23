@@ -36,10 +36,12 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnUnlock"
+            style="@style/PL.BtnFilled"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="@string/btn_unlock" />
+        android:text="@string/btn_unlock"
+        app:icon="@drawable/ic_lock" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnBiometric"
@@ -48,5 +50,6 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="@string/btn_biometric"
-        android:visibility="gone" />
+        android:visibility="gone"
+        app:icon="@drawable/ic_eye" />
 </LinearLayout>

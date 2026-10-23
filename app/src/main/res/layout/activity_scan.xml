@@ -24,7 +24,8 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top|end"
         android:layout_margin="16dp"
-        android:text="@string/btn_torch" />
+        android:text="@string/btn_torch"
+        app:icon="@drawable/ic_flash" />
 
     <TextView
         android:layout_width="match_parent"

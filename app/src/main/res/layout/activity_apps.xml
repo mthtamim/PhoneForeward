@@ -27,17 +27,14 @@
             style="@style/PL.SwitchRow"
             android:text="@string/allowlist_label" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            style="@style/PL.Field"
-            android:hint="@string/hint_app_search">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etAppSearch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
+        <EditText
+            android:id="@+id/etAppSearch"
+            style="@style/PL.SearchBox"
+            android:layout_marginTop="8dp"
+            android:drawableStart="@drawable/ic_search"
+            android:hint="@string/hint_app_search"
+            android:inputType="text"
+            android:maxLines="1" />
     </LinearLayout>
 
     <ListView

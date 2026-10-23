@@ -37,8 +37,10 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnQrClose"
+            style="@style/PL.BtnFilled"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="@string/btn_done" />
+        android:text="@string/btn_done"
+        app:icon="@drawable/ic_check" />
 </LinearLayout>

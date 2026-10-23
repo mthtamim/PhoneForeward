@@ -107,7 +107,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_apply_code" />
+                        android:text="@string/btn_apply_code"
+                        app:icon="@drawable/ic_check" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnNewCode"
@@ -116,7 +117,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_new_code" />
+                        android:text="@string/btn_new_code"
+                        app:icon="@drawable/ic_refresh" />
                 </LinearLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -137,7 +139,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/btn_save_name" />
+                    android:text="@string/btn_save_name"
+                    app:icon="@drawable/ic_check" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -152,7 +155,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_show_qr" />
+                        android:text="@string/btn_show_qr"
+                        app:icon="@drawable/ic_qr" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnScanQr"
@@ -161,7 +165,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_scan_qr" />
+                        android:text="@string/btn_scan_qr"
+                        app:icon="@drawable/ic_camera" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
@@ -170,7 +175,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="@string/btn_profiles" />
+                    android:text="@string/btn_profiles"
+                    app:icon="@drawable/ic_users" />
 
                 <TextView
                     android:id="@+id/tvSafety"
@@ -226,11 +232,13 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnStartService"
+            style="@style/PL.BtnFilled"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_start_service" />
+                        android:text="@string/btn_start_service"
+                        app:icon="@drawable/ic_power" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnStopService"
@@ -239,7 +247,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
                         android:layout_weight="1"
-                        android:text="@string/btn_stop_service" />
+                        android:text="@string/btn_stop_service"
+                        app:icon="@drawable/ic_power" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

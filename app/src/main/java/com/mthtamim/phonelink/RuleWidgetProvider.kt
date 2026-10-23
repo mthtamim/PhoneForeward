@@ -44,8 +44,8 @@ class RuleWidgetProvider : AppWidgetProvider() {
             val rule = Automation.rules(ctx)
                 .firstOrNull { it.optString("id") == ruleIdFor(ctx, widgetId) }
             views.setTextViewText(R.id.wRuleName,
-                "▶ " + (rule?.optString("name")
-                    ?: ctx.getString(R.string.widget_rule_unset)))
+                rule?.optString("name")
+                    ?: ctx.getString(R.string.widget_rule_unset))
             val intent = Intent(ctx, RuleWidgetProvider::class.java)
                 .setAction(ACTION_RUN).putExtra(EXTRA_WIDGET_ID, widgetId)
             val pi = PendingIntent.getBroadcast(ctx, 1000 + widgetId, intent,

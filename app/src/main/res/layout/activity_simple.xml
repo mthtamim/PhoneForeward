@@ -28,6 +28,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSimpleSos"
+        style="@style/PL.BtnDanger"
         android:layout_width="match_parent"
         android:layout_height="88dp"
         android:text="@string/simple_sos"
@@ -49,7 +50,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSimpleFull"
-        style="@style/Widget.Material3.Button.TextButton"
+        style="@style/PL.BtnText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/simple_full_app" />

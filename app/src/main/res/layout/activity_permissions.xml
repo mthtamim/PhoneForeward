@@ -36,7 +36,8 @@
             style="@style/PL.BtnPill"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/btn_grant_all" />
+            android:text="@string/btn_grant_all"
+            app:icon="@drawable/ic_shield_check" />
     </LinearLayout>
 
     <ScrollView
@@ -79,9 +80,14 @@
                     android:orientation="horizontal"
                     android:padding="16dp">
 
+                    <!-- v2.17.3 gauge fix: the ring is a FIXED 104dp
+                         box; the centred texts are width-constrained
+                         to the ring and autosize down instead of
+                         spilling over the title column beside them. -->
                     <FrameLayout
                         android:layout_width="104dp"
-                        android:layout_height="104dp">
+                        android:layout_height="104dp"
+                        android:layout_marginEnd="2dp">
 
                         <ProgressBar
                             android:id="@+id/pbPermGauge"
@@ -95,19 +101,29 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingStart="13dp"
+                            android:paddingEnd="13dp">
 
                             <TextView
                                 android:id="@+id/tvPermGauge"
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:autoSizeMaxTextSize="19sp"
+                                android:autoSizeMinTextSize="10sp"
+                                android:autoSizeStepGranularity="1sp"
+                                android:autoSizeTextType="uniform"
+                                android:gravity="center"
+                                android:maxLines="1"
                                 android:textSize="19sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:id="@+id/tvPermGaugeActive"
-                                android:layout_width="wrap_content"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:maxLines="1"
                                 android:text="@string/perm_gauge_active"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 android:textSize="11sp" />
@@ -209,7 +225,8 @@
                             style="@style/PL.BtnChip"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/btn_open_settings" />
+                            android:text="@string/btn_open_settings"
+                            app:icon="@drawable/ic_bell" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -333,7 +350,8 @@
                             style="@style/PL.BtnChip"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/btn_open_settings" />
+                            android:text="@string/btn_open_settings"
+                            app:icon="@drawable/ic_batt" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -417,7 +435,8 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="5dp"
             android:layout_weight="1.2"
-            android:text="@string/perm_diag" />
+            android:text="@string/perm_diag"
+            app:icon="@drawable/ic_term" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnPermDone"
@@ -426,6 +445,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="5dp"
             android:layout_weight="1"
-            android:text="@string/btn_done" />
+            android:text="@string/btn_done"
+            app:icon="@drawable/ic_check" />
     </LinearLayout>
 </LinearLayout>

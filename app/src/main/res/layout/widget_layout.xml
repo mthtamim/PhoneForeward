@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="📲 PhoneLink"
+        android:text="PhoneLink"
         android:textColor="#F8FAFC"
         android:textSize="13sp"
         android:textStyle="bold" />

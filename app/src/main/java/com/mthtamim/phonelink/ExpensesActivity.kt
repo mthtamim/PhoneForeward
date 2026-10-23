@@ -61,7 +61,7 @@ class ExpensesActivity : LocalizedActivity() {
         line(getString(R.string.exp_recent), 17f, true)
         val df = SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault())
         for (t in txns.take(40)) {
-            line((if (t.incoming) "⬇️ " else "⬆️ ") + t.service + " — ৳" +
+            line((if (t.incoming) "↓ " else "↑ ") + t.service + " — ৳" +
                 fmt(t.amount) + "\n" + df.format(Date(t.time)) + " • " +
                 t.title.take(48), 13f)
         }

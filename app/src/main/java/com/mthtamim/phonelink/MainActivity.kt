@@ -1508,7 +1508,9 @@ class MainActivity : LocalizedActivity() {
     private fun wireV24() {
         // --- sub-screen navigation (v2.4.1) ---
         findViewById<View>(R.id.btnSubBack).setOnClickListener { closeSubScreen() }
-        findViewById<View>(R.id.btnSettingsBack).setOnClickListener { closeSettings() }
+        // v2.17.3: no back arrow on the Settings tab page any more
+        // (btnSettingsBack removed from page_settings.xml) — Settings
+        // is a top-level tab; system Back handles navigation.
         // v2.17.2: the settings hub tiles are the only entry points
         // (tileHubRelay/Perms/Security/Data, cardHubForward and
         // btnHubKeys are wired in wireV217) -- no legacy menu, no
@@ -1523,7 +1525,12 @@ class MainActivity : LocalizedActivity() {
             openSubScreen(R.id.panelFamily, R.string.cat_family) }
         findViewById<View>(R.id.cardHubPanic).setOnClickListener {
             openSubScreen(R.id.panelSecurity, R.string.cat_security) }
-        // Android Back closes a sub-screen before leaving the app.
+        // v2.17.3 back map (Back never falls out of the app from a
+        // panel or a non-Dashboard tab):
+        //   sub-screen open -> close it (back to the Settings hub
+        //   that opened it); config/pairing page open -> close it
+        //   (Settings hub); any other tab -> Dashboard; Dashboard
+        //   with nothing open -> exit.
         onBackPressedDispatcher.addCallback(this,
             object : androidx.activity.OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
@@ -1531,8 +1538,8 @@ class MainActivity : LocalizedActivity() {
                         closeSubScreen()
                     } else if (configOpen) {
                         closeConfigPage()
-                    } else if (settingsOpen) {
-                        closeSettings()
+                    } else if (bottomNav.selectedItemId != R.id.navHome) {
+                        bottomNav.selectedItemId = R.id.navHome
                     } else {
                         isEnabled = false
                         onBackPressedDispatcher.onBackPressed()
@@ -1971,7 +1978,7 @@ class MainActivity : LocalizedActivity() {
     private fun showProfilesDialog() {
         val profiles = Config.profiles(this)
         val labels = mutableListOf<String>()
-        profiles.forEach { (name, code) -> labels.add("⭐ $name — $code") }
+        profiles.forEach { (name, code) -> labels.add("$name — $code") }
         labels.add(getString(R.string.profile_add_current))
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.profiles_title))
@@ -2590,8 +2597,8 @@ class MainActivity : LocalizedActivity() {
                 mins < 1440 -> getString(R.string.time_hours_ago, mins / 60)
                 else -> getString(R.string.time_days_ago, mins / 1440)
             }
-            val batt = if (p.battery >= 0) " • 🔋 ${p.battery}%" else ""
-            val status = if (p.status.isNotEmpty()) "\n💬 ${p.status}" else ""
+            val batt = if (p.battery >= 0) " • ${p.battery}%" else ""
+            val status = if (p.status.isNotEmpty()) "\n${p.status}" else ""
             "${p.name}$batt — $whenText$status"
         }.toMutableList()
         BatteryHist.summary(this)?.let { labels.add(it) }
@@ -2975,7 +2982,7 @@ class MainActivity : LocalizedActivity() {
             peer == null -> ""
             else -> buildString {
                 append(peer.name)
-                if (peer.battery >= 0) append(" • 🔋 ${peer.battery}%")
+                if (peer.battery >= 0) append(" • ${peer.battery}%")
                 if (peer.status.isNotEmpty()) append(" • ${peer.status}")
             }
         }

@@ -34,14 +34,16 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <TextView
+        <!-- v2.17.3: vector icon in the circle (was an emoji
+             TextView). Same id; InboxAdapter sets the drawable. -->
+        <ImageView
             android:id="@+id/tvItemIcon"
             android:layout_width="46dp"
             android:layout_height="46dp"
             android:background="@drawable/bg_icon_chip"
-            android:gravity="center"
-            android:textSize="21sp"
-            android:text="🔔" />
+            android:contentDescription="@null"
+            android:padding="12dp"
+            android:scaleType="centerInside" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -50,15 +52,41 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/tvItemTitle"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="15.5sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/ivItemPin"
+                    android:layout_width="15dp"
+                    android:layout_height="15dp"
+                    android:layout_marginEnd="5dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_pin"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvItemTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="15.5sp"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/ivItemStar"
+                    android:layout_width="17dp"
+                    android:layout_height="17dp"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_star"
+                    android:visibility="gone" />
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvItemBadge"
@@ -115,13 +143,11 @@
                     android:id="@+id/btnItemPrimary"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_pill"
+                    android:background="@drawable/bg_action_pill"
                     android:clickable="true"
                     android:focusable="true"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="7dp"
-                    android:paddingBottom="7dp"
+                    android:gravity="center"
+                    android:minHeight="36dp"
                     android:textColor="?attr/colorOnPrimaryContainer"
                     android:textSize="12.5sp"
                     android:textStyle="bold" />
@@ -131,13 +157,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_search"
+                    android:background="@drawable/bg_action_ghost"
                     android:clickable="true"
                     android:focusable="true"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="7dp"
-                    android:paddingBottom="7dp"
+                    android:gravity="center"
+                    android:minHeight="36dp"
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="12.5sp"
                     android:textStyle="bold"
