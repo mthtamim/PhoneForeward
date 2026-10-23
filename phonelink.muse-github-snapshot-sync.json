@@ -4670,5 +4670,15 @@
    "docs/phonelink-viewer.html",
    "README.md"
   ]
+ },
+ {
+  "owner": "mthtamim",
+  "repo": "PhoneForeward",
+  "branch": "main",
+  "source_dir": "/home/hatch/workspace/github-push/phonelink",
+  "commit_sha": "0710b300a1620a4ec6e40b8388e28bf71b7cb687",
+  "paths": [
+   "settings.gradle"
+  ]
  }
 ]
