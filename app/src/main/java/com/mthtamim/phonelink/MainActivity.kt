@@ -13,7 +13,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
-import android.provider.Settings
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -95,6 +94,13 @@ class MainActivity : LocalizedActivity() {
     private lateinit var tvHubDataSub: TextView
     private lateinit var tvHubFwd: TextView
     private lateinit var tvHubDiag: TextView
+    // v2.17.4: state lines for accesses granted in Permissions, the
+    // Automation Studio info line and the General version line
+    private lateinit var tvSmartUsageState: TextView
+    private lateinit var tvA11yState: TextView
+    private lateinit var tvShizukuRelayState: TextView
+    private lateinit var tvSmartStudioInfo: TextView
+    private lateinit var tvGeneralDiag: TextView
     private lateinit var bottomNav: BottomNavigationView
 
     private var inboxItems: List<History.Item> = emptyList()
@@ -510,6 +516,11 @@ class MainActivity : LocalizedActivity() {
         tvStats = findViewById(R.id.tvStats)
         tvPairCode = findViewById(R.id.tvPairCode)
         tvSenderSeen = findViewById(R.id.tvSenderSeen)
+        tvSmartUsageState = findViewById(R.id.tvSmartUsageState)
+        tvA11yState = findViewById(R.id.tvA11yState)
+        tvShizukuRelayState = findViewById(R.id.tvShizukuRelayState)
+        tvSmartStudioInfo = findViewById(R.id.tvSmartStudioInfo)
+        tvGeneralDiag = findViewById(R.id.tvGeneralDiag)
         lvInbox = findViewById(R.id.lvInbox)
         etSearch = findViewById(R.id.etSearch)
 
@@ -864,9 +875,53 @@ class MainActivity : LocalizedActivity() {
                 { runOnUiThread { toast(getString(R.string.toast_geo_failed)) } })
         }
         bindToggle(R.id.swDailySummary, "daily_summary_on", Config.dailySummaryOn(this))
-        findViewById<Button>(R.id.btnUsageAccess).setOnClickListener {
-            try { startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) }
-            catch (_: Exception) { toast(getString(R.string.toast_no_usage_settings)) }
+        // ----- v2.17.4 settings reorganization wiring -----
+        // Usage Access is granted ONLY in Permissions & Access now;
+        // the Smart panel keeps a state line (refreshStatus) + link.
+        findViewById<Button>(R.id.btnSmartPermsLink).setOnClickListener {
+            startActivity(Intent(this, PermissionsActivity::class.java))
+        }
+        // Same for Device Admin / Accessibility from Security.
+        findViewById<Button>(R.id.btnSecPermsLink).setOnClickListener {
+            startActivity(Intent(this, PermissionsActivity::class.java))
+        }
+        // Bluetooth share link row in the Relay panel's peers card.
+        findViewById<Button>(R.id.btnRelayBtLink).setOnClickListener {
+            startActivity(Intent(this, BtActivity::class.java))
+        }
+        // automation_on finally gets its master toggle (was an
+        // orphan key changeable only via settings import).
+        bindToggle(R.id.swAutoMaster, "automation_on", Config.automationOn(this))
+        // geo_radius finally gets a UI (was stuck at 200 m).
+        findViewById<Button>(R.id.btnGeoRadius).setOnClickListener {
+            val options = intArrayOf(100, 200, 300, 500, 1000)
+            val labels = options.map { "$it m" }.toTypedArray()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_geo_radius))
+                .setItems(labels) { _, which ->
+                    Config.setGeoRadius(this, options[which]); refreshStatus()
+                }
+                .show()
+        }
+        // ptt_autoplay finally gets a UI (Smart panel, voice area).
+        val swPtt = findViewById<CompoundButton>(R.id.swPttAutoplay)
+        swPtt.isChecked = Config.pttAutoplay(this)
+        swPtt.setOnCheckedChangeListener { _, checked ->
+            Config.setPttAutoplay(this, checked)
+        }
+        // Automation Studio link row (real controls live in Studio).
+        findViewById<Button>(R.id.btnSmartStudio).setOnClickListener {
+            startActivity(Intent(this, AutomationActivity::class.java))
+        }
+        // My status: its real home is Appearance & General now; the
+        // Dashboard field remains as a shortcut — both write the
+        // same key and mirror each other's text on save.
+        findViewById<EditText>(R.id.etMyStatusSet).setText(Config.myStatus(this))
+        findViewById<Button>(R.id.btnSaveStatusSet).setOnClickListener {
+            val v = findViewById<EditText>(R.id.etMyStatusSet).text.toString()
+            Config.setMyStatus(this, v)
+            findViewById<EditText>(R.id.etMyStatus).setText(v)
+            toast(getString(R.string.toast_status_saved))
         }
 
         // ----- data & statistics (v2.1) -----
@@ -1217,7 +1272,10 @@ class MainActivity : LocalizedActivity() {
         }
         findViewById<EditText>(R.id.etMyStatus).setText(Config.myStatus(this))
         findViewById<Button>(R.id.btnSaveStatus).setOnClickListener {
-            Config.setMyStatus(this, findViewById<EditText>(R.id.etMyStatus).text.toString())
+            val v = findViewById<EditText>(R.id.etMyStatus).text.toString()
+            Config.setMyStatus(this, v)
+            // v2.17.4: keep the Appearance & General entry in sync
+            findViewById<EditText>(R.id.etMyStatusSet).setText(v)
             toast(getString(R.string.toast_status_saved))
         }
 
@@ -1248,23 +1306,9 @@ class MainActivity : LocalizedActivity() {
         }
         bindToggle(R.id.swAutosave, "autosave_media", Config.autosaveMedia(this))
         findViewById<Button>(R.id.btnSetPin).setOnClickListener { showSetPinDialog() }
-        findViewById<Button>(R.id.btnAdmin).setOnClickListener {
-            if (AdminReceiver.isActive(this)) {
-                try {
-                    startActivity(Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS))
-                } catch (_: Exception) { }
-                toast(getString(R.string.admin_deactivate_hint))
-            } else {
-                val comp = android.content.ComponentName(this, AdminReceiver::class.java)
-                val intent = Intent(android.app.admin.DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
-                    .putExtra(android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN, comp)
-                    .putExtra(android.app.admin.DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                        getString(R.string.admin_explanation))
-                try { startActivity(intent) } catch (_: Exception) {
-                    toast(getString(R.string.toast_admin_failed))
-                }
-            }
-        }
+        // v2.17.4: the Device Admin grant button moved to
+        // Permissions & Access — the Security panel keeps the
+        // tvAdminInfo state line and the btnSecPermsLink link.
         findViewById<Button>(R.id.btnSecLog).setOnClickListener { showSecLogDialog() }
         findViewById<Button>(R.id.btnDataLimit).setOnClickListener {
             val options = intArrayOf(0, 500, 1024, 2048, 5120)
@@ -1410,10 +1454,12 @@ class MainActivity : LocalizedActivity() {
     // Everything that used to pile onto Home/Settings now opens as a
     // full-screen sub-screen (overlay) with its own title and back.
 
+    // v2.17.4: panelGroup abolished — its items live in the Relay
+    // (commanders, peer modes) and Data (backup trio, charts) panels.
     private val subGroups = listOf(
         R.id.panelGeneral, R.id.panelForward, R.id.panelSmart,
         R.id.panelSecurity, R.id.panelRelay, R.id.panelData,
-        R.id.panelGroup, R.id.panelFamily
+        R.id.panelFamily
     )
 
     private fun openSubScreen(groupId: Int, titleRes: Int) {
@@ -1519,8 +1565,6 @@ class MainActivity : LocalizedActivity() {
             openSubScreen(R.id.panelGeneral, R.string.cat_general) }
         findViewById<View>(R.id.tileHubSmart).setOnClickListener {
             openSubScreen(R.id.panelSmart, R.string.cat_smart) }
-        findViewById<View>(R.id.tileHubGroup).setOnClickListener {
-            openSubScreen(R.id.panelGroup, R.string.cat_group) }
         findViewById<View>(R.id.tileHubFamily).setOnClickListener {
             openSubScreen(R.id.panelFamily, R.string.cat_family) }
         findViewById<View>(R.id.cardHubPanic).setOnClickListener {
@@ -1592,13 +1636,11 @@ class MainActivity : LocalizedActivity() {
         }
 
         // --- security panel ---
-        findViewById<Button>(R.id.btnA11y).setOnClickListener {
-            try {
-                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
-            } catch (_: Exception) { }
-        }
+        // v2.17.4: the Accessibility grant button moved to
+        // Permissions & Access — Security keeps the tvA11yState
+        // state line and the btnSecPermsLink link (wired in onCreate).
 
-        // --- group panel ---
+        // --- former group panel items (now in Relay / Data) ---
         findViewById<Button>(R.id.btnCommanders).setOnClickListener {
             val peers = Peers.list(this).filter { it.dev.isNotEmpty() }
             if (peers.isEmpty()) { toast(getString(R.string.toast_no_peers)); return@setOnClickListener }
@@ -1657,27 +1699,9 @@ class MainActivity : LocalizedActivity() {
                 findViewById<EditText>(R.id.etSmtpFrom).text.toString().trim())
             toast(getString(R.string.toast_saved))
         }
-        findViewById<Button>(R.id.btnShizuku).setOnClickListener {
-            when {
-                !ShizukuHelper.available() ->
-                    toast(getString(R.string.shizuku_absent))
-                ShizukuHelper.granted() -> {
-                    toast(getString(R.string.shizuku_testing))
-                    thread {
-                        val ok = ShizukuHelper.selfTest()
-                        val err = ShizukuHelper.lastError ?: ""
-                        runOnUiThread {
-                            if (ok) toast(getString(R.string.shizuku_ready))
-                            else toast(getString(R.string.shizuku_broken, err))
-                        }
-                    }
-                }
-                else -> {
-                    ShizukuHelper.request()
-                    toast(getString(R.string.shizuku_ask))
-                }
-            }
-        }
+        // v2.17.4: the Shizuku connect/test button moved to
+        // Permissions & Access — the Relay diagnostics card keeps
+        // only the tvShizukuRelayState display line (refreshStatus).
         findViewById<Button>(R.id.btnSaveFallback).setOnClickListener {
             Config.setSmsFallbackNumber(this,
                 findViewById<EditText>(R.id.etFallbackNumber).text.toString().trim())
@@ -1767,8 +1791,23 @@ class MainActivity : LocalizedActivity() {
         pageRemote.visibility = if (itemId == R.id.navRemote) View.VISIBLE else View.GONE
         pageSettings.visibility = if (itemId == R.id.navSettings) View.VISIBLE else View.GONE
         if (itemId == R.id.navInbox) markInboxSeen()
-        if (itemId == R.id.navRemote) refreshRemoteStates()
+        if (itemId == R.id.navRemote) {
+            resetHubFilter()
+            refreshRemoteStates()
+        }
         closeSubScreen()
+    }
+
+    /** v2.17.4 (Fix A): every Command Hub open starts on All with
+     *  an empty search — a category/search left over from a previous
+     *  visit (or restored after a recreate) no longer hides whole
+     *  sections behind empty titled cards. */
+    private fun resetHubFilter() {
+        hubCat = "ALL"
+        if (::etHubSearch.isInitialized && etHubSearch.text.isNotEmpty()) {
+            etHubSearch.text.clear()
+        }
+        findViewById<ChipGroup>(R.id.cgHubCats).check(R.id.chipHubAll)
     }
 
     /** v2.17: the Automation bottom bar (and other callers) pass a
@@ -2812,6 +2851,23 @@ class MainActivity : LocalizedActivity() {
         tvAdminInfo.text = getString(
             if (AdminReceiver.isActive(this)) R.string.admin_state_on else R.string.admin_state_off)
 
+        // v2.17.4: display-only state lines for the accesses that
+        // are granted in Permissions & Access (no grant path here).
+        tvA11yState.text = getString(R.string.a11y_state_fmt,
+            getString(if (PermChecks.a11yEnabled(this)) R.string.state_on
+                else R.string.state_off))
+        tvSmartUsageState.text = getString(R.string.usage_state_fmt,
+            getString(if (PermChecks.usageAccess(this)) R.string.status_granted
+                else R.string.status_missing))
+        tvShizukuRelayState.text = getString(
+            if (ShizukuHelper.granted()) R.string.hub_shizuku_on
+            else R.string.hub_shizuku_off)
+        tvSmartStudioInfo.text = getString(R.string.studio_info_fmt,
+            Automation.rules(this).size,
+            getString(if (Config.rulesSyncOn(this)) R.string.state_on
+                else R.string.state_off),
+            Automation.restSeconds(this))
+
         val seen = Config.lastSenderSeen(this)
         tvSenderSeen.text = if (seen == 0L) getString(R.string.sender_never_seen)
         else {
@@ -2910,8 +2966,14 @@ class MainActivity : LocalizedActivity() {
     private fun wireV217() {
         // Command Hub: search + category chips only change which
         // command tiles are visible; every button keeps its handler.
-        findViewById<ChipGroup>(R.id.cgHubCats)
-            .setOnCheckedStateChangeListener { _, ids ->
+        // v2.17.4 (Fix A): force the All chip BEFORE the listener is
+        // attached — a stale chip state (restored after a recreate,
+        // or left over from a previous visit) must never greet the
+        // user; showPage also resets the filter on every hub open.
+        val cgHubCats = findViewById<ChipGroup>(R.id.cgHubCats)
+        hubCat = "ALL"
+        cgHubCats.check(R.id.chipHubAll)
+        cgHubCats.setOnCheckedStateChangeListener { _, ids ->
                 hubCat = when (ids.firstOrNull()) {
                     R.id.chipHubSystem -> "sys"
                     R.id.chipHubDisplay -> "cam"
@@ -2935,7 +2997,7 @@ class MainActivity : LocalizedActivity() {
             openSubScreen(R.id.panelSecurity, R.string.cat_security) }
         findViewById<View>(R.id.tileHubData).setOnClickListener {
             openSubScreen(R.id.panelData, R.string.cat_data) }
-        findViewById<View>(R.id.cardHubForward).setOnClickListener {
+        findViewById<View>(R.id.tileHubForward).setOnClickListener {
             openSubScreen(R.id.panelForward, R.string.cat_forward) }
         findViewById<Button>(R.id.btnHubKeys).setOnClickListener { openConfigPage() }
         // v2.17.2: the paired-devices dialog used to hang off the
@@ -3020,6 +3082,9 @@ class MainActivity : LocalizedActivity() {
             "${Automation.rules(this).size} rules • " +
             "${History.all(this).size} inbox • " +
             "${Relay.queueSize(this)} queued"
+        // v2.17.4: the same version line also lives at the bottom
+        // of Appearance & General (inventory category 7).
+        tvGeneralDiag.text = tvHubDiag.text
     }
 
     /** Command Hub filter: a tagged command button shows only when
@@ -3058,6 +3123,34 @@ class MainActivity : LocalizedActivity() {
             }
         }
         collapse(pageRemote)
+        // v2.17.4 (Fix A): a section card whose hub buttons are ALL
+        // filtered out collapses completely — title included —
+        // instead of standing as an empty titled shell (the Sound &
+        // media / Control & modes bug). It returns as soon as any
+        // of its buttons matches the filter again. Every button
+        // inside a hub card carries a hub:* tag, so counting tagged
+        // buttons is exact.
+        fun collapseCards(v: View) {
+            if (v is com.google.android.material.card.MaterialCardView) {
+                val btns = mutableListOf<Button>()
+                fun collect(g: View) {
+                    val t = g.tag as? String
+                    if (g is Button && t != null && t.startsWith("hub:")) btns.add(g)
+                    if (g is android.view.ViewGroup) {
+                        for (i in 0 until g.childCount) collect(g.getChildAt(i))
+                    }
+                }
+                collect(v)
+                if (btns.isNotEmpty()) {
+                    v.visibility = if (btns.any { it.visibility == View.VISIBLE })
+                        View.VISIBLE else View.GONE
+                }
+            }
+            if (v is android.view.ViewGroup) {
+                for (i in 0 until v.childCount) collapseCards(v.getChildAt(i))
+            }
+        }
+        collapseCards(pageRemote)
     }
 
     private fun ownSsid(): String = try {

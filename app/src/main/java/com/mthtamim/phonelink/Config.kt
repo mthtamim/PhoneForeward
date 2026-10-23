@@ -115,6 +115,7 @@ object Config {
     fun geoLat(ctx: Context) = prefs(ctx).getFloat("geo_lat", 0f).toDouble()
     fun geoLng(ctx: Context) = prefs(ctx).getFloat("geo_lng", 0f).toDouble()
     fun geoRadius(ctx: Context) = prefs(ctx).getInt("geo_radius", 200)
+    fun setGeoRadius(ctx: Context, v: Int) { prefs(ctx).edit().putInt("geo_radius", v).apply() }
     fun setGeoCenter(ctx: Context, lat: Double, lng: Double) {
         prefs(ctx).edit().putFloat("geo_lat", lat.toFloat()).putFloat("geo_lng", lng.toFloat()).apply()
     }
@@ -550,6 +551,7 @@ object Config {
         prefs(ctx).edit().putInt("focus_start", start).putInt("focus_end", end).apply()
     }
     fun pttAutoplay(ctx: Context): Boolean = prefs(ctx).getBoolean("ptt_autoplay", true)
+    fun setPttAutoplay(ctx: Context, v: Boolean) { prefs(ctx).edit().putBoolean("ptt_autoplay", v).apply() }
     // ---- v2.11.1 launcher hide (icon lives on .MainAlias) ----
     fun iconHidden(ctx: Context): Boolean = try {
         ctx.packageManager.getComponentEnabledSetting(

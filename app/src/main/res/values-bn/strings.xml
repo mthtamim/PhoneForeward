@@ -197,7 +197,7 @@
     <string name="enc_label">End-to-end encryption</string>
     <string name="enc_hint">মেসেজ তোমার পেয়ার কোড থেকে তৈরি কী দিয়ে এনক্রিপ্ট হয় — রিলে সার্ভার পড়তে পারে না। দুই ফোনেই একই সেটিং রাখতে হবে।</string>
     <string name="lock_label">অ্যাপ লক (PIN / ফিঙ্গারপ্রিন্ট)</string>
-    <string name="btn_change_pin">PIN সেট / বদলাও</string>
+    <string name="btn_change_pin">অ্যাপ-লক PIN সেট / বদলাও</string>
     <string name="lock_title">PhoneLink লক করা</string>
     <string name="lock_subtitle">চালিয়ে যেতে PIN দাও</string>
     <string name="lock_set_title">PIN সেট করো</string>
@@ -238,7 +238,7 @@
     <string name="rule_instant">সাথে সাথে</string>
     <string name="rule_digest">সারাংশে</string>
     <string name="rule_off">বন্ধ</string>
-    <string name="sec_smart">স্মার্ট কন্ট্রোল</string>
+    <string name="sec_smart">স্মার্ট ও অটোমেশন</string>
     <string name="btn_apps">অ্যাপ বাছাই করো</string>
     <string name="quiet_label">Quiet hours (নীরব ডেলিভারি)</string>
     <string name="quiet_window">সময়: %1$s – %2$s</string>
@@ -372,7 +372,7 @@
     <string name="label_battery">ব্যাটারি</string>
     <string name="label_security">নিরাপত্তা ইভেন্ট</string>
     <string name="label_system">সিস্টেম ইভেন্ট</string>
-    <string name="btn_set_pin">কমান্ড PIN</string>
+    <string name="btn_set_pin">কমান্ড PIN সেট / বদলাও</string>
     <string name="btn_admin">Device admin</string>
     <string name="btn_seclog">নিরাপত্তা লগ</string>
     <string name="btn_remote_panel">রিমোট কন্ট্রোল (PIN)</string>
@@ -620,13 +620,12 @@
     <string name="btn_screenshot_cmd">রিমোট স্ক্রিনশট</string>
     <string name="cat_automation">অটোমেশন নিয়ম</string>
     <string name="cat_data">ডেটা ও ব্যাকআপ</string>
-    <string name="cat_family">পরিবার, জরুরি ও সহজ মোড</string>
+    <string name="cat_family">পরিবার ও সহজ মোড</string>
     <string name="cat_forward">ফরওয়ার্ডিং</string>
-    <string name="cat_general">সাধারণ ও চেহারা</string>
-    <string name="cat_group">গ্রুপ, ভূমিকা ও স্থানান্তর</string>
+    <string name="cat_general">চেহারা ও সাধারণ</string>
     <string name="cat_relay">সংযোগ ও রিলে</string>
-    <string name="cat_security">নিরাপত্তা</string>
-    <string name="cat_smart">স্মার্ট কন্ট্রোল</string>
+    <string name="cat_security">নিরাপত্তা ও অ্যাপ লক</string>
+    <string name="cat_smart">স্মার্ট ও অটোমেশন</string>
     <string name="charts_legend">বেগুনি = পাঠানো • সবুজাভ = পাওয়া</string>
     <string name="charts_recv">পাওয়া</string>
     <string name="charts_sent">পাঠানো</string>
@@ -1144,7 +1143,7 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="aa_torch_on">টর্চ চালু</string>
     <string name="aa_torch_off">টর্চ বন্ধ</string>
     <string name="aa_torch_toggle">টর্চ টগল (চালু ⇄ বন্ধ)</string>
-    <string name="auto_rest_label">একই নিয়ম আবার চলার আগে বিশ্রাম</string>
+    <string name="auto_rest_label">আবার চলার আগে বিশ্রাম</string>
     <string name="auto_rest_title">বিশ্রামের সময় (সেকেন্ড)</string>
     <string name="auto_rest_hint">০ = বিশ্রাম নেই, সর্বোচ্চ ৩০০</string>
     <string name="shizuku_testing">Shizuku Shell পরীক্ষা চলছে…</string>
@@ -1240,7 +1239,7 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="set_device_card">সংযুক্ত ডিভাইস ও অ্যাকাউন্ট</string>
     <string name="set_manage_keys">কী পরিচালনা</string>
     <string name="set_hub">প্রধান সেটিংস হাব</string>
-    <string name="set_relay">রিলে ও সার্ভার</string>
+    <string name="set_relay">সংযোগ ও রিলে</string>
     <string name="set_perms">অনুমতি ও অ্যাক্সেস</string>
     <string name="set_security">নিরাপত্তা ও অ্যাপ লক</string>
     <string name="set_data">ডেটা ও ব্যাকআপ</string>
@@ -1275,7 +1274,7 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="perm_shizuku_title">Shizuku / ADB সুবিধা</string>
     <string name="perm_shizuku_desc">হার্ডওয়্যার টগলের জন্য রুট ছাড়া সিস্টেম নিয়ন্ত্রণ</string>
     <string name="perm_note">সব প্রসেসিং এই ফোনেই হয়। আপনার নিজের রিলে নিয়ম ছাড়া কিছুই শেয়ার হয় না।</string>
-    <string name="perm_diag">ডায়াগনস্টিক চালান</string>
+    <string name="perm_diag">সব আবার যাচাই করো</string>
     <string name="perm_diag_fmt">%2$dটির মধ্যে %1$dটি অনুমতি দেওয়া হয়েছে</string>
     <string name="ed_name_label">নিয়মের নাম</string>
     <string name="ed_cat_label">বিভাগ</string>
@@ -1312,4 +1311,33 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="media_next">পরের গান</string>
     <string name="media_vol_down">শব্দ কমাও</string>
     <string name="media_vol_up">শব্দ বাড়াও</string>
+    <!-- v2.17.4: permissions single home + settings reorganization -->
+    <string name="perm_line_read_sms">SMS পড়া</string>
+    <string name="perm_line_location_coarse">লোকেশন (মোটামুটি)</string>
+    <string name="perm_special_title">বিশেষ অ্যাক্সেস</string>
+    <string name="perm_usage_title">ব্যবহারের অ্যাক্সেস (স্ক্রিন-টাইম)</string>
+    <string name="perm_write_title">সিস্টেম সেটিংস বদলানো</string>
+    <string name="perm_write_desc">অটোমেশনকে ব্রাইটনেস, স্ক্রিন-টাইমআউট, ফন্ট-সাইজ ও অটো-রোটেট বদলাতে দেয়।</string>
+    <string name="perm_ctx_title">প্রসঙ্গভিত্তিক অনুমতি</string>
+    <string name="perm_ctx_desc">কোনো ফিচারের দরকার হলেই চাওয়া হয় — সম্পূর্ণতার জন্য এখানে দেখানো হলো, গেজে গণনা হয় না।</string>
+    <string name="perm_ctx_bt">ব্লুটুথ (কাছের শেয়ার)</string>
+    <string name="perm_ctx_mic">মাইক্রোফোন (ভয়েস / ওয়াকি-টকি)</string>
+    <string name="perm_ctx_cal">ক্যালেন্ডার (অটোমেশন)</string>
+    <string name="perm_ctx_install">অজানা অ্যাপ ইনস্টল (আপডেট ফলব্যাক)</string>
+    <string name="perm_btn_grant">অনুমতি দিন</string>
+    <string name="btn_perms_link">অনুমতি ও অ্যাক্সেস খুলুন</string>
+    <string name="btn_geo_radius">জিওফেন্স ব্যাসার্ধ</string>
+    <string name="ptt_autoplay_label">আসা ভয়েস অটো-প্লে (ওয়াকি-টকি)</string>
+    <string name="auto_master_label">অটোমেশন ইঞ্জিন (মাস্টার সুইচ)</string>
+    <string name="sec_peers">কারা এই ফোনে পৌঁছাতে পারবে</string>
+    <string name="sec_web_inbox">LAN ওয়েব ইনবক্স</string>
+    <string name="sec_full_backup">সম্পূর্ণ সেটিংস ব্যাকআপ</string>
+    <string name="sec_my_status">আমার স্ট্যাটাস</string>
+    <string name="sec_automation">অটোমেশন</string>
+    <string name="btn_open_studio">Automation Studio খুলুন</string>
+    <string name="a11y_state_fmt">Accessibility সহায়ক: %1$s</string>
+    <string name="usage_state_fmt">স্ক্রিন-টাইম (usage) access: %1$s</string>
+    <string name="studio_info_fmt">%1$dটি নিয়ম • সিঙ্ক %2$s • বিশ্রাম %3$ds</string>
+    <string name="state_on">চালু</string>
+    <string name="state_off">বন্ধ</string>
 </resources>

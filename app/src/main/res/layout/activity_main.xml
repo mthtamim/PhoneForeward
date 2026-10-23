@@ -247,56 +247,66 @@
                     android:layout_marginTop="6dp"
                     android:text="@string/sw_auto_update" />
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/swWebInbox"
-                    style="@style/PL.SwitchRow"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/sw_web_inbox" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnWebPin"
-                    style="@style/PL.BtnTonal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/btn_web_pin"
-                    app:icon="@drawable/ic_lock" />
+<!-- ===== My status card (v2.17.4: the setting's real home is
+     Appearance & General; the Dashboard field stays as a shortcut) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
 
-                
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
                 <TextView
-                    style="@style/PL.BodySmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/label_sos_numbers" />
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_my_status" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etSosNumbers"
+                <com.google.android.material.textfield.TextInputLayout
                     style="@style/PL.Field"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="@string/hint_sos_numbers"
-                    android:inputType="phone" />
+                    android:layout_marginTop="8dp"
+                    android:hint="@string/hint_my_status">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etMyStatusSet"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="2" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSaveSos"
+                    android:id="@+id/btnSaveStatusSet"
                     style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="8dp"
                     android:text="@string/btn_save"
                     app:icon="@drawable/ic_check" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-        
+
 <TextView
             style="@style/PL.BodySmall"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="8dp"
+            android:layout_marginTop="4dp"
             android:text="@string/footer_about" />
+
+<TextView
+            android:id="@+id/tvGeneralDiag"
+            style="@style/PL.BodySmall"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp" />
 </LinearLayout>
 
 <LinearLayout
@@ -381,6 +391,13 @@
                     android:id="@+id/swFlashCmd"
                     style="@style/PL.SwitchRow"
                     android:text="@string/allow_flash_cmd" />
+
+                <!-- v2.17.4: allow_snap moved here from Smart — the four
+                     remote-command allowances sit together -->
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swSnap"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/snap_label" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swPresence"
@@ -682,11 +699,6 @@
                     android:text="@string/low_loc_label" />
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/swSnap"
-                    style="@style/PL.SwitchRow"
-                    android:text="@string/snap_label" />
-
-                <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swGeo"
                     style="@style/PL.SwitchRow"
                     android:text="@string/geo_label" />
@@ -704,19 +716,36 @@
                     android:text="@string/btn_set_geo"
                     app:icon="@drawable/ic_loc" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGeoRadius"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_geo_radius"
+                    app:icon="@drawable/ic_loc" />
+
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swDailySummary"
                     style="@style/PL.SwitchRow"
                     android:text="@string/daily_summary_label" />
 
+                <!-- v2.17.4: Usage Access is GRANTED only in
+                     Permissions & Access now — here just its state
+                     and a link (no second grant button). -->
+                <TextView
+                    android:id="@+id/tvSmartUsageState"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="10dp" />
+
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnUsageAccess"
-                    style="@style/PL.BtnTonal"
+                    android:id="@+id/btnSmartPermsLink"
+                    style="@style/PL.BtnGhost"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="@string/btn_usage_access"
-                    app:icon="@drawable/ic_chart" />
+                    android:text="@string/btn_perms_link"
+                    app:icon="@drawable/ic_shield_check" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
         <com.google.android.material.card.MaterialCardView
@@ -745,6 +774,79 @@
                     android:id="@+id/swClipSync"
                     style="@style/PL.SwitchRow"
                     android:text="@string/clip_sync_label" />
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swPttAutoplay"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/ptt_autoplay_label" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+<!-- ===== Automation card (v2.17.4): engine master switch, the
+     focus guard and the mode bundle (both moved from the Command
+     Hub — they are settings, not commands), and the Studio link
+     row (sync state + rest value live in the Studio itself) ===== -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_automation" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swAutoMaster"
+                    style="@style/PL.SwitchRow"
+                    android:text="@string/auto_master_label" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnFocusGuard"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/cmd_focus"
+                    app:icon="@drawable/ic_shield_check" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnMode"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_mode"
+                    app:icon="@drawable/ic_sliders" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <TextView
+                    android:id="@+id/tvSmartStudioInfo"
+                    style="@style/PL.BodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSmartStudio"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_open_studio"
+                    app:icon="@drawable/ic_bulb" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -865,6 +967,33 @@
                                     android:layout_marginTop="8dp"
                                     android:text="@string/btn_panic_pin"
                                     app:icon="@drawable/ic_alert" />
+
+                <!-- v2.17.4: SOS numbers moved here from General —
+                     panic PIN and SOS numbers are one emergency
+                     section now (the SOS button stays on Dashboard) -->
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/label_sos_numbers" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etSosNumbers"
+                    style="@style/PL.Field"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/hint_sos_numbers"
+                    android:inputType="phone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveSos"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_save"
+                    app:icon="@drawable/ic_check" />
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swHideIcon"
                     style="@style/PL.SwitchRow"
@@ -892,30 +1021,29 @@
                 <TextView
                     style="@style/PL.CardTitle"
                     android:text="@string/sec_admin_guard" />
+                <!-- v2.17.4: Device Admin and Accessibility are
+                     GRANTED only in Permissions & Access now —
+                     here just their state lines and one link. -->
                 <TextView
                     android:id="@+id/tvAdminInfo"
                     style="@style/PL.BodySmall"
                     android:layout_marginTop="8dp" />
+                <TextView
+                    android:id="@+id/tvA11yState"
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="4dp" />
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAdmin"
-                    style="@style/PL.BtnTonal"
+                    android:id="@+id/btnSecPermsLink"
+                    style="@style/PL.BtnGhost"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="@string/btn_admin"
+                    android:text="@string/btn_perms_link"
                     app:icon="@drawable/ic_shield_check" />
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swGuard"
                     style="@style/PL.SwitchRow"
                     android:text="@string/guard_label" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnA11y"
-                    style="@style/PL.BtnTonal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/btn_a11y"
-                    app:icon="@drawable/ic_eye" />
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSecLog"
                     style="@style/PL.BtnPill"
@@ -1311,14 +1439,6 @@
                     style="@style/PL.CardTitle"
                     android:text="@string/set_diag" />
 <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnShizuku"
-                        style="@style/PL.BtnTonal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/shizuku_btn"
-                        app:icon="@drawable/ic_term" />
-<com.google.android.material.button.MaterialButton
                     android:id="@+id/btnTest"
                     style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
@@ -1336,6 +1456,109 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp" />
+
+                <!-- v2.17.4: Shizuku connect/test lives in
+                     Permissions & Access now — state line only -->
+                <TextView
+                    android:id="@+id/tvShizukuRelayState"
+                    style="@style/PL.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+<!-- ===== Peers & reach (v2.17.4: commanders + peer modes moved
+     here from the abolished Group panel; Bluetooth share link) ===== -->
+<com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_peers" />
+
+                <TextView
+                    style="@style/PL.BodySmall"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/group_note" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCommanders"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_commanders"
+                    app:icon="@drawable/ic_users" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPeerModes"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_peer_modes"
+                    app:icon="@drawable/ic_phone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRelayBtLink"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/bt_title"
+                    app:icon="@drawable/ic_swap" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+<!-- ===== LAN web inbox (v2.17.4: moved here from General) ===== -->
+<com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="1dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_web_inbox" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/swWebInbox"
+                    style="@style/PL.SwitchRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/sw_web_inbox" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnWebPin"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/btn_web_pin"
+                    app:icon="@drawable/ic_lock" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
@@ -1468,6 +1691,16 @@
                     android:text="@string/btn_expenses"
                     app:icon="@drawable/ic_wallet" />
 
+                <!-- v2.17.4: history charts moved here from Group -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCharts"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_charts"
+                    app:icon="@drawable/ic_chart" />
+
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/swAutoBackup"
                     style="@style/PL.SwitchRow"
@@ -1477,19 +1710,12 @@
                     android:text="@string/sw_auto_backup" />
                 </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
 
-<LinearLayout
-            android:id="@+id/panelGroup"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
+<!-- ===== Full settings backup (v2.17.4: moved from Group) ===== -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
+            android:layout_marginTop="12dp"
             app:cardBackgroundColor="?attr/colorSurface"
             app:cardCornerRadius="22dp"
             app:cardElevation="0dp"
@@ -1501,34 +1727,11 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="16dp">
+
                 <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/group_note" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCommanders"
-                    style="@style/PL.BtnTonal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/btn_commanders"
-                    app:icon="@drawable/ic_users" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnPeerModes"
-                    style="@style/PL.BtnTonal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/btn_peer_modes"
-                    app:icon="@drawable/ic_phone" />
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCharts"
-                    style="@style/PL.BtnTonal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/btn_charts"
-                    app:icon="@drawable/ic_chart" />
+                    style="@style/PL.CardTitle"
+                    android:text="@string/sec_full_backup" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnExportConfig"
                     style="@style/PL.BtnTonal"
@@ -1537,25 +1740,26 @@
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_export_config"
                     app:icon="@drawable/ic_upload" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnImportConfig"
                     style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:text="@string/btn_import_config"
                     app:icon="@drawable/ic_download" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnConfigCode"
                     style="@style/PL.BtnTonal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:text="@string/btn_config_code"
                     app:icon="@drawable/ic_copy" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
 
 <LinearLayout

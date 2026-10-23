@@ -755,34 +755,18 @@
                     android:text="@string/btn_remote_panel"
                     app:icon="@drawable/ic_term" />
 
-                <LinearLayout
+                <!-- v2.17.4: the Mode bundle moved to Settings →
+                     Smart & Automation (it is a setting, not a
+                     command); Lost Mode stays here as a command -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLostMode"
+                    android:tag="hub:sec"
+                    style="@style/PL.BtnPill"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnMode"
-                        android:tag="hub:sec"
-                        style="@style/PL.BtnChip"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="4dp"
-                        android:text="@string/btn_mode"
-                        app:icon="@drawable/ic_sliders" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLostMode"
-                        android:tag="hub:sec"
-                        style="@style/PL.BtnPill"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/btn_lost_mode"
-                        app:icon="@drawable/ic_alert" />
-                </LinearLayout>
+                    android:text="@string/btn_lost_mode"
+                    app:icon="@drawable/ic_alert" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -1002,34 +986,17 @@
                         app:icon="@drawable/ic_video" />
                 </LinearLayout>
 
-                <LinearLayout
+                <!-- v2.17.4: Focus Guard moved to Settings →
+                     Smart & Automation (a setting, not a command) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCmdUrl"
+                    android:tag="hub:sys"
+                    style="@style/PL.BtnChip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCmdUrl"
-                        android:tag="hub:sys"
-                        style="@style/PL.BtnChip"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="4dp"
-                        android:text="@string/cmd_url"
-                        app:icon="@drawable/ic_link" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnFocusGuard"
-                        android:tag="hub:sys"
-                        style="@style/PL.BtnChip"
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:text="@string/cmd_focus"
-                        app:icon="@drawable/ic_shield_check" />
-                </LinearLayout>
+                    android:text="@string/cmd_url"
+                    app:icon="@drawable/ic_link" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

@@ -39,7 +39,8 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- (SCHEDULE_EXACT_ALARM is declared once, near the top —
+         the duplicate declaration was removed in v2.17.4.) -->
     <!-- Without this declaration Android does not even LIST the app
          on the Usage Access settings page, so the user cannot grant
          it (v2.14.2). -->

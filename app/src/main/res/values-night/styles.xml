@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== v2.17.4 (Fix B): dark-mode button contrast =====
+         In the day styles the button fills come from md_btnFill,
+         whose night value (#1C2326) is nearly identical to the
+         card surface (#171D1F), and the ghost/tile strokes use
+         colorOutline / colorSurfaceVariant (too weak at night).
+         These night overrides keep every size/shape item from the
+         day styles and change ONLY the colour items: a clearly
+         raised fill (#27313A vs the #101415 background and the
+         #151A1C–#171D1F cards), a stronger mint-tinted stroke
+         (#338A68), and full-brightness text/icon tint. The light
+         theme is untouched. -->
+
+    <style name="PL.BtnChip" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">15dp</item>
+        <item name="backgroundTint">@color/btn_fill_night</item>
+        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">6dp</item>
+    </style>
+
+    <style name="PL.BtnTonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">15dp</item>
+        <item name="backgroundTint">@color/btn_fill_night</item>
+        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
+    </style>
+
+    <style name="PL.BtnOutlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">15dp</item>
+        <item name="backgroundTint">@color/btn_fill_night</item>
+        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="PL.BtnGhost" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/btn_fill_night</item>
+        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="iconTint">?attr/colorOnSurface</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
+    </style>
+
+    <style name="PL.BtnPill" parent="Widget.Material3.Button">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/md_primary</item>
+        <item name="android:textColor">@color/md_onPrimary</item>
+        <item name="iconTint">@color/md_onPrimary</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconSize">20dp</item>
+        <item name="iconPadding">7dp</item>
+    </style>
+
+    <!-- Tile buttons: the day style fills tiles with md_surface,
+         which at night IS the card colour (#171D1F) — the tiles
+         vanished into their cards. Raised fill + mint stroke;
+         icon tint is NOT set here because tile icons are artwork
+         (layouts override with app:iconTint="@null"). -->
+    <style name="PL.BtnTile" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/btn_fill_night</item>
+        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:minHeight">98dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:paddingStart">10dp</item>
+        <item name="android:paddingEnd">10dp</item>
+        <item name="android:textSize">13.5sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13.5sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconGravity">top</item>
+        <item name="iconSize">40dp</item>
+        <item name="iconPadding">5dp</item>
+    </style>
+
+    <style name="PL.BtnTileQs" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="backgroundTint">@color/btn_fill_night</item>
+        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:minHeight">88dp</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">9dp</item>
+        <item name="android:paddingBottom">9dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="autoSizeTextType">uniform</item>
+        <item name="autoSizeMinTextSize">11sp</item>
+        <item name="autoSizeMaxTextSize">13sp</item>
+        <item name="autoSizeStepGranularity">1sp</item>
+        <item name="iconGravity">top</item>
+        <item name="iconSize">40dp</item>
+        <item name="iconPadding">4dp</item>
+    </style>
+</resources>

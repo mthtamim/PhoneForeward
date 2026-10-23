@@ -10,9 +10,7 @@ import androidx.appcompat.app.AlertDialog
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.app.AlarmManager
 import android.app.AppOpsManager
-import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import android.widget.LinearLayout
 import android.widget.Switch
@@ -358,30 +356,28 @@ class AutomationActivity : LocalizedActivity() {
 
     /** v2.14.1: trigger health — several trigger families silently do
      *  nothing while a system access is off. Show each one's live
-     *  status and let a tap jump to the right settings page. */
+     *  status. v2.17.4: a tap no longer opens a second grant path —
+     *  every broken row deep-links to Permissions & Access, the one
+     *  place all access is granted (inventory move #5/#6). */
     private fun renderHealth() {
         val box = findViewById<LinearLayout>(R.id.healthRows)
         box.removeAllViews()
+        val toPermissions: () -> Unit = {
+            startActivity(Intent(this, PermissionsActivity::class.java))
+        }
         val items = mutableListOf<Triple<Int, Boolean, (() -> Unit)?>>()
-        items.add(Triple(R.string.auto_health_a11y, a11yEnabled()) {
-            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) })
-        items.add(Triple(R.string.auto_health_notif, PermChecks.notifAccess(this)) {
-            startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")) })
-        items.add(Triple(R.string.auto_health_usage, usageAccess()) {
-            startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) })
+        items.add(Triple(R.string.auto_health_a11y, a11yEnabled(), toPermissions))
+        items.add(Triple(R.string.auto_health_notif, PermChecks.notifAccess(this), toPermissions))
+        items.add(Triple(R.string.auto_health_usage, usageAccess(), toPermissions))
         if (Build.VERSION.SDK_INT >= 31) {
             val am = getSystemService(ALARM_SERVICE) as AlarmManager
-            items.add(Triple(R.string.auto_health_alarm, am.canScheduleExactAlarms()) {
-                startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
-                    Uri.parse("package:" + packageName))) })
+            items.add(Triple(R.string.auto_health_alarm, am.canScheduleExactAlarms(), toPermissions))
         }
-        items.add(Triple(R.string.auto_health_shizuku, ShizukuHelper.granted(), null))
+        items.add(Triple(R.string.auto_health_shizuku, ShizukuHelper.granted(), toPermissions))
         // v2.15.0: sms_sent quietly dies without READ_SMS — visible here.
         items.add(Triple(R.string.auto_health_sms,
             checkSelfPermission(android.Manifest.permission.READ_SMS) ==
-                android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                Uri.parse("package:" + packageName))) })
+                android.content.pm.PackageManager.PERMISSION_GRANTED, toPermissions))
         // v2.14.2: compact — the title line carries the summary, and
         // only the broken items get a row (the full five-row list ate
         // too much of the screen).

@@ -207,7 +207,7 @@
     <string name="enc_label">End-to-end encryption</string>
     <string name="enc_hint">Messages are encrypted with a key from your pair code — the relay server cannot read them. Both phones must keep the same setting.</string>
     <string name="lock_label">App lock (PIN / fingerprint)</string>
-    <string name="btn_change_pin">Set / change PIN</string>
+    <string name="btn_change_pin">Set / change app-lock PIN</string>
     <string name="lock_title">PhoneLink is locked</string>
     <string name="lock_subtitle">Enter your PIN to continue</string>
     <string name="lock_set_title">Set a PIN</string>
@@ -248,7 +248,7 @@
     <string name="rule_instant">Instant</string>
     <string name="rule_digest">Digest</string>
     <string name="rule_off">Off</string>
-    <string name="sec_smart">Smart control</string>
+    <string name="sec_smart">Smart &amp; automation</string>
     <string name="btn_apps">Choose apps</string>
     <string name="quiet_label">Quiet hours (silent delivery)</string>
     <string name="quiet_window">Window: %1$s – %2$s</string>
@@ -382,7 +382,7 @@
     <string name="label_battery">Battery</string>
     <string name="label_security">Security events</string>
     <string name="label_system">System events</string>
-    <string name="btn_set_pin">Command PIN</string>
+    <string name="btn_set_pin">Set / change command PIN</string>
     <string name="btn_admin">Device admin</string>
     <string name="btn_seclog">Security log</string>
     <string name="btn_remote_panel">Remote control (PIN)</string>
@@ -630,13 +630,12 @@
     <string name="btn_screenshot_cmd">Remote screenshot</string>
     <string name="cat_automation">Automation rules</string>
     <string name="cat_data">Data &amp; backup</string>
-    <string name="cat_family">Family, emergency &amp; simple mode</string>
+    <string name="cat_family">Family &amp; simple mode</string>
     <string name="cat_forward">Forwarding</string>
-    <string name="cat_general">General &amp; appearance</string>
-    <string name="cat_group">Group, roles &amp; transfer</string>
+    <string name="cat_general">Appearance &amp; general</string>
     <string name="cat_relay">Connection &amp; relay</string>
-    <string name="cat_security">Security</string>
-    <string name="cat_smart">Smart control</string>
+    <string name="cat_security">Security &amp; App Lock</string>
+    <string name="cat_smart">Smart &amp; automation</string>
     <string name="charts_legend">Purple = sent • Teal = received</string>
     <string name="charts_recv">Received</string>
     <string name="charts_sent">Sent</string>
@@ -1154,7 +1153,7 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="aa_torch_on">Torch ON</string>
     <string name="aa_torch_off">Torch OFF</string>
     <string name="aa_torch_toggle">Torch toggle (on ⇄ off)</string>
-    <string name="auto_rest_label">Rest before the same rule can run again</string>
+    <string name="auto_rest_label">Rest before running again</string>
     <string name="auto_rest_title">Rest time (seconds)</string>
     <string name="auto_rest_hint">0 = no rest, max 300</string>
     <string name="shizuku_testing">Testing the Shizuku shell…</string>
@@ -1250,7 +1249,7 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="set_device_card">Connected Device &amp; Account</string>
     <string name="set_manage_keys">Manage Keys</string>
     <string name="set_hub">Primary Settings Hub</string>
-    <string name="set_relay">Relay &amp; Servers</string>
+    <string name="set_relay">Connection &amp; Relay</string>
     <string name="set_perms">Permissions &amp; Access</string>
     <string name="set_security">Security &amp; App Lock</string>
     <string name="set_data">Data &amp; Backup</string>
@@ -1285,7 +1284,7 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="perm_shizuku_title">Shizuku / ADB privileges</string>
     <string name="perm_shizuku_desc">Rootless system control for hardware toggles</string>
     <string name="perm_note">Local on-device processing. Nothing is shared without your own relay rules.</string>
-    <string name="perm_diag">Run Diagnostics</string>
+    <string name="perm_diag">Re-check everything</string>
     <string name="perm_diag_fmt">%1$d of %2$d permissions granted</string>
     <string name="ed_name_label">Rule Name</string>
     <string name="ed_cat_label">Category</string>
@@ -1322,4 +1321,33 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="media_next">Next track</string>
     <string name="media_vol_down">Volume down</string>
     <string name="media_vol_up">Volume up</string>
+    <!-- v2.17.4: permissions single home + settings reorganization -->
+    <string name="perm_line_read_sms">Read SMS</string>
+    <string name="perm_line_location_coarse">Location (approximate)</string>
+    <string name="perm_special_title">Special access</string>
+    <string name="perm_usage_title">Usage access (screen time)</string>
+    <string name="perm_write_title">Modify system settings</string>
+    <string name="perm_write_desc">Lets automation change brightness, screen timeout, font size and auto-rotate.</string>
+    <string name="perm_ctx_title">Contextual permissions</string>
+    <string name="perm_ctx_desc">Asked for only when a feature needs them — shown here for completeness, not counted in the gauge.</string>
+    <string name="perm_ctx_bt">Bluetooth (nearby share)</string>
+    <string name="perm_ctx_mic">Microphone (voice / walkie-talkie)</string>
+    <string name="perm_ctx_cal">Calendar (automation)</string>
+    <string name="perm_ctx_install">Install unknown apps (update fallback)</string>
+    <string name="perm_btn_grant">Grant</string>
+    <string name="btn_perms_link">Open Permissions &amp; Access</string>
+    <string name="btn_geo_radius">Geofence radius</string>
+    <string name="ptt_autoplay_label">Auto-play incoming voice (walkie-talkie)</string>
+    <string name="auto_master_label">Automation engine (master switch)</string>
+    <string name="sec_peers">Who can reach this phone</string>
+    <string name="sec_web_inbox">LAN web inbox</string>
+    <string name="sec_full_backup">Full settings backup</string>
+    <string name="sec_my_status">My status</string>
+    <string name="sec_automation">Automation</string>
+    <string name="btn_open_studio">Open Automation Studio</string>
+    <string name="a11y_state_fmt">Accessibility helper: %1$s</string>
+    <string name="usage_state_fmt">Screen-time (usage) access: %1$s</string>
+    <string name="studio_info_fmt">%1$d rules • sync %2$s • rest %3$ds</string>
+    <string name="state_on">on</string>
+    <string name="state_off">off</string>
 </resources>

@@ -24,6 +24,13 @@
     <color name="md_onError">#450A0A</color>
     <color name="md_errorContainer">#33151A</color>
 
+    <!-- v2.17.4 (Fix B): button contrast in dark mode. The day
+         md_btnFill (#1C2326) sits almost on top of the card surface
+         (#171D1F); buttons get a clearly raised fill and a
+         mint-tinted stroke so they read as buttons at a glance. -->
+    <color name="btn_fill_night">#27313A</color>
+    <color name="btn_stroke_night">#338A68</color>
+
     <color name="status_ok">#2FD68F</color>
     <color name="status_bad">#F87171</color>
     <color name="pair_code">#F5A623</color>
