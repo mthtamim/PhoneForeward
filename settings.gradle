@@ -9,6 +9,11 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
+        // Google's official Maven Central mirror first: repo.maven.apache.org
+        // intermittently returns 403 to GitHub-hosted runners (seen on the
+        // v2.18.0 build fetching the new Paho dependency); the mirror serves
+        // the identical artifacts. mavenCentral() stays as the fallback.
+        maven { url 'https://maven-central.storage-download.googleapis.com/maven2' }
         mavenCentral()
     }
 }
