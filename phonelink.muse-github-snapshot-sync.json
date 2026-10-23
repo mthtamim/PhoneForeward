@@ -4690,5 +4690,15 @@
   "paths": [
    "app/src/main/res/layout/view_applock.xml"
   ]
+ },
+ {
+  "owner": "mthtamim",
+  "repo": "PhoneForeward",
+  "branch": "main",
+  "source_dir": "/home/hatch/workspace/github-push/phonelink",
+  "commit_sha": "fd5310fb87120b33832ef720bd9a02c87cec907b",
+  "paths": [
+   "app/src/main/java/com/mthtamim/phonelink/WebInbox.kt"
+  ]
  }
 ]
