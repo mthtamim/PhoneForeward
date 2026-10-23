@@ -6,6 +6,18 @@
 
 > 📖 **ডকুমেন্টেশন:** [সম্পূর্ণ ফিচার প্রতিবেদন](docs/ফিচার-প্রতিবেদন.md) • [ব্যবহারের ম্যানুয়াল (ধাপে ধাপে)](docs/ব্যবহারের-ম্যানুয়াল.md)
 
+![PhoneLink](showcase/hero.png)
+
+## স্ক্রিনশট
+
+![Dashboard ও Quick Send](showcase/board-dashboard.png)
+
+![Command Hub — পূর্ণ রিমোট নিয়ন্ত্রণ](showcase/board-command-hub.png)
+
+![Automation Studio](showcase/board-automation.png)
+
+![Settings — প্রতিটি সেটিংস তার জায়গায়](showcase/board-settings.png)
+
 ---
 
 ## কীভাবে কাজ করে
