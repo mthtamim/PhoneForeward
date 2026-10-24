@@ -647,8 +647,8 @@
    "app/src/main/res/xml/device_admin.xml",
    "app/src/main/res/xml/widget_info.xml",
    "build.gradle",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ]
@@ -753,8 +753,8 @@
    "app/src/main/res/xml/widget_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ]
@@ -793,7 +793,7 @@
   "commit_sha": "4d9d1a8c697b4d633924b5cc57b89f071ddd7d47",
   "paths": [
    "README.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md"
+   "docs/ব্যবহারের-ম্যানুয়াল.md"
   ]
  },
  {
@@ -803,7 +803,7 @@
   "source_dir": "/home/hatch/workspace/github-push/phonelink",
   "commit_sha": "aa17e27e206bd8e42970d9104963c19427874db8",
   "paths": [
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md"
+   "docs/ফিচার-প্রতিবেদন.md"
   ]
  },
  {
@@ -842,7 +842,7 @@
   "commit_sha": "b6d4de76d4b0946f5063adf3e09bfde65198d27d",
   "paths": [
    "README.md",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md"
+   "docs/ফিচার-প্রতিবেদন.md"
   ]
  },
  {
@@ -949,7 +949,7 @@
   "commit_sha": "905114708edb224c0a6d81e7c9dd1ad1583395d4",
   "paths": [
    "README.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md"
+   "docs/ব্যবহারের-ম্যানুয়াল.md"
   ]
  },
  {
@@ -1177,8 +1177,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -1308,8 +1308,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -1451,8 +1451,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -1606,8 +1606,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -1750,8 +1750,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -1895,8 +1895,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -2040,8 +2040,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -2185,8 +2185,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -2330,8 +2330,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -2475,8 +2475,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -2620,8 +2620,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -2765,8 +2765,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -2910,8 +2910,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -3055,8 +3055,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -3200,8 +3200,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -3345,8 +3345,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -3490,8 +3490,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ],
@@ -3636,8 +3636,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ]
@@ -3789,8 +3789,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ]
@@ -3942,8 +3942,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ]
@@ -4356,8 +4356,8 @@
    "app/src/main/res/xml/widget_rule_info.xml",
    "build.gradle",
    "docs/phonelink-viewer.html",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
+   "docs/ফিচার-প্রতিবেদন.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
    "gradle.properties",
    "settings.gradle"
   ]
@@ -4665,8 +4665,8 @@
    "gradle.properties",
    "build.gradle",
    ".gitignore",
-   "docs/\u09ac\u09cd\u09af\u09ac\u09b9\u09be\u09b0\u09c7\u09b0-\u09ae\u09cd\u09af\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b2.md",
-   "docs/\u09ab\u09bf\u099a\u09be\u09b0-\u09aa\u09cd\u09b0\u09a4\u09bf\u09ac\u09c7\u09a6\u09a8.md",
+   "docs/ব্যবহারের-ম্যানুয়াল.md",
+   "docs/ফিচার-প্রতিবেদন.md",
    "docs/phonelink-viewer.html",
    "README.md"
   ]
@@ -4699,6 +4699,25 @@
   "commit_sha": "fd5310fb87120b33832ef720bd9a02c87cec907b",
   "paths": [
    "app/src/main/java/com/mthtamim/phonelink/WebInbox.kt"
+  ]
+ },
+ {
+  "owner": "mthtamim",
+  "repo": "PhoneForeward",
+  "branch": "main",
+  "source_dir": "/home/hatch/workspace/github-push/phonelink",
+  "commit_sha": "c953bce415da8637c71ec716fb9691fb57a156e4",
+  "paths": [
+   "README.md",
+   "app/build.gradle",
+   "app/src/main/AndroidManifest.xml",
+   "app/src/main/java/com/mthtamim/phonelink/Automation.kt",
+   "app/src/main/java/com/mthtamim/phonelink/AppLockActivity.kt",
+   "app/src/main/res/layout/widget_lock_layout.xml",
+   "app/src/main/res/values/strings.xml",
+   "app/src/main/res/values-bn/strings.xml",
+   "app/src/main/res/xml/widget_lock_a11y_info.xml",
+   "app/src/main/res/xml/widget_lock_admin_info.xml"
   ]
  }
 ]
