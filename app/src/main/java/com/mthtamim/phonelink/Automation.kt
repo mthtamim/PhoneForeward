@@ -4376,8 +4376,8 @@ object Automation {
         }
         val parts = raw.split("|")
         var since = parts.getOrNull(1)?.toLongOrNull() ?: 0L
-        val warned = parts.getOrNull(2) == "1"
-        val fired = parts.getOrNull(3) == "1"
+        var warned = parts.getOrNull(2) == "1"
+        var fired = parts.getOrNull(3) == "1"
         if (parts.getOrNull(0) != fg || since <= 0L) {
             since = now; warned = false; fired = false
             p.edit().putString(key, "$fg|$since|0|0").apply()
