@@ -11,8 +11,17 @@ android {
         applicationId "com.mthtamim.phonelink"
         minSdk 26
         targetSdk 34
-        versionCode 40
-        versionName "2.19.0"
+        versionCode 41
+        versionName "2.19.1"
+        // v2.19.1: ship ONLY arm64-v8a native libraries. The APK had been
+        // bundling .so files for 4 ABIs (~99 MB of the ~114 MB APK):
+        // x86/x86_64 exist only for emulators and armeabi-v7a only for old
+        // 32-bit phones — Tamim's phones are arm64, so the other three sets
+        // were dead weight (~73 MB). Trade-off, accepted by Tamim: this APK
+        // no longer installs on emulators or 32-bit-only phones.
+        ndk {
+            abiFilters 'arm64-v8a'
+        }
     }
 
     buildTypes {
