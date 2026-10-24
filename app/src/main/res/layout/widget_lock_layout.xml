@@ -1,40 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v2.18: shared tile for the two screen-lock widgets (a11y / admin).
-     Dark v2.17 tile (#101415) + the mint lock glyph; the sub-label is
-     set per widget from its provider. -->
+<!-- v2.19: app-icon look for the two screen-lock widgets (a11y /
+     admin), per Tamim's screenshot request — a normal launcher icon,
+     not a big tile. Transparent root centers a FIXED-SIZE icon tile
+     (62dp, @drawable/widget_lock_bg) with the lock glyph and the tiny
+     per-widget sub-label inside it; the title sits BELOW the tile as
+     a launcher-style label. The content never stretches, so even if
+     the launcher allocates 2x2 cells the visual stays icon-sized.
+     The whole root stays the tap target (providers unchanged). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/wLockRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_lock_bg"
     android:gravity="center"
-    android:orientation="vertical"
-    android:padding="8dp">
+    android:orientation="vertical">
 
-    <ImageView
-        android:id="@+id/wLockIcon"
-        android:layout_width="30dp"
-        android:layout_height="30dp"
-        android:contentDescription="@string/widget_lock_title"
-        android:src="@drawable/ic_lock" />
+    <LinearLayout
+        android:layout_width="62dp"
+        android:layout_height="62dp"
+        android:background="@drawable/widget_lock_bg"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/wLockIcon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:contentDescription="@string/widget_lock_title"
+            android:src="@drawable/ic_lock" />
+
+        <TextView
+            android:id="@+id/wLockSub"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#9ADFC3"
+            android:textSize="8sp" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/wLockTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="4dp"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="#F8FAFC"
-        android:textSize="12sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/wLockSub"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:ellipsize="end"
-        android:maxLines="1"
-        android:textColor="#9ADFC3"
-        android:textSize="10sp" />
+        android:shadowColor="#000000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="3"
+        android:textColor="#FFFFFF"
+        android:textSize="11sp" />
 </LinearLayout>

@@ -811,7 +811,7 @@
     <string name="aah_rule_run">অন্য নিয়মটির হুবহু নাম</string>
     <string name="aah_inc_var">নাম বা নাম:পরিমাণ, যেমন count:5</string>
     <string name="aah_delete_file">অ্যাপের ফোল্ডারের ভিতরের পুরো পথ</string>
-    <string name="aah_send_intent">ব্রডকাস্ট action-এর নাম</string>
+    <string name="aah_send_intent">Action, তারপর | দিয়ে আলাদা করে key=value আকারে extras। target=প্যাকেজ দিলে broadcast explicit হবে। উদাহরণ: com.focuslock.app.AUTOMATION | target=com.focuslock.app | token=YOUR_TOKEN | cmd=block_app | app=com.google.android.youtube | mins=120</string>
     <string name="aah_play_sound">শব্দের URI (খালি = ডিফল্ট নোটিফিকেশন শব্দ)</string>
     <string name="aah_auto_rotate_set">on বা off</string>
     <string name="aah_bt_toggle">on বা off</string>

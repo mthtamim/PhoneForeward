@@ -92,7 +92,8 @@
         <activity
             android:name=".AppLockActivity"
             android:excludeFromRecents="true"
-            android:exported="false" />
+            android:exported="false"
+            android:taskAffinity="" />
 
         <!-- v2.4 screens -->
         <activity

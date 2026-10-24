@@ -2093,7 +2093,41 @@ object Automation {
                     wl.acquire(10_000)
                 }
                 "send_intent" -> {
-                    try { ctx.sendBroadcast(Intent(param.trim())) } catch (_: Exception) { }
+                    // v2.19.0: extras syntax —
+                    // "<action> | key=value | key=value ...". The special
+                    // key target=<package> makes the broadcast explicit
+                    // (Intent.setPackage). Values that are pure integers
+                    // become Int extras, true/false become Boolean extras,
+                    // everything else a String extra (FocusLock contract:
+                    // token/cmd/app/preset are Strings, mins is an Int).
+                    // A bare action string with no '|' segments builds the
+                    // exact same Intent as the legacy code did.
+                    try {
+                        val segments = param.split("|").map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                        val intent = Intent(segments.firstOrNull() ?: "")
+                        for (seg in segments.drop(1)) {
+                            val eq = seg.indexOf('=')
+                            if (eq <= 0) continue
+                            val key = seg.substring(0, eq).trim()
+                            val value = seg.substring(eq + 1).trim()
+                            if (key.isEmpty()) continue
+                            when {
+                                key == "target" -> intent.setPackage(value)
+                                value.equals("true", ignoreCase = true) ->
+                                    intent.putExtra(key, true)
+                                value.equals("false", ignoreCase = true) ->
+                                    intent.putExtra(key, false)
+                                value.toIntOrNull() != null ->
+                                    intent.putExtra(key, value.toInt())
+                                else -> intent.putExtra(key, value)
+                            }
+                        }
+                        ctx.sendBroadcast(intent)
+                    } catch (e: Exception) {
+                        log(ctx, "⚠ " + ruleNameHint + " (send_intent: " +
+                            (e.message ?: e.javaClass.simpleName) + ")")
+                    }
                 }
                 // ---- v2.8 final round actions ----
                 "gesture_tap" -> {

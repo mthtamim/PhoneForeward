@@ -821,7 +821,7 @@
     <string name="aah_rule_run">The other rule name, exactly</string>
     <string name="aah_inc_var">name or name:amount, e.g. count:5</string>
     <string name="aah_delete_file">Full path inside app folders</string>
-    <string name="aah_send_intent">Broadcast action string</string>
+    <string name="aah_send_intent">Action, then extras as key=value separated by |. target=package makes the broadcast explicit. Example: com.focuslock.app.AUTOMATION | target=com.focuslock.app | token=YOUR_TOKEN | cmd=block_app | app=com.google.android.youtube | mins=120</string>
     <string name="aah_play_sound">Sound URI (blank = default notification sound)</string>
     <string name="aah_auto_rotate_set">on or off</string>
     <string name="aah_bt_toggle">on or off</string>

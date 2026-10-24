@@ -1,5 +1,6 @@
 package com.mthtamim.phonelink
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.OnBackPressedCallback
@@ -34,7 +35,7 @@ class AppLockActivity : LocalizedActivity() {
         setContentView(R.layout.view_applock)
         val root = findViewById<android.view.View>(R.id.lockRoot)
         val controller = AppLockUi(this, root, pkg, AppLockUi.Host.ACTIVITY,
-            onUnlocked = { finish() },
+            onUnlocked = { unlockAndReturn() },
             onBiometric = { showBiometric() })
         ui = controller
         onBackPressedDispatcher.addCallback(this,
@@ -59,7 +60,7 @@ class AppLockActivity : LocalizedActivity() {
                 override fun onAuthenticationSucceeded(
                     result: BiometricPrompt.AuthenticationResult) {
                     AppLocker.grantGrace(this@AppLockActivity, pkg)
-                    finish()
+                    unlockAndReturn()
                 }
             })
         val info = BiometricPrompt.PromptInfo.Builder()
@@ -68,6 +69,30 @@ class AppLockActivity : LocalizedActivity() {
             .setNegativeButtonText(getString(R.string.btn_cancel))
             .build()
         try { prompt.authenticate(info) } catch (_: Exception) { }
+    }
+
+    /**
+     * v2.19.0 fix: a successful unlock (PIN via AppLockUi, biometric
+     * here, or a peer grant observed by AppLockUi) must hand the user
+     * back to the app they were opening. The old code just called
+     * finish() — and because this activity lived in PhoneLink's own
+     * task, an existing MainActivity underneath surfaced instead of
+     * the target app. Now the target is relaunched FIRST (its own
+     * task comes to the front with its stack intact), then we finish.
+     * RESET_TASK_IF_NEEDED is deliberately NOT used: it could reset
+     * the target task to its root intent and lose the screen the
+     * user was on; REORDER_TO_FRONT preserves it.
+     */
+    private fun unlockAndReturn() {
+        try {
+            val launch = packageManager.getLaunchIntentForPackage(pkg)
+            if (launch != null) {
+                launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                startActivity(launch)
+            }
+        } catch (_: Exception) { }
+        finish()
     }
 
     override fun onResume() {
