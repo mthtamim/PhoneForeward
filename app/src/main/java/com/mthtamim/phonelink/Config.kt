@@ -531,6 +531,79 @@ object Config {
     // ---------- v2.4: automation ----------
     fun automationOn(ctx: Context) = prefs(ctx).getBoolean("automation_on", true)
     fun rulesSyncOn(ctx: Context) = prefs(ctx).getBoolean("rules_sync_on", false)
+
+    // ---------- v2.20: FocusLock integration ----------
+    /** The FocusLock automation token, saved ONCE from the
+     *  Automation screen's FocusLock card and reused by every
+     *  focuslock_control step at run time (the steps themselves
+     *  never carry it). Lives in the same private cfg store as
+     *  the pair code. Empty = not set = steps log and skip. */
+    fun focusLockToken(ctx: Context): String =
+        prefs(ctx).getString("focuslock_token", "") ?: ""
+    fun setFocusLockToken(ctx: Context, v: String) {
+        prefs(ctx).edit().putString("focuslock_token", v).apply() }
+
+    // ---------- v2.20: Study Guard lists ----------
+    /** One named Study Guard template: the study apps the user
+     *  picked once, reused by every Study Guard trigger (Tamim's
+     *  decision, 24 Oct 2026: MULTIPLE named lists). Stored as a
+     *  JSON array in cfg key "study_lists" — [{id, name, pkgs}] —
+     *  the same shape the profiles/templates stores use. */
+    class StudyList(val id: String, val name: String,
+                    val pkgs: Set<String>)
+
+    fun studyLists(ctx: Context): List<StudyList> {
+        val out = mutableListOf<StudyList>()
+        try {
+            val arr = org.json.JSONArray(
+                prefs(ctx).getString("study_lists", "[]") ?: "[]")
+            for (i in 0 until arr.length()) {
+                val o = arr.optJSONObject(i) ?: continue
+                val pkgs = mutableSetOf<String>()
+                val pa = o.optJSONArray("pkgs")
+                if (pa != null) for (j in 0 until pa.length())
+                    pa.optString(j).takeIf { it.isNotEmpty() }
+                        ?.let { pkgs.add(it) }
+                out.add(StudyList(o.optString("id"),
+                    o.optString("name"), pkgs))
+            }
+        } catch (e: Exception) { }
+        return out.filter { it.id.isNotEmpty() }
+    }
+
+    fun studyList(ctx: Context, id: String): StudyList? =
+        studyLists(ctx).firstOrNull { it.id == id }
+
+    /** Upsert by id; a blank id mints a fresh stable one. */
+    fun saveStudyList(ctx: Context, list: StudyList): StudyList {
+        val saved = if (list.id.isNotEmpty()) list else StudyList(
+            "sl" + System.currentTimeMillis().toString(36) +
+                (100..999).random(), list.name, list.pkgs)
+        val cur = studyLists(ctx).filter { it.id != saved.id } + saved
+        val arr = org.json.JSONArray()
+        for (l in cur) {
+            val pa = org.json.JSONArray()
+            for (p in l.pkgs) pa.put(p)
+            arr.put(org.json.JSONObject().put("id", l.id)
+                .put("name", l.name).put("pkgs", pa))
+        }
+        prefs(ctx).edit().putString("study_lists", arr.toString())
+            .apply()
+        return saved
+    }
+
+    fun deleteStudyList(ctx: Context, id: String) {
+        val cur = studyLists(ctx).filter { it.id != id }
+        val arr = org.json.JSONArray()
+        for (l in cur) {
+            val pa = org.json.JSONArray()
+            for (p in l.pkgs) pa.put(p)
+            arr.put(org.json.JSONObject().put("id", l.id)
+                .put("name", l.name).put("pkgs", pa))
+        }
+        prefs(ctx).edit().putString("study_lists", arr.toString())
+            .apply()
+    }
     // ---- v2.11 ----
     fun sosNumbers(ctx: Context): List<String> =
         (prefs(ctx).getString("sos_numbers", "") ?: "")

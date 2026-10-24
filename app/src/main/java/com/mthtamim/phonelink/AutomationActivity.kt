@@ -56,7 +56,10 @@ object AutoCatalog {
         // v2.18 (WS4)
         "mqtt_message",
         // v2.18 App Locker
-        "applock_failed")
+        "applock_failed",
+        // v2.20 Study Guard (picker cards in the rule editor,
+        // like focuslock_control — not the raw trigger picker)
+        "study_guard_continuous", "study_guard_daily")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
         "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
@@ -114,7 +117,10 @@ object AutoCatalog {
         // v2.18 (WS4)
         "mqtt_publish",
         // v2.18 App Locker
-        "lock_app", "unlock_app")
+        "lock_app", "unlock_app",
+        // v2.20 FocusLock (picker step; added via its editor button,
+        // like if_else, not the raw action picker)
+        "focuslock_control")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {
@@ -332,6 +338,22 @@ class AutomationActivity : LocalizedActivity() {
             }
         }
         findViewById<Button>(R.id.btnAutoBackup).setOnClickListener { showBackups() }
+        findViewById<Button>(R.id.btnFlToken).setOnClickListener {
+            showFocusLockTokenDialog()
+        }
+        findViewById<Button>(R.id.btnFlOpen).setOnClickListener {
+            val launch = packageManager.getLaunchIntentForPackage(
+                Automation.FOCUSLOCK_PKG)
+            if (launch != null) startActivity(launch)
+            else android.widget.Toast.makeText(this,
+                getString(R.string.fl_not_installed_toast),
+                android.widget.Toast.LENGTH_SHORT).show()
+        }
+        renderFocusLock()
+        findViewById<Button>(R.id.btnSgManage).setOnClickListener {
+            StudyGuardUi.showManager(this) { renderStudyGuard() }
+        }
+        renderStudyGuard()
         val btnRest = findViewById<Button>(R.id.btnRestTime)
         btnRest.text = Automation.restSeconds(this).toString() + "s"
         btnRest.setOnClickListener {
@@ -359,7 +381,61 @@ class AutomationActivity : LocalizedActivity() {
     override fun onResume() {
         super.onResume()
         renderHealth()
+        renderFocusLock()
+        renderStudyGuard()
         render()
+    }
+
+    /** v2.20: Study Guard card status — just the list count;
+     *  the lists themselves live in the manager dialog. */
+    private fun renderStudyGuard() {
+        val n = Config.studyLists(this).size
+        findViewById<TextView>(R.id.tvSgStatus).text =
+            if (n == 0) getString(R.string.sg_card_empty)
+            else getString(R.string.sg_card_status, n)
+    }
+
+    /** v2.20: FocusLock card status — install state from the
+     *  PackageManager, token state from Config. The token itself
+     *  is NEVER shown; the status only carries the •••• marker. */
+    private fun renderFocusLock() {
+        val installed = Automation.focusLockInstalled(this)
+        val hasToken = Config.focusLockToken(this).isNotEmpty()
+        findViewById<TextView>(R.id.tvFlStatus).text =
+            getString(if (installed) R.string.fl_status_connected
+                else R.string.fl_status_missing) + " • " +
+            getString(if (hasToken) R.string.fl_status_token_set
+                else R.string.fl_status_token_unset)
+        findViewById<Button>(R.id.btnFlToken).text =
+            getString(if (hasToken) R.string.fl_btn_token_change
+                else R.string.fl_btn_token_set)
+    }
+
+    /** v2.20: one-time token save. The field always starts EMPTY
+     *  (the saved token is never displayed anywhere); saving an
+     *  empty field clears the token. */
+    private fun showFocusLockTokenDialog() {
+        val input = EditText(this).apply {
+            hint = getString(R.string.fl_token_hint)
+            setSingleLine()
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.fl_token_dialog_title))
+            .setMessage(getString(R.string.fl_token_dialog_msg))
+            .setView(input)
+            .setPositiveButton(getString(R.string.btn_save)) { _, _ ->
+                val v = input.text.toString().trim()
+                Config.setFocusLockToken(this, v)
+                android.widget.Toast.makeText(this,
+                    getString(if (v.isEmpty()) R.string.fl_token_cleared
+                        else R.string.fl_token_saved),
+                    android.widget.Toast.LENGTH_SHORT).show()
+                renderFocusLock()
+            }
+            .setNegativeButton(getString(R.string.btn_cancel), null)
+            .show()
     }
 
     /** v2.14.1: trigger health — several trigger families silently do
@@ -501,11 +577,21 @@ class AutomationActivity : LocalizedActivity() {
                 layoutParams = LinearLayout.LayoutParams(
                     0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             }
+            // v2.20: a Study Guard first trigger reads as its
+            // plain summary (list/app + minutes), never raw param.
+            val trigType = trig?.optString("type") ?: ""
+            val trigParam = trig?.optString("param") ?: ""
+            val ifSummary = if (trigType == "study_guard_continuous" ||
+                trigType == "study_guard_daily")
+                Automation.studyGuardSummary(
+                    this@AutomationActivity, trigType, trigParam)
+            else ""
             flow.addView(flowBox(R.string.auto_if_label,
                 AutoCatalog.label(this@AutomationActivity, "t",
-                    trig?.optString("type") ?: "") +
+                    trigType) +
                     (if (trigList.size > 1) " +${trigList.size - 1}" else "") +
-                    (trig?.optString("param")?.takeIf { it.isNotBlank() }
+                    (if (ifSummary.isNotEmpty()) " — " + ifSummary
+                    else trigParam.takeIf { it.isNotBlank() }
                         ?.let { " — $it" } ?: "")))
             flow.addView(TextView(this).apply {
                 text = "›"
@@ -514,8 +600,16 @@ class AutomationActivity : LocalizedActivity() {
                     this@AutomationActivity, R.color.pl_mint))
                 setPadding(12, 0, 12, 0)
             })
+            // v2.20: a FocusLock first step reads as its plain
+            // summary ("YouTube ব্লক 60 মিনিট"), never the raw param.
+            val firstSummary = if (firstAct == "focuslock_control")
+                Automation.focusLockSummary(this@AutomationActivity,
+                    acts?.optJSONObject(0)?.optString("param") ?: "")
+            else ""
             flow.addView(flowBox(R.string.auto_then_label,
                 AutoCatalog.label(this@AutomationActivity, "a", firstAct) +
+                    (if (firstSummary.isNotEmpty())
+                        " — " + firstSummary else "") +
                     (if (nActions > 1) " +${nActions - 1}" else "")))
             row.addView(flow)
             row.addView(TextView(this).apply {

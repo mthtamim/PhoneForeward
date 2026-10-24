@@ -132,6 +132,15 @@
                     android:layout_marginTop="10dp"
                     android:text="@string/auto_add_trigger"
                     app:icon="@drawable/ic_plus" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddStudyGuard"
+                    style="@style/PL.BtnGhost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_add_study_guard"
+                    app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -248,6 +257,15 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="@string/btn_add_ifelse"
+                    app:icon="@drawable/ic_plus" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddFocusLock"
+                    style="@style/PL.BtnGhost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_add_focuslock"
                     app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

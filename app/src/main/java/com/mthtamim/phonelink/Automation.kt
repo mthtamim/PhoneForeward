@@ -1789,6 +1789,11 @@ object Automation {
                         log(ctx, "⚠ " + ruleNameHint +
                             " (unlock_app: " + param.take(40) + ")")
                 }
+                // v2.20: the picker-built FocusLock step. The param
+                // is the compact picker form (see parseFocusLockParam);
+                // the token is read from the one-time save, and the
+                // intent is built in runFocusLock.
+                "focuslock_control" -> runFocusLock(ctx, param, data)
                 // v2.18 (WS4): publish via the shared MQTT
                 // connection; param = topic|payload|qos|retained
                 // (see MqttManager.publishParam). execRange's fill()
@@ -3108,6 +3113,7 @@ object Automation {
                 pollEdges(ctx)
                 pollWifi(ctx)
                 pollAppUsage(ctx, list)
+                pollStudyGuard(ctx, list)
                 pollStates(ctx)
                 pollCalendar(ctx)
             } catch (e: Exception) { }
@@ -4043,6 +4049,447 @@ object Automation {
             val pm = ctx.packageManager
             pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
         } catch (e: Exception) { pkg }
+    }
+
+    // ---------------- v2.20: FocusLock control ----------------
+    const val FOCUSLOCK_PKG = "com.focuslock.app"
+    const val FOCUSLOCK_ACTION = "com.focuslock.app.AUTOMATION"
+
+    fun focusLockInstalled(ctx: Context): Boolean = try {
+        ctx.packageManager.getPackageInfo(FOCUSLOCK_PKG, 0)
+        true
+    } catch (_: Exception) { false }
+
+    /** The ONE parser for the focuslock_control picker param
+     *  (cmd=..|app=..|mins=..|preset=..). The rule editor writes
+     *  this form and the runtime reads it through here, so the
+     *  format round-trips by construction. */
+    fun parseFocusLockParam(param: String): Map<String, String> {
+        val out = LinkedHashMap<String, String>()
+        for (seg in param.split("|")) {
+            val eq = seg.indexOf('=')
+            if (eq <= 0) continue
+            val k = seg.substring(0, eq).trim()
+            val v = seg.substring(eq + 1).trim()
+            if (k.isNotEmpty() && v.isNotEmpty()) out[k] = v
+        }
+        return out
+    }
+
+    /** Plain-language summary of one focuslock_control step
+     *  (e.g. "YouTube ব্লক 60 মিনিট") — used by the rule list so
+     *  the raw picker param is never what the user reads. */
+    fun focusLockSummary(ctx: Context, param: String): String {
+        val kv = parseFocusLockParam(param)
+        // v2.20 Study Guard: mins=day reads as "rest of today",
+        // app=@trigger_app as the triggering app — never raw.
+        val suffix = when {
+            kv["mins"] == "day" -> " " +
+                ctx.getString(R.string.fl_mins_day)
+            kv["mins"]?.toIntOrNull() != null -> " " +
+                ctx.getString(R.string.fl_mins_suffix,
+                    kv["mins"]!!.toInt())
+            else -> ""
+        }
+        val appName = when {
+            kv["app"] == SG_TRIGGER_APP ->
+                ctx.getString(R.string.fl_app_trigger)
+            kv["app"]?.isNotBlank() == true ->
+                appLabel(ctx, kv["app"]!!)
+            else -> ""
+        }
+        return when (kv["cmd"] ?: "block_app") {
+            "lock_full" ->
+                ctx.getString(R.string.fl_cmd_lock_full) + suffix
+            "focus" -> ctx.getString(R.string.fl_cmd_focus) +
+                (kv["preset"]?.takeIf { it.isNotBlank() }
+                    ?.let { " «$it»" } ?: "") + suffix
+            "unblock" -> ctx.getString(R.string.fl_cmd_unblock) +
+                " " + appName.ifEmpty { ctx.getString(R.string.fl_all) }
+            else -> (appName + " " +
+                ctx.getString(R.string.fl_word_block) + suffix).trim()
+        }
+    }
+
+    /** Minutes from now until local midnight (at least 1) —
+     *  the runtime meaning of the picker's mins=day chip ("দিনের
+     *  বাকি সময়": a daily quota, once crossed, blocks the app
+     *  until the day rolls over). */
+    fun minutesToMidnight(now: Long = System.currentTimeMillis()): Int {
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = now
+        cal.add(Calendar.DAY_OF_YEAR, 1)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return ((cal.timeInMillis - now) / 60_000L).toInt()
+            .coerceAtLeast(1)
+    }
+
+    /** Execute one focuslock_control step: build the exact
+     *  explicit broadcast the FocusLock contract expects, with
+     *  the extras typed as the contract wants (token / cmd /
+     *  app / preset Strings, mins an Int). The token comes from
+     *  the one-time save (Config.focusLockToken), never from the
+     *  rule. Without a token or the app, the step logs its
+     *  reason and sends nothing. Send failures log the real
+     *  error, exactly like send_intent since v2.19.0. */
+    fun runFocusLock(ctx: Context, param: String,
+                     data: JSONObject = JSONObject()) {
+        val token = Config.focusLockToken(ctx)
+        if (token.isEmpty()) {
+            log(ctx, "⚠ " + ruleNameHint + " (focuslock: " +
+                ctx.getString(R.string.fl_log_no_token) + ")")
+            return
+        }
+        if (!focusLockInstalled(ctx)) {
+            log(ctx, "⚠ " + ruleNameHint + " (focuslock: " +
+                ctx.getString(R.string.fl_log_not_installed) + ")")
+            return
+        }
+        val kv = parseFocusLockParam(param)
+        try {
+            val intent = Intent(FOCUSLOCK_ACTION)
+                .setPackage(FOCUSLOCK_PKG)
+            intent.putExtra("token", token)
+            intent.putExtra("cmd", kv["cmd"] ?: "block_app")
+            // v2.20 Study Guard: app=@trigger_app resolves to the
+            // package that fired this rule (the trigger data's
+            // "pkg" — Study Guard and the app events both carry
+            // it). Unresolvable (e.g. a time trigger) → log + skip:
+            // blocking SOME app is worse than blocking none.
+            val appRaw = kv["app"]?.takeIf { it.isNotBlank() }
+            if (appRaw == SG_TRIGGER_APP) {
+                val tp = data.optString("pkg")
+                if (tp.isEmpty()) {
+                    log(ctx, "⚠ " + ruleNameHint + " (focuslock: " +
+                        ctx.getString(R.string.fl_log_no_trigger_app) +
+                        ")")
+                    return
+                }
+                intent.putExtra("app", tp)
+            } else if (appRaw != null) {
+                intent.putExtra("app", appRaw)
+            }
+            // mins=day → minutes left until local midnight.
+            val mins: Int? = when {
+                kv["mins"] == "day" -> minutesToMidnight()
+                else -> kv["mins"]?.toIntOrNull()
+            }
+            mins?.let { intent.putExtra("mins", it) }
+            kv["preset"]?.takeIf { it.isNotBlank() }
+                ?.let { intent.putExtra("preset", it) }
+            ctx.sendBroadcast(intent)
+        } catch (e: Exception) {
+            log(ctx, "⚠ " + ruleNameHint + " (focuslock: " +
+                (e.message ?: e.javaClass.simpleName) + ")")
+        }
+    }
+
+    // ---------------- v2.20: Study Guard ----------------
+    /** Special app value in a focuslock_control param: "the app
+     *  that triggered this rule". Resolved at run time from the
+     *  trigger data's "pkg" (see runFocusLock). */
+    const val SG_TRIGGER_APP = "@trigger_app"
+
+    /** The ONE parser for both Study Guard trigger params
+     *  (continuous: list=..|mins=..|warn=..; daily: app=.. or
+     *  list=.., plus limit=..|warn=..). Same k=v '|' format as
+     *  the FocusLock picker param, so it delegates to that
+     *  parser — editor and engine round-trip through one code
+     *  path and cannot drift. */
+    fun parseStudyGuardParam(param: String): Map<String, String> =
+        parseFocusLockParam(param)
+
+    /** Plain-language summary of a Study Guard trigger (rule
+     *  list IF box) — list name / app label + minutes + warn,
+     *  never the raw param. */
+    fun studyGuardSummary(ctx: Context, type: String,
+                          param: String): String {
+        val kv = parseStudyGuardParam(param)
+        val warn = kv["warn"]?.toIntOrNull() ?: 5
+        val warnSuffix = if (warn > 0) " • " +
+            ctx.getString(R.string.sg_warn_suffix, warn) else ""
+        fun listName(id: String?): String {
+            val l = id?.takeIf { it.isNotEmpty() }
+                ?.let { Config.studyList(ctx, it) }
+            return l?.name ?: ctx.getString(R.string.sg_list_deleted)
+        }
+        return if (type == "study_guard_continuous") {
+            val mins = kv["mins"]?.toIntOrNull() ?: 30
+            ctx.getString(R.string.sg_sum_continuous,
+                listName(kv["list"]), mins) + warnSuffix
+        } else {
+            val limit = kv["limit"]?.toIntOrNull() ?: 30
+            val app = kv["app"]?.takeIf { it.isNotBlank() }
+            if (app != null) ctx.getString(R.string.sg_sum_daily_app,
+                appLabel(ctx, app), limit) + warnSuffix
+            else ctx.getString(R.string.sg_sum_daily_list,
+                listName(kv["list"]), limit) + warnSuffix
+        }
+    }
+
+    private fun sgDialerPkg(ctx: Context): String = try {
+        val tm = ctx.getSystemService(Context.TELECOM_SERVICE)
+            as android.telecom.TelecomManager
+        tm.defaultDialerPackage ?: ""
+    } catch (e: Exception) { "" }
+
+    private fun sgLauncherPkg(ctx: Context): String = try {
+        val i = Intent(Intent.ACTION_MAIN)
+            .addCategory(Intent.CATEGORY_HOME)
+        ctx.packageManager.resolveActivity(i, 0)
+            ?.activityInfo?.packageName ?: ""
+    } catch (e: Exception) { "" }
+
+    /** Never counted by Study Guard: PhoneLink itself, FocusLock,
+     *  SystemUI, the default dialer and the current launcher. */
+    private fun sgExcluded(ctx: Context, pkg: String,
+                           dialer: String, launcher: String): Boolean =
+        pkg.isEmpty() || pkg == ctx.packageName ||
+            pkg == FOCUSLOCK_PKG || pkg == "com.android.systemui" ||
+            (dialer.isNotEmpty() && pkg == dialer) ||
+            (launcher.isNotEmpty() && pkg == launcher)
+
+    /** Current foreground package, reconstructed from usage
+     *  events over a 6-hour window (the same source pollAppUsage
+     *  uses, wider): the last RESUMED package not followed by its
+     *  own PAUSED / a screen-off / a keyguard event. Empty when
+     *  nothing is in front (home, lock, screen off). When the
+     *  window holds NO transitions at all, the last definite
+     *  foreground app still stands — nothing happened since. */
+    private fun sgForegroundPkg(ctx: Context,
+                                usm: UsageStatsManager,
+                                now: Long): String {
+        val pm = ctx.getSystemService(Context.POWER_SERVICE)
+            as android.os.PowerManager
+        if (!pm.isInteractive) return ""
+        var fg: String? = null
+        var saw = false
+        try {
+            val events = usm.queryEvents(now - 6 * 3600_000L, now)
+                ?: return ""
+            val ev = UsageEvents.Event()
+            while (events.hasNextEvent()) {
+                events.getNextEvent(ev)
+                val pkg = ev.packageName ?: continue
+                when (ev.eventType) {
+                    UsageEvents.Event.ACTIVITY_RESUMED,
+                    UsageEvents.Event.MOVE_TO_FOREGROUND -> {
+                        fg = pkg; saw = true
+                    }
+                    UsageEvents.Event.ACTIVITY_PAUSED,
+                    UsageEvents.Event.MOVE_TO_BACKGROUND -> {
+                        saw = true
+                        if (fg == pkg) fg = null
+                    }
+                    UsageEvents.Event.SCREEN_NON_INTERACTIVE,
+                    UsageEvents.Event.KEYGUARD_SHOWN -> {
+                        saw = true; fg = null
+                    }
+                }
+            }
+        } catch (e: Exception) { return "" }
+        val p = prefs(ctx)
+        if (fg != null) {
+            if (p.getString("sg_last_fg", "") != fg)
+                p.edit().putString("sg_last_fg", fg).apply()
+            return fg
+        }
+        if (saw) return ""
+        return p.getString("sg_last_fg", "") ?: ""
+    }
+
+    /** Today's foreground totals (ms), from local midnight —
+     *  the day boundary is midnight only (spec §৮ক; the custom
+     *  day-start idea stayed a proposal). */
+    private fun sgDailyTotals(usm: UsageStatsManager,
+                              now: Long): Map<String, Long> {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val out = HashMap<String, Long>()
+        try {
+            val map = usm.queryAndAggregateUsageStats(
+                cal.timeInMillis, now)
+            if (map != null) for ((pkg, st) in map) {
+                val t = st.totalTimeInForeground
+                if (t > 0) out[pkg] = t
+            }
+        } catch (e: Exception) { }
+        return out
+    }
+
+    private fun sgFire(ctx: Context, rule: JSONObject,
+                       type: String, pkg: String) {
+        markFired(ctx, rule.optString("id"),
+            System.currentTimeMillis())
+        ruleNameHint = rule.optString("name")
+        val label = appLabel(ctx, pkg)
+        log(ctx, "▶ " + rule.optString("name") + " (" + type +
+            ": " + label + ")")
+        // The trigger context: "pkg" is what a focuslock_control
+        // step's app=@trigger_app resolves from.
+        runActions(ctx, rule, JSONObject().put("pkg", pkg)
+            .put("app", label).put("title", label), 0)
+    }
+
+    /** The pre-warning (decision 3): ONE notification per
+     *  session (continuous) or per day per app (daily), a few
+     *  minutes BEFORE the limit — then the rule fires directly
+     *  at the limit and its actions do the blocking. Posted via
+     *  localNotify, the app's existing inbox-channel helper. */
+    private fun sgWarn(ctx: Context, rule: JSONObject,
+                       type: String, pkg: String, remain: Int) {
+        val label = appLabel(ctx, pkg)
+        localNotify(ctx, ctx.getString(
+            if (type == "study_guard_continuous")
+                R.string.sg_warn_continuous
+            else R.string.sg_warn_daily, label, remain))
+        log(ctx, "⏳ " + rule.optString("name") + " (" + type +
+            ": " + label + " — " +
+            ctx.getString(R.string.sg_log_warn, remain) + ")")
+    }
+
+    private fun sgEvalContinuous(ctx: Context, rule: JSONObject,
+                                 param: String, fg: String,
+                                 dialer: String, launcher: String,
+                                 now: Long) {
+        val kv = parseStudyGuardParam(param)
+        val list = kv["list"]?.takeIf { it.isNotEmpty() }
+            ?.let { Config.studyList(ctx, it) } ?: return
+        val mins = (kv["mins"]?.toIntOrNull() ?: 30).coerceAtLeast(1)
+        val warn = kv["warn"]?.toIntOrNull() ?: 5
+        val key = "sgc_${rule.optString("id")}_${param.hashCode()}"
+        val p = prefs(ctx)
+        val raw = p.getString(key, "") ?: ""
+        // Reset (decision 2): nothing in front, a study-list app
+        // in front, or an emergency/system package in front —
+        // the session clock starts over.
+        if (fg.isEmpty() || fg in list.pkgs ||
+            sgExcluded(ctx, fg, dialer, launcher)) {
+            if (raw.isNotEmpty()) p.edit().remove(key).apply()
+            return
+        }
+        val parts = raw.split("|")
+        var since = parts.getOrNull(1)?.toLongOrNull() ?: 0L
+        val warned = parts.getOrNull(2) == "1"
+        val fired = parts.getOrNull(3) == "1"
+        if (parts.getOrNull(0) != fg || since <= 0L) {
+            since = now; warned = false; fired = false
+            p.edit().putString(key, "$fg|$since|0|0").apply()
+        }
+        val limitMs = mins * 60_000L
+        val elapsedMs = now - since
+        if (elapsedMs >= limitMs) {
+            if (!fired && constraintsPass(ctx, rule)) {
+                p.edit().putString(key,
+                    "$fg|$since|${if (warned) 1 else 0}|1").apply()
+                sgFire(ctx, rule, "study_guard_continuous", fg)
+            }
+            return
+        }
+        if (warn > 0 && !warned &&
+            elapsedMs >= limitMs - warn * 60_000L) {
+            p.edit().putString(key,
+                "$fg|$since|1|${if (fired) 1 else 0}").apply()
+            val remain = ((limitMs - elapsedMs + 59_999L) /
+                60_000L).toInt().coerceAtLeast(1)
+            sgWarn(ctx, rule, "study_guard_continuous", fg, remain)
+        }
+    }
+
+    private fun sgEvalDaily(ctx: Context, rule: JSONObject,
+                            param: String,
+                            totals: Map<String, Long>,
+                            dialer: String, launcher: String,
+                            today: String) {
+        val kv = parseStudyGuardParam(param)
+        val limit = (kv["limit"]?.toIntOrNull() ?: 30)
+            .coerceAtLeast(1)
+        val warn = kv["warn"]?.toIntOrNull() ?: 5
+        val limitMs = limit * 60_000L
+        val appMode = kv["app"]?.takeIf { it.isNotBlank() }
+        val candidates: List<String> = if (appMode != null)
+            listOf(appMode)
+        else {
+            val list = kv["list"]?.takeIf { it.isNotEmpty() }
+                ?.let { Config.studyList(ctx, it) } ?: return
+            totals.keys.filter { it !in list.pkgs &&
+                !sgExcluded(ctx, it, dialer, launcher) }
+        }
+        val p = prefs(ctx)
+        val rid = rule.optString("id")
+        for (pkg in candidates) {
+            val used = totals[pkg] ?: 0L
+            if (used <= 0L) continue
+            if (warn > 0 && used >= limitMs - warn * 60_000L &&
+                used < limitMs &&
+                p.getString("sgw_${rid}_$pkg", "") != today) {
+                p.edit().putString("sgw_${rid}_$pkg", today).apply()
+                val remain = ((limitMs - used + 59_999L) /
+                    60_000L).toInt().coerceAtLeast(1)
+                sgWarn(ctx, rule, "study_guard_daily", pkg, remain)
+            }
+            if (used >= limitMs &&
+                p.getString("day_${rid}_$pkg", "") != today) {
+                if (!constraintsPass(ctx, rule)) continue
+                p.edit().putString("day_${rid}_$pkg", today).apply()
+                sgFire(ctx, rule, "study_guard_daily", pkg)
+            }
+        }
+    }
+
+    /** Study Guard evaluation, hooked into tick() next to
+     *  pollAppUsage — the existing ~20-second cadence from
+     *  LinkService's poll loop (plus heartbeat ticks). No new
+     *  service, no new timer. Minute-level by design: battery
+     *  savers can delay a tick, and the manual says so. */
+    fun pollStudyGuard(ctx: Context, list: List<JSONObject>) {
+        try {
+            val cont = mutableListOf<Pair<JSONObject, JSONObject>>()
+            val daily = mutableListOf<Pair<JSONObject, JSONObject>>()
+            for (rule in list) for (trig in ruleTriggers(rule)) {
+                when (trig.optString("type")) {
+                    "study_guard_continuous" -> cont.add(rule to trig)
+                    "study_guard_daily" -> daily.add(rule to trig)
+                }
+            }
+            if (cont.isEmpty() && daily.isEmpty()) return
+            val p = prefs(ctx)
+            if (!PermChecks.usageAccess(ctx)) {
+                // Log ONCE until access is granted — no spam.
+                if (!p.getBoolean("sg_noperm", false)) {
+                    p.edit().putBoolean("sg_noperm", true).apply()
+                    log(ctx, "⚠ " + ctx.getString(
+                        R.string.sg_log_no_perm))
+                }
+                return
+            }
+            if (p.getBoolean("sg_noperm", false))
+                p.edit().putBoolean("sg_noperm", false).apply()
+            val usm = ctx.getSystemService(
+                Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            val now = System.currentTimeMillis()
+            val dialer = sgDialerPkg(ctx)
+            val launcher = sgLauncherPkg(ctx)
+            if (cont.isNotEmpty()) {
+                val fg = sgForegroundPkg(ctx, usm, now)
+                for ((rule, trig) in cont) sgEvalContinuous(ctx,
+                    rule, trig.optString("param"), fg, dialer,
+                    launcher, now)
+            }
+            if (daily.isNotEmpty()) {
+                val totals = sgDailyTotals(usm, now)
+                val today = dayKey()
+                for ((rule, trig) in daily) sgEvalDaily(ctx, rule,
+                    trig.optString("param"), totals, dialer,
+                    launcher, today)
+            }
+        } catch (e: Exception) { }
     }
 
     private fun distanceM(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
