@@ -3,6 +3,7 @@ package com.mthtamim.phonelink
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -142,7 +143,16 @@ object AutoCatalog {
 class AutomationActivity : LocalizedActivity() {
 
     private lateinit var container: LinearLayout
-    private var healthBroken = -1
+
+    companion object {
+        private const val MENU_SG = 1
+        private const val MENU_BACKUP = 2
+        private const val MENU_QR = 3
+        private const val MENU_LOG = 4
+        private const val MENU_VARS = 5
+        private const val MENU_EXPORT = 6
+        private const val MENU_IMPORT = 7
+    }
 
     private val scanLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
@@ -320,24 +330,23 @@ class AutomationActivity : LocalizedActivity() {
             startActivity(Intent(this, RuleEditorActivity::class.java))
         }
         findViewById<android.widget.ImageButton>(R.id.btnAutoBack).setOnClickListener { finish() }
-        findViewById<Button>(R.id.btnAutoQr).setOnClickListener {
-            scanLauncher.launch(Intent(this, ScanActivity::class.java))
+        findViewById<android.widget.ImageButton>(R.id.btnAutoMenu).setOnClickListener {
+            showAutoMenu(it)
         }
-        findViewById<Button>(R.id.btnAutoLog).setOnClickListener { showLog() }
-        findViewById<Button>(R.id.btnAutoVars).setOnClickListener { showVars() }
-        findViewById<Button>(R.id.btnAutoExport).setOnClickListener {
-            val send = Intent(Intent.ACTION_SEND).setType("application/json")
-                .putExtra(Intent.EXTRA_TEXT, Automation.exportJson(this))
-            startActivity(Intent.createChooser(send, getString(R.string.auto_export)))
+        // v2.20.1: the compact line expands to the full 3-row detail.
+        findViewById<LinearLayout>(R.id.statusLineRow).setOnClickListener {
+            val detail = findViewById<LinearLayout>(R.id.statusDetail)
+            val open = detail.visibility != View.VISIBLE
+            detail.visibility = if (open) View.VISIBLE else View.GONE
+            findViewById<TextView>(R.id.tvStatusChev).text = if (open) "⌃" else "⌄"
         }
-        findViewById<Button>(R.id.btnAutoImport).setOnClickListener { showImport() }
         findViewById<android.widget.CompoundButton>(R.id.swRulesSync).apply {
             isChecked = Config.rulesSyncOn(this@AutomationActivity)
             setOnCheckedChangeListener { _, on ->
                 Config.setRulesSyncOn(this@AutomationActivity, on)
+                refreshStatusLine()
             }
         }
-        findViewById<Button>(R.id.btnAutoBackup).setOnClickListener { showBackups() }
         findViewById<Button>(R.id.btnFlToken).setOnClickListener {
             showFocusLockTokenDialog()
         }
@@ -350,10 +359,6 @@ class AutomationActivity : LocalizedActivity() {
                 android.widget.Toast.LENGTH_SHORT).show()
         }
         renderFocusLock()
-        findViewById<Button>(R.id.btnSgManage).setOnClickListener {
-            StudyGuardUi.showManager(this) { renderStudyGuard() }
-        }
-        renderStudyGuard()
         val btnRest = findViewById<Button>(R.id.btnRestTime)
         btnRest.text = Automation.restSeconds(this).toString() + "s"
         btnRest.setOnClickListener {
@@ -372,6 +377,7 @@ class AutomationActivity : LocalizedActivity() {
                     Automation.setRestSeconds(this, sec)
                     btnRest.text = Automation.restSeconds(this)
                         .toString() + "s"
+                    refreshStatusLine()
                 }
                 .setNegativeButton(getString(R.string.btn_cancel), null)
                 .show()
@@ -382,17 +388,7 @@ class AutomationActivity : LocalizedActivity() {
         super.onResume()
         renderHealth()
         renderFocusLock()
-        renderStudyGuard()
         render()
-    }
-
-    /** v2.20: Study Guard card status — just the list count;
-     *  the lists themselves live in the manager dialog. */
-    private fun renderStudyGuard() {
-        val n = Config.studyLists(this).size
-        findViewById<TextView>(R.id.tvSgStatus).text =
-            if (n == 0) getString(R.string.sg_card_empty)
-            else getString(R.string.sg_card_status, n)
     }
 
     /** v2.20: FocusLock card status — install state from the
@@ -466,7 +462,6 @@ class AutomationActivity : LocalizedActivity() {
         // only the broken items get a row (the full five-row list ate
         // too much of the screen).
         val broken = items.filter { !it.second }
-        healthBroken = broken.size
         findViewById<TextView>(R.id.tvHealthTitle).text =
             if (broken.isEmpty())
                 getString(R.string.auto_health_all_ok)
@@ -499,20 +494,64 @@ class AutomationActivity : LocalizedActivity() {
         mode == AppOpsManager.MODE_ALLOWED
     } catch (_: Exception) { false }
 
-    private fun updateAutoPill(total: Int, active: Int) {
-        var text = getString(R.string.auto_pill_fmt, active, total)
-        if (healthBroken > 0) {
-            text += " • " + getString(R.string.auto_health_broken, healthBroken)
+    /** v2.20.1: the compact header line — rule counts + trigger
+     *  health + rest seconds in one row. The health title already
+     *  carries the broken count, so it is not appended twice. The
+     *  sync mark is dim when rule sync is off; the switch itself
+     *  lives in the expanded detail. */
+    private fun refreshStatusLine() {
+        val list = Automation.rules(this)
+        val total = list.size
+        val active = list.count { it.optBoolean("enabled", true) }
+        val health = findViewById<TextView>(R.id.tvHealthTitle).text.toString()
+        val rest = Automation.restSeconds(this).toString() + "s"
+        findViewById<TextView>(R.id.tvStatusLine).text =
+            getString(R.string.auto_pill_compact, active, total) +
+                " · " + health + " · " + rest
+        findViewById<TextView>(R.id.tvSyncMark).alpha =
+            if (Config.rulesSyncOn(this)) 1.0f else 0.35f
+    }
+
+    /** v2.20.1: the ⋮ menu — Study Guard first (its list count is
+     *  built fresh on every open), then the six quick tools that
+     *  used to sit in the fixed header row. */
+    private fun showAutoMenu(anchor: View) {
+        val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
+        val n = Config.studyLists(this).size
+        val sgTitle = getString(R.string.sg_card_title) + " · " +
+            if (n == 0) getString(R.string.sg_card_empty)
+            else getString(R.string.sg_card_status, n)
+        popup.menu.add(0, MENU_SG, 0, sgTitle)
+        popup.menu.add(0, MENU_BACKUP, 1, getString(R.string.auto_backup))
+        popup.menu.add(0, MENU_QR, 2, getString(R.string.auto_qr))
+        popup.menu.add(0, MENU_LOG, 3, getString(R.string.auto_log))
+        popup.menu.add(0, MENU_VARS, 4, getString(R.string.auto_vars))
+        popup.menu.add(0, MENU_EXPORT, 5, getString(R.string.auto_export))
+        popup.menu.add(0, MENU_IMPORT, 6, getString(R.string.auto_import))
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_SG -> StudyGuardUi.showManager(this) { }
+                MENU_BACKUP -> showBackups()
+                MENU_QR -> scanLauncher.launch(Intent(this, ScanActivity::class.java))
+                MENU_LOG -> showLog()
+                MENU_VARS -> showVars()
+                MENU_EXPORT -> {
+                    val send = Intent(Intent.ACTION_SEND).setType("application/json")
+                        .putExtra(Intent.EXTRA_TEXT, Automation.exportJson(this))
+                    startActivity(Intent.createChooser(send, getString(R.string.auto_export)))
+                }
+                MENU_IMPORT -> showImport()
+            }
+            true
         }
-        findViewById<TextView>(R.id.tvAutoPill).text = text
+        popup.show()
     }
 
     private fun render() {
         container.removeAllViews()
         val list = Automation.rules(this)
             .sortedWith(compareBy({ it.optString("cat") }, { it.optString("name") }))
-        updateAutoPill(list.size,
-            list.count { it.optBoolean("enabled", true) })
+        refreshStatusLine()
         if (list.isEmpty()) {
             container.addView(TextView(this).apply {
                 text = getString(R.string.auto_empty)

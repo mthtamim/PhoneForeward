@@ -195,7 +195,21 @@ class LinkService : Service() {
             if (Config.isSender(applicationContext)) {
                 cmdThread = thread(name = "pl-cmd") { listenLoop(cmd = true) }
                 heartbeatThread = thread(name = "pl-heartbeat") { heartbeatLoop() }
+            }
+            // v2.20.1: the poll loop is LOCAL automation, not forwarding —
+            // it used to start sender-only, so on a Receiver phone Study
+            // Guard, app open/close edges, battery crossings, states,
+            // wifi and calendar triggers never evaluated at all. It now
+            // starts for every configured role. The command listener
+            // above stays sender-only and the data listener receiver-only.
+            // The local loop below carries the checks whose effect is
+            // local (geofence events, dev-options log, local backup
+            // file, update check) — their peer-relay parts stay gated
+            // on isSender inside each check.
+            if (Config.isSender(applicationContext) ||
+                Config.isReceiver(applicationContext)) {
                 pollThread = thread(name = "pl-poll") { pollLoop() }
+                localThread = thread(name = "pl-local") { localLoop() }
             }
             if (Config.lostOn(applicationContext) && !lostRunning) {
                 lostRunning = true
@@ -214,7 +228,7 @@ class LinkService : Service() {
         Lan.stopServer()
         MqttManager.stop()
         dataThread?.interrupt(); cmdThread?.interrupt(); heartbeatThread?.interrupt()
-        pollThread?.interrupt()
+        pollThread?.interrupt(); localThread?.interrupt()
         try { batteryReceiver?.let { unregisterReceiver(it) } }
         catch (_: Exception) { }
         batteryReceiver = null
@@ -281,6 +295,7 @@ class LinkService : Service() {
     private var batteryReceiver: BroadcastReceiver? = null
     private var wifiCallback: android.net.ConnectivityManager.NetworkCallback? = null
     private var pollThread: Thread? = null
+    private var localThread: Thread? = null
     private var musicCallback: android.media.AudioManager.AudioPlaybackCallback? = null
     private var telephonyCallback: android.telephony.TelephonyCallback? = null
     @Volatile private var lastMusicActive = false
@@ -2173,10 +2188,14 @@ class LinkService : Service() {
                     .format(java.util.Date()) + ".json"
                 val dir = java.io.File("/sdcard/Download/PhoneLinkBackups")
                 dir.mkdirs()
+                // v2.20.1: the local backup file is written on every
+                // role; only the peer copy + peer notice stay sender-only.
                 java.io.File(dir, name).writeBytes(bytes)
-                if (bytes.size <= 4_500_000) Relay.postFile(ctx, name, bytes, "application/json")
-                Relay.send(ctx, Relay.TYPE_INFO, "💾 অটো-ব্যাকআপ হয়েছে",
-                    "$name (${humanSize(bytes.size.toLong())})")
+                if (Config.isSender(ctx)) {
+                    if (bytes.size <= 4_500_000) Relay.postFile(ctx, name, bytes, "application/json")
+                    Relay.send(ctx, Relay.TYPE_INFO, "💾 অটো-ব্যাকআপ হয়েছে",
+                        "$name (${humanSize(bytes.size.toLong())})")
+                }
             } catch (_: Exception) { }
         }
     }
@@ -2206,6 +2225,30 @@ class LinkService : Service() {
         }
     }
 
+    /** v2.20.1: local-only periodic checks, for EVERY configured role.
+     *  These used to live only in the sender-only heartbeatLoop, so a
+     *  Receiver phone never ran them: geofence transitions (whose
+     *  Automation.onEvent is local), the dev-options security-log
+     *  entry, the local auto-backup file, and the app-update check
+     *  (local notification / auto-update, no relay traffic). Each
+     *  check is latch- or day-throttled internally, so a 10-minute
+     *  cadence is safe; their peer-relay parts stay gated on
+     *  isSender inside the checks themselves. Runs only from the
+     *  both-roles localThread started in onStartCommand. */
+    private fun localLoop() {
+        while (running) {
+            try {
+                checkGeofence()
+                checkDevOptions()
+                checkAutoBackup()
+                if (System.currentTimeMillis() -
+                    Config.updateLastCheck(applicationContext) > 24 * 3600_000L)
+                    Update.check(applicationContext, false)
+            } catch (_: Exception) { }
+            try { Thread.sleep(10 * 60_000L) } catch (_: InterruptedException) { break }
+        }
+    }
+
     private fun heartbeatLoop() {
         // First heartbeat shortly after start so the receiver sees us online.
         try { Thread.sleep(8000) } catch (_: InterruptedException) { return }
@@ -2224,23 +2267,22 @@ class LinkService : Service() {
                 checkSimChanged()
                 checkMms()
                 checkBatteryHealth()
-                checkAutoBackup()
                 flushDigestIfDue()
-                checkGeofence()
                 checkDailySummary()
                 checkLowBatteryLocation()
                 checkRoutine()
                 checkUsageLimits()
                 checkSchedules()
-                checkDevOptions()
                 checkChargeFull()
                 checkDataUsage()
                 checkWeeklyReport()
                 checkCheckin()
                 Automation.tick(hctx)
-                if (System.currentTimeMillis() -
-                    Config.updateLastCheck(hctx) > 24 * 3600_000L)
-                    Update.check(hctx, false)
+                // v2.20.1: checkGeofence, checkDevOptions,
+                // checkAutoBackup and Update.check moved to localLoop —
+                // they have local effects and must also run on Receiver.
+                // Everything left here ends in a Relay.send to the peer
+                // by design, so heartbeatLoop stays sender-only.
                 Chunks.requestMissing(hctx)
                 Chunks.cleanupSent(hctx)
                 if (Lan.peerIp(hctx).isEmpty()) Lan.discoverAsync(hctx)
@@ -2375,8 +2417,11 @@ class LinkService : Service() {
                 return
             }
             if (nowVal > 0 && prev == 0) {
+                // v2.20.1: the security-log entry is local and must be
+                // recorded on Receiver too; only the peer alert stays
+                // sender-gated.
                 SecLog.add(ctx, "Developer options / USB debugging চালু হয়েছে")
-                if (Config.fwdSecurity(ctx)) {
+                if (Config.isSender(ctx) && Config.fwdSecurity(ctx)) {
                     Relay.send(ctx, Relay.TYPE_SYSTEM, "⚠️ Developer options চালু",
                         "এই ফোনে USB debugging / Developer options চালু করা হয়েছে।")
                 }
@@ -2572,12 +2617,16 @@ class LinkService : Service() {
                 val prev = prefs.getInt("geo_inside", -1)
                 prefs.edit().putInt("geo_inside", if (inside) 1 else 0).apply()
                 if (prev == 1 && !inside) {
-                    Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকা ছেড়েছে",
-                        "${Config.deviceName(ctx)} নির্ধারিত এলাকার বাইরে (প্রায় ${res[0].toInt()} মিটার দূরে)।")
+                    // v2.20.1: the peer alert stays sender-only, but the
+                    // automation event is local and must fire on Receiver.
+                    if (Config.isSender(ctx))
+                        Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকা ছেড়েছে",
+                            "${Config.deviceName(ctx)} নির্ধারিত এলাকার বাইরে (প্রায় ${res[0].toInt()} মিটার দূরে)।")
                     Automation.onEvent(ctx, "geofence_out", JSONObject())
                 } else if (prev == 0 && inside) {
-                    Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকায় ফিরেছে",
-                        "${Config.deviceName(ctx)} আবার নির্ধারিত এলাকায়।")
+                    if (Config.isSender(ctx))
+                        Relay.send(ctx, Relay.TYPE_SYSTEM, "📍 জিওফেন্স: এলাকায় ফিরেছে",
+                            "${Config.deviceName(ctx)} আবার নির্ধারিত এলাকায়।")
                     Automation.onEvent(ctx, "geofence_in", JSONObject())
                 }
             } catch (_: Exception) { }

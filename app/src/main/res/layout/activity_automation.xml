@@ -47,16 +47,24 @@
                 android:layout_height="wrap_content"
                 android:text="@string/auto_add"
                 app:icon="@drawable/ic_plus" />
+
+            <ImageButton
+                android:id="@+id/btnAutoMenu"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/bg_back_chip"
+                android:contentDescription="@string/auto_menu"
+                android:padding="8dp"
+                android:src="@drawable/ic_more_vert"
+                android:tint="?attr/colorOnSurface" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvAutoPill"
-            style="@style/PL.Pill"
-            android:layout_marginTop="12dp" />
 
-        <!-- v2.17.4: ONE full-width status card, 3 rows
-             (health / rest / sync) instead of the two half-width
-             cards that crushed the rest label (~130dp total) -->
+        <!-- v2.20.1: compact header — one status line (counts + health +
+             rest + sync mark); tap expands the full 3-row detail.
+             The quick-tool chips and the Study Guard card moved to
+             the ⋮ menu so the rules list gets the screen. -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -67,6 +75,45 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="12dp">
+            <LinearLayout
+                android:id="@+id/statusLineRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvStatusLine"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvSyncMark"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="⇄"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvStatusChev"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="⌄"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/statusDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical"
+                android:visibility="gone">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -152,81 +199,8 @@
                         android:layout_height="wrap_content" />
                 </LinearLayout>
             </LinearLayout>
+            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
-        <!-- Quick tools -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:orientation="horizontal">
-
-            <!-- v2.17.4: rule backups moved here from the old
-                 Sync card, as a quick chip like the others -->
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAutoBackup"
-                style="@style/PL.BtnChip"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="3dp"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:text="@string/auto_backup" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAutoQr"
-                style="@style/PL.BtnChip"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:layout_marginEnd="3dp"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:text="@string/auto_qr" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAutoLog"
-                style="@style/PL.BtnChip"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:layout_marginEnd="3dp"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:text="@string/auto_log" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAutoVars"
-                style="@style/PL.BtnChip"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:layout_marginEnd="3dp"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:text="@string/auto_vars" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAutoExport"
-                style="@style/PL.BtnChip"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:layout_marginEnd="3dp"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:text="@string/auto_export" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAutoImport"
-                style="@style/PL.BtnChip"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="3dp"
-                android:layout_weight="1"
-                android:maxLines="1"
-                android:text="@string/auto_import" />
-        </LinearLayout>
 
         <ScrollView
             android:layout_width="match_parent"
@@ -314,65 +288,6 @@
                                 android:maxLines="1"
                                 android:text="@string/fl_btn_open" />
                         </LinearLayout>
-                    </LinearLayout>
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- v2.20: Study Guard entry — a compact sibling
-                     of the FocusLock card: study-list count + the
-                     one manager entry (lists themselves are edited
-                     here and from the Study Guard trigger card in
-                     the rule editor — one manager, two doors). -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/sg_card_title"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:id="@+id/tvSgStatus"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="10dp"
-                                android:layout_weight="1"
-                                android:gravity="end"
-                                android:textColor="?attr/colorPrimary"
-                                android:textSize="13.5sp"
-                                android:textStyle="bold" />
-                        </LinearLayout>
-
-                        <TextView
-                            style="@style/PL.BodySmall"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="@string/sg_card_sub" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSgManage"
-                            style="@style/PL.BtnChip"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="10dp"
-                            android:maxLines="1"
-                            android:text="@string/sg_btn_manage" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

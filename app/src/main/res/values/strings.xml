@@ -1275,6 +1275,8 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="item_call_back">Call Back</string>
     <string name="item_reply">Reply</string>
     <string name="bkash_badge">bKash Auto-Detected</string>
+    <string name="auto_menu">More options</string>
+    <string name="auto_pill_compact">%1$d of %2$d active</string>
     <string name="auto_pill_fmt">%1$d of %2$d rules active</string>
     <string name="ed_when">1. WHEN (Trigger)</string>
     <string name="ed_constraints">CONSTRAINTS / CONDITIONS</string>

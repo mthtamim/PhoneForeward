@@ -10,20 +10,36 @@ class SystemReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val ctx = context.applicationContext
         // Automation events fire regardless of forwarding roles.
+        // v2.20.1: the service restart and the local security effects
+        // below are also role-neutral. They used to sit behind the
+        // sender gate further down, so a Receiver phone never restarted
+        // LinkService after a reboot — and with no service there was
+        // no poll loop, no tick, and no local automation at all.
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED -> {
                 Automation.onEvent(ctx, "boot", JSONObject())
                 // v2.14.1: reboot wipes AlarmManager alarms — re-arm the
-                // time rules for BOTH roles. (LinkService.start below is
-                // sender-gated, so receiver phones silently lost theirs.)
+                // time rules for BOTH roles.
                 Automation.scheduleTimeRules(ctx)
+                SecLog.add(ctx, "ফোন বুট/রিস্টার্ট হয়েছে")
+                LinkService.start(ctx)
             }
             Intent.ACTION_MY_PACKAGE_REPLACED ->
                 Automation.scheduleTimeRules(ctx)
-            Intent.ACTION_POWER_CONNECTED ->
+            Intent.ACTION_POWER_CONNECTED -> {
                 Automation.onEvent(ctx, "charging_on", JSONObject())
-            Intent.ACTION_POWER_DISCONNECTED ->
+                LinkService.start(ctx) // good moment to flush the offline queue
+            }
+            Intent.ACTION_POWER_DISCONNECTED -> {
                 Automation.onEvent(ctx, "charging_off", JSONObject())
+                if (Config.guardOn(ctx)) {
+                    // Guard mode: an unplugged charger is treated as
+                    // theft. Ringing + the local log entry happen on
+                    // every role; only the peer alert below stays gated.
+                    RingHelper.start(ctx, maxAll = true)
+                    SecLog.add(ctx, "পাহারা মোড: চার্জার খুলে ফেলা হয়েছে")
+                }
+            }
             "android.intent.action.HEADSET_PLUG" -> {
                 val state = intent.getIntExtra("state", 0)
                 Automation.onEvent(ctx, if (state == 1) "headphone_in" else "headphone_out",
@@ -34,11 +50,9 @@ class SystemReceiver : BroadcastReceiver() {
         }
         if (!Config.isSender(ctx)) return
 
+        // Everything below is peer forwarding and stays sender-only.
         when (intent.action) {
             Intent.ACTION_BOOT_COMPLETED -> {
-                // Restart the realtime link after a reboot, and tell the other phone.
-                SecLog.add(ctx, "ফোন বুট/রিস্টার্ট হয়েছে")
-                LinkService.start(ctx)
                 if (Config.fwdSystem(ctx)) {
                     Relay.send(ctx, Relay.TYPE_SYSTEM, "ফোন চালু হয়েছে",
                         "${Config.deviceName(ctx)} রিবুটের পর আবার অনলাইন। ব্যাটারি: ${batteryPercent(ctx)}%")
@@ -58,13 +72,9 @@ class SystemReceiver : BroadcastReceiver() {
                 if (Config.fwdBattery(ctx))
                     Relay.send(ctx, Relay.TYPE_BATTERY, "চার্জে দেওয়া হয়েছে",
                         "ব্যাটারি ${batteryPercent(ctx)}%")
-                LinkService.start(ctx) // good moment to flush the offline queue
             }
             Intent.ACTION_POWER_DISCONNECTED -> {
                 if (Config.guardOn(ctx)) {
-                    // Guard mode: an unplugged charger is treated as theft.
-                    RingHelper.start(ctx, maxAll = true)
-                    SecLog.add(ctx, "পাহারা মোড: চার্জার খুলে ফেলা হয়েছে")
                     Relay.send(ctx, Relay.TYPE_SYSTEM, "🚨 পাহারা মোড",
                         "চার্জার খুলে ফেলা হয়েছে — ফোন সরানো হয়ে থাকতে পারে।")
                 } else if (Config.fwdBattery(ctx)) {

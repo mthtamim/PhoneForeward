@@ -1265,6 +1265,8 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="item_call_back">কল ব্যাক</string>
     <string name="item_reply">রিপ্লাই</string>
     <string name="bkash_badge">bKash শনাক্ত হয়েছে</string>
+    <string name="auto_menu">আরো অপশন</string>
+    <string name="auto_pill_compact">%2$dটির মধ্যে %1$dটি সক্রিয়</string>
     <string name="auto_pill_fmt">%2$dটি নিয়মের মধ্যে %1$dটি সক্রিয়</string>
     <string name="ed_when">১. কখন (ট্রিগার)</string>
     <string name="ed_constraints">শর্তাবলি / কন্ডিশন</string>

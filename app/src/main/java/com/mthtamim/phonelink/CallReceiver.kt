@@ -24,13 +24,18 @@ class CallReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val ctx = context.applicationContext
-        if (!Config.isSender(ctx) || !Config.fwdCalls(ctx)) return
+        // v2.20.1: call triggers are LOCAL automation — they used to sit
+        // behind this sender gate, so on a Receiver phone no call rule
+        // ever fired. Only the peer forward stays gated; the state
+        // tracking, the Automation.onEvent calls and the user-enabled
+        // missed-call auto-reply below now run on every role.
+        val fwd = Config.isSender(ctx) && Config.fwdCalls(ctx)
 
         when (intent.action) {
             Intent.ACTION_NEW_OUTGOING_CALL -> {
                 val number = intent.getStringExtra(Intent.EXTRA_PHONE_NUMBER)
                 outgoingNumber = number
-                Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, number)}আউটগোয়িং কল",
+                if (fwd) Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, number)}আউটগোয়িং কল",
                     Contacts.labelForNumber(ctx, number), extraFor(ctx, number))
                 Automation.onEvent(ctx, "call_outgoing", org.json.JSONObject()
                     .put("title", Contacts.labelForNumber(ctx, number))
@@ -46,7 +51,7 @@ class CallReceiver : BroadcastReceiver() {
                             incomingNumber = number ?: incomingNumber
                             callStart = System.currentTimeMillis()
                             answered = false
-                            Relay.send(ctx, Relay.TYPE_CALL,
+                            if (fwd) Relay.send(ctx, Relay.TYPE_CALL,
                                 "${star(ctx, incomingNumber)}ইনকামিং কল বাজছে",
                                 Contacts.labelForNumber(ctx, incomingNumber),
                                 extraFor(ctx, incomingNumber, ringing = true))
@@ -69,7 +74,7 @@ class CallReceiver : BroadcastReceiver() {
                     }
                     TelephonyManager.EXTRA_STATE_IDLE -> {
                         if (lastState == TelephonyManager.EXTRA_STATE_RINGING && !answered) {
-                            Relay.send(ctx, Relay.TYPE_CALL,
+                            if (fwd) Relay.send(ctx, Relay.TYPE_CALL,
                                 "${star(ctx, incomingNumber)}মিসড কল",
                                 Contacts.labelForNumber(ctx, incomingNumber),
                                 extraFor(ctx, incomingNumber))
@@ -80,7 +85,7 @@ class CallReceiver : BroadcastReceiver() {
                         } else if (lastState == TelephonyManager.EXTRA_STATE_OFFHOOK) {
                             val secs = ((System.currentTimeMillis() - callStart) / 1000).coerceAtLeast(0)
                             val who = incomingNumber ?: outgoingNumber
-                            Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, who)}কল শেষ",
+                            if (fwd) Relay.send(ctx, Relay.TYPE_CALL, "${star(ctx, who)}কল শেষ",
                                 "${Contacts.labelForNumber(ctx, who)} — সময়: ${secs / 60} মিনিট ${secs % 60} সেকেন্ড",
                                 extraFor(ctx, who))
                             Automation.onEvent(ctx, "call_ended", org.json.JSONObject()
