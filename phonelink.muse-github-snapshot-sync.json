@@ -4750,5 +4750,15 @@
    "app/src/main/res/values/strings.xml",
    "app/src/main/res/values-bn/strings.xml"
   ]
+ },
+ {
+  "owner": "mthtamim",
+  "repo": "PhoneForeward",
+  "branch": "main",
+  "source_dir": "/home/hatch/workspace/github-push/phonelink",
+  "commit_sha": "8703d01d87952fe9d87839c523b0cef7253d0320",
+  "paths": [
+   "app/src/main/java/com/mthtamim/phonelink/Automation.kt"
+  ]
  }
 ]
