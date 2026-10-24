@@ -4730,5 +4730,25 @@
    "README.md",
    "app/build.gradle"
   ]
+ },
+ {
+  "owner": "mthtamim",
+  "repo": "PhoneForeward",
+  "branch": "main",
+  "source_dir": "/home/hatch/workspace/github-push/phonelink",
+  "commit_sha": "a6f0301c4861e5db15df8335791c1a3293178d11",
+  "paths": [
+   "README.md",
+   "app/build.gradle",
+   "app/src/main/java/com/mthtamim/phonelink/Automation.kt",
+   "app/src/main/java/com/mthtamim/phonelink/AutomationActivity.kt",
+   "app/src/main/java/com/mthtamim/phonelink/Config.kt",
+   "app/src/main/java/com/mthtamim/phonelink/RuleEditorActivity.kt",
+   "app/src/main/java/com/mthtamim/phonelink/StudyGuardUi.kt",
+   "app/src/main/res/layout/activity_automation.xml",
+   "app/src/main/res/layout/activity_rule_editor.xml",
+   "app/src/main/res/values/strings.xml",
+   "app/src/main/res/values-bn/strings.xml"
+  ]
  }
 ]
