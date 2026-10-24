@@ -4719,5 +4719,16 @@
    "app/src/main/res/xml/widget_lock_a11y_info.xml",
    "app/src/main/res/xml/widget_lock_admin_info.xml"
   ]
+ },
+ {
+  "owner": "mthtamim",
+  "repo": "PhoneForeward",
+  "branch": "main",
+  "source_dir": "/home/hatch/workspace/github-push/phonelink",
+  "commit_sha": "18ba80c00d3b72ce2c5cae4d097561fd6cbd0399",
+  "paths": [
+   "README.md",
+   "app/build.gradle"
+  ]
  }
 ]
