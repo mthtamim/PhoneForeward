@@ -11,8 +11,8 @@ android {
         applicationId "com.mthtamim.phonelink"
         minSdk 26
         targetSdk 34
-        versionCode 43
-        versionName "2.20.1"
+        versionCode 44
+        versionName "2.21.0"
         // v2.19.1: ship ONLY arm64-v8a native libraries. The APK had been
         // bundling .so files for 4 ABIs (~99 MB of the ~114 MB APK):
         // x86/x86_64 exist only for emulators and armeabi-v7a only for old
@@ -45,6 +45,7 @@ android {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.24"
     implementation "androidx.appcompat:appcompat:1.7.0"
+    implementation "androidx.activity:activity-ktx:1.9.0"
     implementation "com.google.android.material:material:1.12.0"
     implementation "androidx.biometric:biometric:1.1.0"
     implementation "com.google.zxing:core:3.5.3"

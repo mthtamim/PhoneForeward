@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AutoTap screens keep their own theme; its values already match
+     PhoneLink's dark tokens (bg #101415, accent #10B981). -->
+<resources>
+    <style name="Theme.AutoTap" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">#10B981</item>
+        <item name="colorPrimaryDark">#101415</item>
+        <item name="colorAccent">#2FD68F</item>
+        <item name="android:windowBackground">#101415</item>
+        <item name="android:statusBarColor">#101415</item>
+        <item name="android:navigationBarColor">#101415</item>
+    </style>
+</resources>

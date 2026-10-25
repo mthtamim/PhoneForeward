@@ -348,6 +348,11 @@ object Config {
     fun myStatus(ctx: Context): String = prefs(ctx).getString("my_status", "") ?: ""
     fun setMyStatus(ctx: Context, s: String) { prefs(ctx).edit().putString("my_status", s.trim()).apply() }
 
+    /** v2.21: the script name remembered by the Dashboard AutoTap
+     *  card, exactly like myStatus above. */
+    fun autoTapScript(ctx: Context): String = prefs(ctx).getString("autotap_script", "") ?: ""
+    fun setAutoTapScript(ctx: Context, s: String) { prefs(ctx).edit().putString("autotap_script", s.trim()).apply() }
+
     fun sharedNote(ctx: Context): String = prefs(ctx).getString("shared_note", "") ?: ""
     fun setSharedNote(ctx: Context, s: String) { prefs(ctx).edit().putString("shared_note", s).apply() }
 

@@ -303,6 +303,7 @@
     <string name="tts_code_prefix">তোমার কোড</string>
     <string name="perm_line_send_sms">SMS পাঠানো</string>
     <string name="perm_line_call_log">কল লগ</string>
+    <string name="perm_line_call_phone">কল করা</string>
     <string name="perm_line_camera">ক্যামেরা</string>
     <string name="tile_label">PhoneLink সেন্ডার</string>
     <string name="tile_on">সেন্ডার চালু</string>
@@ -941,6 +942,9 @@
     <string name="ach_process_running">প্যাকেজ নাম</string>
     <string name="aa_call_number">নম্বরে কল করো</string>
     <string name="aah_call_number">ফোন নম্বর</string>
+    <string name="call_sim_default">ডিফল্ট</string>
+    <string name="call_sim_1">SIM 1</string>
+    <string name="call_sim_2">SIM 2</string>
     <string name="aa_ussd_run">USSD কোড ডায়াল করো</string>
     <string name="aah_ussd_run">যেমন *121#</string>
     <string name="aa_whatsapp_msg">WhatsApp চ্যাট খোলো</string>
@@ -1243,6 +1247,20 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="dash_ptt">ওয়াকি-টকি</string>
     <string name="dash_ptt_hint">Push-to-talk ভয়েস</string>
     <string name="dash_recent">সাম্প্রতিক কার্যকলাপ</string>
+    <string name="dash_autotap_title">AutoTap</string>
+    <string name="dash_autotap_name_hint">Script-এর নাম</string>
+    <string name="dash_autotap_start">চালু করো</string>
+    <string name="dash_autotap_stop">থামাও</string>
+    <string name="dash_autotap_open">AutoTap খুলো</string>
+    <string name="dash_autotap_note">মার্জ করা Accessibility সার্ভিস চালু থাকতে হবে, আর নাম হুবহু মিলতে হবে</string>
+    <string name="dash_autotap_no_name">script-এর নাম দাও</string>
+    <string name="dash_autotap_not_found">ওই নামে চালু করার মতো script নেই</string>
+    <string name="dash_autotap_a11y_on">AutoTap Accessibility চালু</string>
+    <string name="dash_autotap_a11y_off">AutoTap Accessibility বন্ধ — AutoTap খুলে চালু করো</string>
+    <string name="dash_autotap_started">\"%1$s\" চালু হচ্ছে</string>
+    <string name="dash_autotap_stopped">বন্ধ হচ্ছে</string>
+    <string name="autotap_accessibility_label">AutoTap Auto Click</string>
+    <string name="autotap_accessibility_description">AutoTap আপনার বানানো script অনুযায়ী স্ক্রিনে tap ও swipe করে, আর Text tap ধাপে স্ক্রিনের লেখা খুঁজে সেখানে tap করে। এটি শুধু তখনই কাজ করে যখন আপনি নিজে script চালু করেন; কোনো তথ্য সংরক্ষণ বা পাঠানো হয় না।</string>
     <string name="dash_recent_empty">এখনো কিছু আসেনি</string>
     <string name="set_status_ok">সব সিস্টেম ঠিকঠাক চলছে</string>
     <string name="set_status_warn">%1$dটি অনুমতি বাকি আছে</string>
@@ -1503,6 +1521,17 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <!-- ===== v2.20 FocusLock (easy mode) ===== -->
     <string name="aa_focuslock_control">FocusLock নিয়ন্ত্রণ</string>
     <string name="aah_focuslock_control">FocusLock ধাপের কার্ডে পিকার দিয়ে বানানো হয়</string>
+    <string name="aa_autotap_control">AutoTap নিয়ন্ত্রণ</string>
+    <string name="aah_autotap_control">AutoTap ধাপের কার্ডে পিকার দিয়ে বানানো হয়</string>
+    <string name="btn_add_autotap">AutoTap ধাপ যোগ করো</string>
+    <string name="atap_cmd_start">Script চালু</string>
+    <string name="atap_cmd_stop">Script থামাও</string>
+    <string name="atap_name_label">Script-এর নাম</string>
+    <string name="atap_sum_start">AutoTap: %1$s চালু</string>
+    <string name="atap_sum_stop">AutoTap থামাও</string>
+    <string name="atap_log_no_name">script-এর নাম দেওয়া হয়নি</string>
+    <string name="atap_log_no_script">ওই নামে চালু করার মতো script নেই</string>
+    <string name="atap_log_no_a11y">AutoTap Accessibility চালু নেই</string>
     <string name="btn_add_focuslock">FocusLock ধাপ যোগ করো</string>
     <string name="fl_card_title">FocusLock</string>
     <string name="fl_card_sub">নিয়ম থেকে FocusLock-এর কমান্ড চালাও — টোকেন একবার এখানেই সেভ থাকে</string>
@@ -1544,6 +1573,7 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="at_study_guard_daily">স্টাডি গার্ড: দৈনিক সীমা</string>
     <string name="ath_study_guard_daily">কোনো অ্যাপ দিনের ব্যবহারের সীমা ছাড়ালে — স্টাডি গার্ড কার্ডে বানানো হয়</string>
     <string name="btn_add_study_guard">স্টাডি গার্ড ট্রিগার যোগ করো</string>
+    <string name="btn_add_screen_rest">স্ক্রিন রেস্ট ট্রিগার যোগ করো</string>
     <string name="sg_card_title">স্টাডি গার্ড</string>
     <string name="sg_card_sub">স্টাডি গার্ড ট্রিগারের জন্য স্টাডি-অ্যাপের তালিকা — তালিকার বাইরের অ্যাপ বেশি সময় চললেই তোমার নিয়ম জ্বলবে</string>
     <string name="sg_card_empty">এখনো তালিকা নেই</string>
@@ -1575,6 +1605,11 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="sg_warn_label">আগাম সতর্ক (মিনিট)</string>
     <string name="sg_warn_off">বন্ধ</string>
     <string name="sg_warn_suffix">%1$d মিনিট আগে সতর্ক</string>
+    <string name="at_screen_on_continuous">একটানা স্ক্রিন অন</string>
+    <string name="ath_screen_on_continuous">স্ক্রিন একটানা N মিনিট অন থাকলে জ্বলে</string>
+    <string name="sr_mins_label">একটানা সময় (মিনিট)</string>
+    <string name="sr_warn">⏳ স্ক্রিন একটানা চলছে — রেস্টের আর %1$d মিনিট বাকি</string>
+    <string name="sr_sum">একটানা %1$d মিনিট স্ক্রিন অন</string>
     <string name="sg_perm_hint">⚠ Usage Access বন্ধ — স্টাডি গার্ড অ্যাপের ব্যবহার মাপতে পারছে না। চাপ দিয়ে Permissions &amp; Access খোলো।</string>
     <string name="sg_warn_continuous">⏳ %1$s — আর %2$d মিনিট পর ব্লক হতে পারে</string>
     <string name="sg_warn_daily">⏳ %1$s-এর আজকের সময় প্রায় শেষ — আর %2$d মিনিট বাকি</string>

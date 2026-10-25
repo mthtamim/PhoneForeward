@@ -25,6 +25,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
@@ -438,6 +439,175 @@
             android:exported="true"
             android:multiprocess="false"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <!-- ===== AutoTap, merged in (v2.21) — fully qualified names,
+             so the same simple class names as PhoneLink's own
+             (MainActivity, ScanActivity, WidgetActionReceiver)
+             never collide. No LAUNCHER filter: the merged screens
+             open from the Dashboard card, widgets, tile and
+             shortcuts. No second ShizukuProvider: PhoneLink's
+             own entry above already covers it. ===== -->
+        <activity
+            android:name="com.autotap.app.MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AutoTap" />
+
+        <activity
+            android:name="com.autotap.app.HeatmapActivity"
+            android:exported="false" />
+
+        <activity
+            android:name="com.autotap.app.ScanActivity"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.TapAccessibilityService"
+            android:exported="true"
+            android:label="@string/autotap_accessibility_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/autotap_accessibility_config" />
+        </service>
+
+        <service
+            android:name="com.autotap.app.RunnerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Auto click and auto scroll scripts chosen and started by the user" />
+        </service>
+
+        <service
+            android:name="com.autotap.app.EditOverlayService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.RecordOverlayService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.ScreenCaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+
+        <service
+            android:name="com.autotap.app.PreflightOverlayService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.DockService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.PickerOverlayService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.CalibrateService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.TriggerService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.PcEditorService"
+            android:exported="false" />
+
+        <service
+            android:name="com.autotap.app.AutoTapNotificationListener"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <service
+            android:name="com.autotap.app.AutoTapTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_autotap"
+            android:label="AutoTap"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="com.autotap.app.ScheduleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.autotap.app.SCHEDULE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.autotap.app.WatchReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.autotap.app.PowerReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.autotap.app.WidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/autotap_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name="com.autotap.app.MultiWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_multi_info" />
+        </receiver>
+
+        <receiver
+            android:name="com.autotap.app.WidgetActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.autotap.app.WIDGET_TOGGLE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.autotap.app.MultiWidgetActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.autotap.app.MULTI_WIDGET_RUN" />
+            </intent-filter>
+        </receiver>
+
+        <!-- External automation API, kept for Tasker compat: the
+             same actions the standalone app answered. Internal
+             PhoneLink callers use the engine directly instead. -->
+        <receiver
+            android:name="com.autotap.app.ApiReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.autotap.app.api.START" />
+                <action android:name="com.autotap.app.api.STOP" />
+            </intent-filter>
+        </receiver>
 
     </application>
 </manifest>

@@ -14,6 +14,9 @@ import android.os.BatteryManager
 import android.speech.tts.TextToSpeech
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.autotap.app.RunnerService
+import com.autotap.app.Store
+import com.autotap.app.TapAccessibilityService
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -1794,6 +1797,11 @@ object Automation {
                 // the token is read from the one-time save, and the
                 // intent is built in runFocusLock.
                 "focuslock_control" -> runFocusLock(ctx, param, data)
+                // v2.21: the picker-built AutoTap step. The param
+                // is "cmd=start|name=.." or "cmd=stop" (see
+                // runAutoTap); the broadcast is AutoTap's own
+                // external API, enabled in its Settings.
+                "autotap_control" -> runAutoTap(ctx, param)
                 // v2.18 (WS4): publish via the shared MQTT
                 // connection; param = topic|payload|qos|retained
                 // (see MqttManager.publishParam). execRange's fill()
@@ -2473,15 +2481,39 @@ object Automation {
                     }
                 }
                 // ---- v2.9 actions ----
+                // v2.21: call_number takes an optional SIM choice
+                // ("number|sim=sim1|sim2", from the editor's SIM
+                // chips; plain "number" = system default SIM).
+                // CALL_PHONE granted -> ACTION_CALL, with the
+                // chosen SIM's account when it resolves, else the
+                // default SIM. CALL_PHONE missing -> ACTION_DIAL
+                // with the bare number, exactly as before.
                 "call_number" -> {
                     try {
-                        val has = ctx.checkSelfPermission(
-                            android.Manifest.permission.CALL_PHONE) ==
-                            android.content.pm.PackageManager.PERMISSION_GRANTED
-                        ctx.startActivity(Intent(
-                            if (has) Intent.ACTION_CALL else Intent.ACTION_DIAL,
-                            android.net.Uri.parse("tel:" + param.trim()))
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        val (number, sim) = parseCallParam(param)
+                        if (number.isNotEmpty()) {
+                            val has = ctx.checkSelfPermission(
+                                android.Manifest.permission.CALL_PHONE) ==
+                                android.content.pm.PackageManager.PERMISSION_GRANTED
+                            if (!has) {
+                                ctx.startActivity(Intent(Intent.ACTION_DIAL,
+                                    android.net.Uri.parse("tel:" + number))
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                            } else {
+                                val intent = Intent(Intent.ACTION_CALL,
+                                    android.net.Uri.parse("tel:" + number))
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                if (sim != "default") {
+                                    val slot = if (sim == "sim1") 0 else 1
+                                    simAccountForSlot(ctx, slot)?.let {
+                                        intent.putExtra(
+                                            android.telecom.TelecomManager
+                                                .EXTRA_PHONE_ACCOUNT_HANDLE, it)
+                                    }
+                                }
+                                ctx.startActivity(intent)
+                            }
+                        }
                     } catch (_: Exception) { }
                 }
                 "ussd_run" -> {
@@ -3114,6 +3146,7 @@ object Automation {
                 pollWifi(ctx)
                 pollAppUsage(ctx, list)
                 pollStudyGuard(ctx, list)
+                pollScreenRest(ctx, list)
                 pollStates(ctx)
                 pollCalendar(ctx)
             } catch (e: Exception) { }
@@ -4060,6 +4093,72 @@ object Automation {
         true
     } catch (_: Exception) { false }
 
+    /** v2.21: AutoTap's own external API (its Settings →
+     *  "বাইরের API" toggle, off by default). The PhoneLink
+     *  bridge sends exactly these explicit broadcasts. */
+    const val AUTOTAP_PKG = "com.autotap.app"
+    const val AUTOTAP_ACTION_START = "com.autotap.app.api.START"
+    const val AUTOTAP_ACTION_STOP = "com.autotap.app.api.STOP"
+
+    /** Plain-language summary of one autotap_control step
+     *  (e.g. "AutoTap: অটো স্ক্রল চালু") — used by the rule
+     *  list so the raw picker param is never what the user
+     *  reads. */
+    fun autoTapSummary(ctx: Context, param: String): String {
+        val kv = parseFocusLockParam(param)
+        return if (kv["cmd"] == "stop")
+            ctx.getString(R.string.atap_sum_stop)
+        else ctx.getString(R.string.atap_sum_start,
+            kv["name"] ?: "")
+    }
+
+    /** Execute one autotap_control step — DIRECT, since v2.21
+     *  merged the whole AutoTap engine into PhoneLink: no
+     *  broadcast, no separate app, no API toggle in the path.
+     *  A STOP stops the merged RunnerService. A START finds
+     *  the script by exact name in the merged Store, checks
+     *  it has steps and that the merged TapAccessibilityService
+     *  is enabled, then starts it — every failure logs its
+     *  reason, exactly like send_intent and runFocusLock.
+     *  The AUTOTAP_PKG / AUTOTAP_ACTION_* constants above
+     *  only document the external contract; the exported
+     *  ApiReceiver carries its own copies of the actions. */
+    fun runAutoTap(ctx: Context, param: String) {
+        val kv = parseFocusLockParam(param)
+        val cmd = kv[\"cmd\"] ?: \"start\"
+        try {
+            if (cmd == \"stop\") {
+                RunnerService.sendCmd(ctx, RunnerService.CMD_STOP)
+                return
+            }
+            // '|' and '=' are the param's own separators —
+            // they can never appear inside a script name.
+            val name = (kv[\"name\"] ?: \"\").trim()
+                .replace(\"|\", \" \").replace(\"=\", \" \")
+            if (name.isEmpty()) {
+                log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
+                    ctx.getString(R.string.atap_log_no_name) + \")\")
+                return
+            }
+            val script = Store.getScripts(ctx)
+                .firstOrNull { it.name == name }
+            if (script == null || script.steps.isEmpty()) {
+                log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
+                    ctx.getString(R.string.atap_log_no_script) + \")\")
+                return
+            }
+            if (!TapAccessibilityService.isEnabled()) {
+                log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
+                    ctx.getString(R.string.atap_log_no_a11y) + \")\")
+                return
+            }
+            RunnerService.start(ctx, script.id)
+        } catch (e: Exception) {
+            log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
+                (e.message ?: e.javaClass.simpleName) + \")\")
+        }
+    }
+
     /** The ONE parser for the focuslock_control picker param
      *  (cmd=..|app=..|mins=..|preset=..). The rule editor writes
      *  this form and the runtime reads it through here, so the
@@ -4075,6 +4174,47 @@ object Automation {
         }
         return out
     }
+
+    /** v2.21: the ONE parser for the call_number param —
+     *  "number" (old rules, or Default SIM) or
+     *  "number|sim=default|sim1|sim2" (the rule editor's SIM chips).
+     *  The number is the first segment; the SIM is the LAST sim=
+     *  segment, so a hand-typed suffix can never double up with
+     *  the chip value. Unknown sim values fall back to default. */
+    fun parseCallParam(raw: String): Pair<String, String> {
+        val parts = raw.split("|")
+        var sim = "default"
+        for (seg in parts.drop(1)) {
+            val v = seg.trim().lowercase()
+            if (v.startsWith("sim=")) {
+                val s = v.removePrefix("sim=")
+                if (s == "sim1" || s == "sim2" || s == "default") sim = s
+            }
+        }
+        return parts[0].trim() to sim
+    }
+
+    /** v2.21: the call-capable PhoneAccountHandle for a SIM slot
+     *  (0 = SIM 1, 1 = SIM 2), or null when the slot has no
+     *  call-capable account — the caller then falls back to the
+     *  system default SIM instead of failing. AOSP names SIM
+     *  accounts by subscription id; a bare id match wins, a
+     *  contains-match is the fallback. Needs READ_PHONE_STATE
+     *  (already in the runtime permission set) for the
+     *  subscription list; anything missing just yields null. */
+    private fun simAccountForSlot(ctx: Context, slot: Int):
+        android.telecom.PhoneAccountHandle? = try {
+        val tm = ctx.getSystemService(Context.TELECOM_SERVICE)
+            as android.telecom.TelecomManager
+        val sm = ctx.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE)
+            as android.telephony.SubscriptionManager
+        val info = sm.activeSubscriptionInfoList
+            ?.firstOrNull { it.simSlotIndex == slot } ?: return null
+        val sub = info.subscriptionId.toString()
+        val accounts = tm.callCapablePhoneAccounts
+        accounts.firstOrNull { it.id == sub }
+            ?: accounts.firstOrNull { it.id.contains(sub) }
+    } catch (_: Exception) { null }
 
     /** Plain-language summary of one focuslock_control step
      *  (e.g. "YouTube ব্লক 60 মিনিট") — used by the rule list so
@@ -4486,8 +4626,112 @@ object Automation {
                 val totals = sgDailyTotals(usm, now)
                 val today = dayKey()
                 for ((rule, trig) in daily) sgEvalDaily(ctx, rule,
-                    trig.optString("param"), totals, dialer,
+                    trig.optString(\"param\"), totals, dialer,
                     launcher, today)
+            }
+        } catch (e: Exception) { }
+    }
+
+    /** v2.21: the screen-rest param is the same key=value form
+     *  (\"mins=..|warn=..\") as Study Guard's, so it parses
+     *  through the same parser and round-trips by construction. */
+    fun parseScreenRestParam(param: String): Map<String, String> =
+        parseFocusLockParam(param)
+
+    /** Plain-language summary of a screen-rest trigger (rule
+     *  list IF box) — minutes + warn, never the raw param. */
+    fun screenRestSummary(ctx: Context, param: String): String {
+        val kv = parseScreenRestParam(param)
+        val mins = kv[\"mins\"]?.toIntOrNull() ?: 60
+        val warn = kv[\"warn\"]?.toIntOrNull() ?: 5
+        val warnSuffix = if (warn > 0) \" • \" +
+            ctx.getString(R.string.sg_warn_suffix, warn) else \"\"
+        return ctx.getString(R.string.sr_sum, mins) + warnSuffix
+    }
+
+    /** v2.21: screen-rest evaluation, hooked into tick() next to
+     *  pollStudyGuard — the same ~20-second cadence, no new
+     *  service, no new timer, no Usage Access. The session clock
+     *  lives in the tick itself (Study Guard's continuous
+     *  pattern): each tick, \"using\" means the screen is
+     *  interactive AND the keyguard is off — a locked screen or
+     *  a screen-off resets the clock, so lying idle with the
+     *  screen on at the lock screen never counts as use.
+     *  Warns once per session, then fires once per session;
+     *  the rule's own actions do the resting (FocusLock's
+     *  existing lock_full / block_app / focus steps — nothing
+     *  new there, exactly as the user asked). */
+    fun pollScreenRest(ctx: Context, list: List<JSONObject>) {
+        try {
+            val rest = mutableListOf<Pair<JSONObject, JSONObject>>()
+            for (rule in list) for (trig in ruleTriggers(rule)) {
+                if (trig.optString(\"type\") == \"screen_on_continuous\")
+                    rest.add(rule to trig)
+            }
+            if (rest.isEmpty()) return
+            val pm = ctx.getSystemService(Context.POWER_SERVICE)
+                as android.os.PowerManager
+            val km = ctx.getSystemService(Context.KEYGUARD_SERVICE)
+                as android.app.KeyguardManager
+            val using = try {
+                pm.isInteractive && !km.isKeyguardLocked
+            } catch (_: Exception) { false }
+            val now = System.currentTimeMillis()
+            val p = prefs(ctx)
+            for ((rule, trig) in rest) {
+                val kv = parseScreenRestParam(trig.optString(\"param\"))
+                val mins = (kv[\"mins\"]?.toIntOrNull() ?: 60)
+                    .coerceAtLeast(1)
+                val warn = kv[\"warn\"]?.toIntOrNull() ?: 5
+                val key = \"src_${rule.optString(\"id\")}_\" +
+                    trig.optString(\"param\").hashCode()
+                if (!using) {
+                    if (p.contains(key))
+                        p.edit().remove(key).apply()
+                    continue
+                }
+                val parts = (p.getString(key, \"\") ?: \"\").split(\"|\")
+                var since = parts.getOrNull(0)?.toLongOrNull() ?: 0L
+                var warned = parts.getOrNull(1) == \"1\"
+                var fired = parts.getOrNull(2) == \"1\"
+                if (since <= 0L) {
+                    since = now; warned = false; fired = false
+                    p.edit().putString(key, \"$since|0|0\").apply()
+                    continue
+                }
+                val limitMs = mins * 60_000L
+                val elapsedMs = now - since
+                if (elapsedMs >= limitMs) {
+                    if (!fired && constraintsPass(ctx, rule)) {
+                        p.edit().putString(key,
+                            \"$since|${if (warned) 1 else 0}|1\").apply()
+                        markFired(ctx, rule.optString(\"id\"), now)
+                        ruleNameHint = rule.optString(\"name\")
+                        log(ctx, \"▶ \" + rule.optString(\"name\") +
+                            \" (screen_on_continuous)\")
+                        // No triggering app exists here, so a
+                        // focuslock_control step with
+                        // app=@trigger_app logs and skips by
+                        // design — lock_full or a named app is
+                        // the right action for this trigger.
+                        runActions(ctx, rule, JSONObject()
+                            .put(\"title\", rule.optString(\"name\")), 0)
+                    }
+                    continue
+                }
+                if (warn > 0 && !warned &&
+                    elapsedMs >= limitMs - warn * 60_000L) {
+                    p.edit().putString(key,
+                        \"$since|1|${if (fired) 1 else 0}\").apply()
+                    val remain = ((limitMs - elapsedMs + 59_999L) /
+                        60_000L).toInt().coerceAtLeast(1)
+                    localNotify(ctx, ctx.getString(
+                        R.string.sr_warn, remain))
+                    log(ctx, \"⏳ \" + rule.optString(\"name\") +
+                        \" (screen_on_continuous: \" +
+                        ctx.getString(R.string.sg_log_warn, remain) +
+                        \")\")
+                }
             }
         } catch (e: Exception) { }
     }

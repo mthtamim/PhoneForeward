@@ -28,6 +28,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import com.autotap.app.RunnerService
+import com.autotap.app.Store
+import com.autotap.app.TapAccessibilityService
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.chip.ChipGroup
@@ -84,6 +87,12 @@ class MainActivity : LocalizedActivity() {
     private lateinit var tvDashBatteryPct: TextView
     private lateinit var tvDashLoc: TextView
     private lateinit var tvDashRecent: TextView
+    // v2.21 AutoTap dashboard card views
+    private lateinit var tvDashAutoTapStatus: TextView
+    private lateinit var etDashAutoTapScript: EditText
+    private lateinit var btnDashAutoTapStart: Button
+    private lateinit var btnDashAutoTapStop: Button
+    private lateinit var btnDashAutoTapOpen: Button
     private lateinit var tvHubShizuku: TextView
     private lateinit var tvHubPeerState: TextView
     private lateinit var etHubSearch: EditText
@@ -494,6 +503,11 @@ class MainActivity : LocalizedActivity() {
         tvDashBatteryPct = findViewById(R.id.tvDashBatteryPct)
         tvDashLoc = findViewById(R.id.tvDashLoc)
         tvDashRecent = findViewById(R.id.tvDashRecent)
+        tvDashAutoTapStatus = findViewById(R.id.tvDashAutoTapStatus)
+        etDashAutoTapScript = findViewById(R.id.etDashAutoTapScript)
+        btnDashAutoTapStart = findViewById(R.id.btnDashAutoTapStart)
+        btnDashAutoTapStop = findViewById(R.id.btnDashAutoTapStop)
+        btnDashAutoTapOpen = findViewById(R.id.btnDashAutoTapOpen)
         tvHubShizuku = findViewById(R.id.tvHubShizuku)
         tvHubPeerState = findViewById(R.id.tvHubPeerState)
         etHubSearch = findViewById(R.id.etHubSearch)
@@ -1301,6 +1315,26 @@ class MainActivity : LocalizedActivity() {
         }
         findViewById<View>(R.id.cardDashRecent).setOnClickListener {
             bottomNav.selectedItemId = R.id.navInbox
+        }
+        // ----- v2.21 AutoTap dashboard card (bottom of Dashboard):
+        // the merged engine, controlled directly — no broadcast,
+        // no separate app. The name is remembered like myStatus;
+        // Start saves it first.
+        btnDashAutoTapStart.setOnClickListener {
+            val name = etDashAutoTapScript.text.toString().trim()
+            if (name.isEmpty()) {
+                toast(getString(R.string.dash_autotap_no_name))
+                return@setOnClickListener
+            }
+            Config.setAutoTapScript(this, name)
+            runAutoTapDirect(true, name)
+        }
+        btnDashAutoTapStop.setOnClickListener {
+            runAutoTapDirect(false, "")
+        }
+        btnDashAutoTapOpen.setOnClickListener {
+            startActivity(Intent(this,
+                com.autotap.app.MainActivity::class.java))
         }
         findViewById<Button>(R.id.btnCmdRemote).setOnClickListener { showRemotePanel() }
         findViewById<Button>(R.id.btnMode).setOnClickListener { showModeDialog() }
@@ -3186,6 +3220,50 @@ class MainActivity : LocalizedActivity() {
                 "• ${it.title} — ${it.body.take(42)}"
             }
         }
+        refreshAutoTapCard()
+    }
+
+    /** v2.21: run the merged AutoTap engine by hand (no rule
+     *  involved). A STOP always goes through; a START needs
+     *  an exact script name, a script with steps, and the
+     *  merged TapAccessibilityService enabled — each failure
+     *  toasts its reason instead of failing silently. */
+    private fun runAutoTapDirect(start: Boolean, name: String) {
+        try {
+            if (!start) {
+                RunnerService.sendCmd(this, RunnerService.CMD_STOP)
+                toast(getString(R.string.dash_autotap_stopped))
+                return
+            }
+            val script = Store.getScripts(this)
+                .firstOrNull { it.name == name }
+            if (script == null || script.steps.isEmpty()) {
+                toast(getString(R.string.dash_autotap_not_found))
+                return
+            }
+            if (!TapAccessibilityService.isEnabled()) {
+                toast(getString(R.string.dash_autotap_a11y_off))
+                return
+            }
+            RunnerService.start(this, script.id)
+            toast(getString(R.string.dash_autotap_started, name))
+        } catch (e: Exception) {
+            toast(e.message ?: e.javaClass.simpleName)
+        }
+    }
+
+    /** v2.21: AutoTap card state. The engine is built in, so
+     *  the status line shows the real precondition — whether
+     *  the merged Accessibility service is enabled — and the
+     *  name field is prefilled from the remembered name only
+     *  while empty, so a refresh never clobbers typed text. */
+    private fun refreshAutoTapCard() {
+        tvDashAutoTapStatus.text = getString(
+            if (TapAccessibilityService.isEnabled())
+                R.string.dash_autotap_a11y_on
+            else R.string.dash_autotap_a11y_off)
+        if (etDashAutoTapScript.text.toString().isEmpty())
+            etDashAutoTapScript.setText(Config.autoTapScript(this))
     }
 
     private fun refreshRemoteStates() {

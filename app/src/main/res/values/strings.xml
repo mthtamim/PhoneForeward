@@ -313,6 +313,7 @@
     <string name="tts_code_prefix">Your code is</string>
     <string name="perm_line_send_sms">Send SMS</string>
     <string name="perm_line_call_log">Call log</string>
+    <string name="perm_line_call_phone">Make phone calls</string>
     <string name="perm_line_camera">Camera</string>
     <string name="tile_label">PhoneLink sender</string>
     <string name="tile_on">Sender on</string>
@@ -951,6 +952,9 @@
     <string name="ach_process_running">Package name</string>
     <string name="aa_call_number">Call a number</string>
     <string name="aah_call_number">Phone number</string>
+    <string name="call_sim_default">Default</string>
+    <string name="call_sim_1">SIM 1</string>
+    <string name="call_sim_2">SIM 2</string>
     <string name="aa_ussd_run">Dial a USSD code</string>
     <string name="aah_ussd_run">e.g. *121#</string>
     <string name="aa_whatsapp_msg">Open WhatsApp chat</string>
@@ -1253,6 +1257,20 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="dash_ptt">Walkie-talkie</string>
     <string name="dash_ptt_hint">Push-to-talk voice</string>
     <string name="dash_recent">Recent Activity</string>
+    <string name="dash_autotap_title">AutoTap</string>
+    <string name="dash_autotap_name_hint">Script name</string>
+    <string name="dash_autotap_start">Start</string>
+    <string name="dash_autotap_stop">Stop</string>
+    <string name="dash_autotap_open">Open AutoTap</string>
+    <string name="dash_autotap_note">Needs the merged Accessibility service ON, and an exact script-name match</string>
+    <string name="dash_autotap_no_name">Enter a script name</string>
+    <string name="dash_autotap_not_found">No runnable script with that name</string>
+    <string name="dash_autotap_a11y_on">AutoTap Accessibility is on</string>
+    <string name="dash_autotap_a11y_off">AutoTap Accessibility is off — enable it from AutoTap</string>
+    <string name="dash_autotap_started">Starting \"%1$s\"</string>
+    <string name="dash_autotap_stopped">Stopping</string>
+    <string name="autotap_accessibility_label">AutoTap Auto Click</string>
+    <string name="autotap_accessibility_description">AutoTap আপনার বানানো script অনুযায়ী স্ক্রিনে tap ও swipe করে, আর Text tap ধাপে স্ক্রিনের লেখা খুঁজে সেখানে tap করে। এটি শুধু তখনই কাজ করে যখন আপনি নিজে script চালু করেন; কোনো তথ্য সংরক্ষণ বা পাঠানো হয় না।</string>
     <string name="dash_recent_empty">Nothing received yet</string>
     <string name="set_status_ok">All systems operational</string>
     <string name="set_status_warn">%1$d permissions need attention</string>
@@ -1513,6 +1531,17 @@ Settings → Apps → PhoneLink also always works.</string>
     <!-- ===== v2.20 FocusLock (easy mode) ===== -->
     <string name="aa_focuslock_control">FocusLock control</string>
     <string name="aah_focuslock_control">Built with the pickers in the FocusLock step card</string>
+    <string name="aa_autotap_control">AutoTap control</string>
+    <string name="aah_autotap_control">Built with the pickers in the AutoTap step card</string>
+    <string name="btn_add_autotap">Add AutoTap step</string>
+    <string name="atap_cmd_start">Start script</string>
+    <string name="atap_cmd_stop">Stop script</string>
+    <string name="atap_name_label">Script name</string>
+    <string name="atap_sum_start">AutoTap: start %1$s</string>
+    <string name="atap_sum_stop">AutoTap: stop</string>
+    <string name="atap_log_no_name">no script name given</string>
+    <string name="atap_log_no_script">no runnable script with that name</string>
+    <string name="atap_log_no_a11y">AutoTap Accessibility is off</string>
     <string name="btn_add_focuslock">Add FocusLock step</string>
     <string name="fl_card_title">FocusLock</string>
     <string name="fl_card_sub">Run FocusLock commands from your rules — the token is saved once, here</string>
@@ -1554,6 +1583,7 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="at_study_guard_daily">Study Guard: daily limit</string>
     <string name="ath_study_guard_daily">an app passes its daily usage limit — built in the Study Guard card</string>
     <string name="btn_add_study_guard">Add Study Guard trigger</string>
+    <string name="btn_add_screen_rest">Add screen-rest trigger</string>
     <string name="sg_card_title">Study Guard</string>
     <string name="sg_card_sub">Study-app lists for the Study Guard triggers — a non-list app used too long fires your rule</string>
     <string name="sg_card_empty">No lists yet</string>
@@ -1585,6 +1615,11 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="sg_warn_label">Warn before (minutes)</string>
     <string name="sg_warn_off">Off</string>
     <string name="sg_warn_suffix">warn %1$d min before</string>
+    <string name="at_screen_on_continuous">Continuous screen-on</string>
+    <string name="ath_screen_on_continuous">Fires when the screen stays on for N minutes</string>
+    <string name="sr_mins_label">Continuous minutes</string>
+    <string name="sr_warn">⏳ Screen has been on continuously — rest in %1$d min</string>
+    <string name="sr_sum">Screen on continuously %1$d min</string>
     <string name="sg_perm_hint">⚠ Usage Access is off — Study Guard cannot measure app use. Tap to open Permissions &amp; Access.</string>
     <string name="sg_warn_continuous">⏳ %1$s may be blocked in %2$d min</string>
     <string name="sg_warn_daily">⏳ %1$s is near its daily limit — %2$d min left</string>
