@@ -4203,7 +4203,8 @@ object Automation {
      *  (already in the runtime permission set) for the
      *  subscription list; anything missing just yields null. */
     private fun simAccountForSlot(ctx: Context, slot: Int):
-        android.telecom.PhoneAccountHandle? = try {
+        android.telecom.PhoneAccountHandle? {
+        return try {
         val tm = ctx.getSystemService(Context.TELECOM_SERVICE)
             as android.telecom.TelecomManager
         val sm = ctx.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE)
@@ -4214,7 +4215,8 @@ object Automation {
         val accounts = tm.callCapablePhoneAccounts
         accounts.firstOrNull { it.id == sub }
             ?: accounts.firstOrNull { it.id.contains(sub) }
-    } catch (_: Exception) { null }
+        } catch (_: Exception) { null }
+    }
 
     /** Plain-language summary of one focuslock_control step
      *  (e.g. "YouTube ব্লক 60 মিনিট") — used by the rule list so
