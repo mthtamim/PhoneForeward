@@ -4125,37 +4125,37 @@ object Automation {
      *  ApiReceiver carries its own copies of the actions. */
     fun runAutoTap(ctx: Context, param: String) {
         val kv = parseFocusLockParam(param)
-        val cmd = kv[\"cmd\"] ?: \"start\"
+        val cmd = kv["cmd"] ?: "start"
         try {
-            if (cmd == \"stop\") {
+            if (cmd == "stop") {
                 RunnerService.sendCmd(ctx, RunnerService.CMD_STOP)
                 return
             }
             // '|' and '=' are the param's own separators —
             // they can never appear inside a script name.
-            val name = (kv[\"name\"] ?: \"\").trim()
-                .replace(\"|\", \" \").replace(\"=\", \" \")
+            val name = (kv["name"] ?: "").trim()
+                .replace("|", " ").replace("=", " ")
             if (name.isEmpty()) {
-                log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
-                    ctx.getString(R.string.atap_log_no_name) + \")\")
+                log(ctx, "⚠ " + ruleNameHint + " (autotap: " +
+                    ctx.getString(R.string.atap_log_no_name) + ")")
                 return
             }
             val script = Store.getScripts(ctx)
                 .firstOrNull { it.name == name }
             if (script == null || script.steps.isEmpty()) {
-                log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
-                    ctx.getString(R.string.atap_log_no_script) + \")\")
+                log(ctx, "⚠ " + ruleNameHint + " (autotap: " +
+                    ctx.getString(R.string.atap_log_no_script) + ")")
                 return
             }
             if (!TapAccessibilityService.isEnabled()) {
-                log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
-                    ctx.getString(R.string.atap_log_no_a11y) + \")\")
+                log(ctx, "⚠ " + ruleNameHint + " (autotap: " +
+                    ctx.getString(R.string.atap_log_no_a11y) + ")")
                 return
             }
             RunnerService.start(ctx, script.id)
         } catch (e: Exception) {
-            log(ctx, \"⚠ \" + ruleNameHint + \" (autotap: \" +
-                (e.message ?: e.javaClass.simpleName) + \")\")
+            log(ctx, "⚠ " + ruleNameHint + " (autotap: " +
+                (e.message ?: e.javaClass.simpleName) + ")")
         }
     }
 
@@ -4626,7 +4626,7 @@ object Automation {
                 val totals = sgDailyTotals(usm, now)
                 val today = dayKey()
                 for ((rule, trig) in daily) sgEvalDaily(ctx, rule,
-                    trig.optString(\"param\"), totals, dialer,
+                    trig.optString("param"), totals, dialer,
                     launcher, today)
             }
         } catch (e: Exception) { }
@@ -4642,10 +4642,10 @@ object Automation {
      *  list IF box) — minutes + warn, never the raw param. */
     fun screenRestSummary(ctx: Context, param: String): String {
         val kv = parseScreenRestParam(param)
-        val mins = kv[\"mins\"]?.toIntOrNull() ?: 60
-        val warn = kv[\"warn\"]?.toIntOrNull() ?: 5
-        val warnSuffix = if (warn > 0) \" • \" +
-            ctx.getString(R.string.sg_warn_suffix, warn) else \"\"
+        val mins = kv["mins"]?.toIntOrNull() ?: 60
+        val warn = kv["warn"]?.toIntOrNull() ?: 5
+        val warnSuffix = if (warn > 0) " • " +
+            ctx.getString(R.string.sg_warn_suffix, warn) else ""
         return ctx.getString(R.string.sr_sum, mins) + warnSuffix
     }
 
@@ -4665,7 +4665,7 @@ object Automation {
         try {
             val rest = mutableListOf<Pair<JSONObject, JSONObject>>()
             for (rule in list) for (trig in ruleTriggers(rule)) {
-                if (trig.optString(\"type\") == \"screen_on_continuous\")
+                if (trig.optString("type") == "screen_on_continuous")
                     rest.add(rule to trig)
             }
             if (rest.isEmpty()) return
@@ -4679,24 +4679,24 @@ object Automation {
             val now = System.currentTimeMillis()
             val p = prefs(ctx)
             for ((rule, trig) in rest) {
-                val kv = parseScreenRestParam(trig.optString(\"param\"))
-                val mins = (kv[\"mins\"]?.toIntOrNull() ?: 60)
+                val kv = parseScreenRestParam(trig.optString("param"))
+                val mins = (kv["mins"]?.toIntOrNull() ?: 60)
                     .coerceAtLeast(1)
-                val warn = kv[\"warn\"]?.toIntOrNull() ?: 5
-                val key = \"src_${rule.optString(\"id\")}_\" +
-                    trig.optString(\"param\").hashCode()
+                val warn = kv["warn"]?.toIntOrNull() ?: 5
+                val key = "src_${rule.optString("id")}_" +
+                    trig.optString("param").hashCode()
                 if (!using) {
                     if (p.contains(key))
                         p.edit().remove(key).apply()
                     continue
                 }
-                val parts = (p.getString(key, \"\") ?: \"\").split(\"|\")
+                val parts = (p.getString(key, "") ?: "").split("|")
                 var since = parts.getOrNull(0)?.toLongOrNull() ?: 0L
-                var warned = parts.getOrNull(1) == \"1\"
-                var fired = parts.getOrNull(2) == \"1\"
+                var warned = parts.getOrNull(1) == "1"
+                var fired = parts.getOrNull(2) == "1"
                 if (since <= 0L) {
                     since = now; warned = false; fired = false
-                    p.edit().putString(key, \"$since|0|0\").apply()
+                    p.edit().putString(key, "$since|0|0").apply()
                     continue
                 }
                 val limitMs = mins * 60_000L
@@ -4704,33 +4704,33 @@ object Automation {
                 if (elapsedMs >= limitMs) {
                     if (!fired && constraintsPass(ctx, rule)) {
                         p.edit().putString(key,
-                            \"$since|${if (warned) 1 else 0}|1\").apply()
-                        markFired(ctx, rule.optString(\"id\"), now)
-                        ruleNameHint = rule.optString(\"name\")
-                        log(ctx, \"▶ \" + rule.optString(\"name\") +
-                            \" (screen_on_continuous)\")
+                            "$since|${if (warned) 1 else 0}|1").apply()
+                        markFired(ctx, rule.optString("id"), now)
+                        ruleNameHint = rule.optString("name")
+                        log(ctx, "▶ " + rule.optString("name") +
+                            " (screen_on_continuous)")
                         // No triggering app exists here, so a
                         // focuslock_control step with
                         // app=@trigger_app logs and skips by
                         // design — lock_full or a named app is
                         // the right action for this trigger.
                         runActions(ctx, rule, JSONObject()
-                            .put(\"title\", rule.optString(\"name\")), 0)
+                            .put("title", rule.optString("name")), 0)
                     }
                     continue
                 }
                 if (warn > 0 && !warned &&
                     elapsedMs >= limitMs - warn * 60_000L) {
                     p.edit().putString(key,
-                        \"$since|1|${if (fired) 1 else 0}\").apply()
+                        "$since|1|${if (fired) 1 else 0}").apply()
                     val remain = ((limitMs - elapsedMs + 59_999L) /
                         60_000L).toInt().coerceAtLeast(1)
                     localNotify(ctx, ctx.getString(
                         R.string.sr_warn, remain))
-                    log(ctx, \"⏳ \" + rule.optString(\"name\") +
-                        \" (screen_on_continuous: \" +
+                    log(ctx, "⏳ " + rule.optString("name") +
+                        " (screen_on_continuous: " +
                         ctx.getString(R.string.sg_log_warn, remain) +
-                        \")\")
+                        ")")
                 }
             }
         } catch (e: Exception) { }
