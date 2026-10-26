@@ -68,6 +68,15 @@
         android:maxSdkVersion="32" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
+    <!-- v2.24.0 (Lab merge): permissions Lab needs that PhoneLink
+         lacked — body sensors (heart-rate trigger), background
+         location (geofence while closed), MMS detection, and the
+         location foreground-service type for FlowService. -->
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -606,6 +615,136 @@
             <intent-filter>
                 <action android:name="com.autotap.app.api.START" />
                 <action android:name="com.autotap.app.api.STOP" />
+            </intent-filter>
+        </receiver>
+
+        <!-- v2.24.0 (Lab merge): Flow editor, engine service and
+             helpers. Rules keep their own receivers/services above;
+             these Flow components never touch rule storage. The
+             Flow wifi receiver is registered dynamically by
+             FlowService (not here) so wifi events arrive only
+             while the Flows switch is on. No Flow widget, QS tile,
+             or app-lock gate ships in this merge, so none is
+             declared. -->
+        <activity
+            android:name=".FlowEditorActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FlowDialogActivity"
+            android:exported="false"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <activity
+            android:name=".FlowCameraActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FlowFlowImportActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FlowScanActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FlowRestoreActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FlowFloImportActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".FlowPinActivity"
+            android:exported="false" />
+
+        <service
+            android:name=".FlowService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|location" />
+
+        <service
+            android:name=".FlowA11yService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/flow_a11y_config" />
+        </service>
+
+        <service
+            android:name=".FlowNotifListener"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".FlowBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".FlowSmsReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".FlowCallReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PHONE_STATE" />
+                <action android:name="android.intent.action.NEW_OUTGOING_CALL" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".FlowPackageReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.PACKAGE_ADDED" />
+                <action android:name="android.intent.action.PACKAGE_REMOVED" />
+                <action android:name="android.intent.action.PACKAGE_REPLACED" />
+                <data android:scheme="package" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".FlowActionReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".FlowSystemReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.intent.action.WALLPAPER_CHANGED" />
+                <action android:name="android.intent.action.MEDIA_MOUNTED" />
+                <action android:name="android.intent.action.MEDIA_UNMOUNTED" />
+                <data android:scheme="file" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.provider.Telephony.WAP_PUSH_RECEIVED" />
+                <data android:mimeType="application/vnd.wap.mms-message" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="flow_sms_sent" />
+                <action android:name="flow_sms_delivered" />
+                <action android:name="flow_alarm" />
+                <action android:name="flow_proximity" />
+                <action android:name="flow_activity" />
             </intent-filter>
         </receiver>
 

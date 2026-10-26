@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.4.3 QR/barcode scan screen: full-screen camera preview with a
+     hint and a Cancel button. Hardcoded dark colors: a camera screen
+     is dark in either theme. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000"
+    android:orientation="vertical">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/scanPreview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#101415"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/scanHint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#EAF4EE"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/btnScanCancel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/scan_cancel" />
+
+    </LinearLayout>
+
+</LinearLayout>

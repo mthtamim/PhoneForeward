@@ -61,11 +61,45 @@
         </LinearLayout>
 
 
+        <!-- v2.24.0 (Lab merge): Rules | Flows tabs. The ⋮ menu in
+             the header above switches with the tab: rule tools on
+             Rules, flow tools on Flows. -->
+        <LinearLayout
+            android:id="@+id/tabRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tabRules"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="10dp"
+                android:text="@string/flow_tab_rules"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tabFlows"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="10dp"
+                android:text="@string/flow_tab_flows"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+
         <!-- v2.20.1: compact header — one status line (counts + health +
              rest + sync mark); tap expands the full 3-row detail.
              The quick-tool chips and the Study Guard card moved to
              the ⋮ menu so the rules list gets the screen. -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/statusCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="14dp">
@@ -202,11 +236,15 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <ScrollView
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginTop="14dp"
             android:layout_weight="1">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -220,6 +258,7 @@
                      to the rules below it. One-time token save +
                      install/token status + open-FocusLock. -->
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/flCard"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="12dp">
@@ -298,6 +337,19 @@
                     android:orientation="vertical" />
             </LinearLayout>
         </ScrollView>
+
+            <!-- v2.24.0: new-flow FAB, Flows tab only. -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabAddFlow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:contentDescription="@string/flow_tab_flows"
+                android:src="@drawable/ic_plus"
+                android:visibility="gone"
+                app:backgroundTint="@color/pl_mint" />
+        </FrameLayout>
     </LinearLayout>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView

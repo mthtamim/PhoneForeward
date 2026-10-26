@@ -156,6 +156,10 @@ class AutomationActivity : LocalizedActivity() {
 
     private lateinit var container: LinearLayout
 
+    /** v2.24.0 (Lab merge): which tab is showing. Rules rendering
+     *  is untouched; the Flows tab builds its own cards below. */
+    private var flowTab = false
+
     companion object {
         private const val MENU_SG = 1
         private const val MENU_BACKUP = 2
@@ -164,6 +168,12 @@ class AutomationActivity : LocalizedActivity() {
         private const val MENU_VARS = 5
         private const val MENU_EXPORT = 6
         private const val MENU_IMPORT = 7
+        private const val MENU_FLOW_IMPORT = 11
+        private const val MENU_FLOW_FLO = 12
+        private const val MENU_FLOW_EXPORT = 13
+        private const val MENU_FLOW_BACKUP = 14
+        private const val MENU_FLOW_RESTORE = 15
+        private const val MENU_FLOW_LOG = 16
     }
 
     private val scanLauncher = registerForActivityResult(
@@ -341,9 +351,16 @@ class AutomationActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnAddRule).setOnClickListener {
             startActivity(Intent(this, RuleEditorActivity::class.java))
         }
+        // v2.24.0: Rules | Flows tabs. The ⋮ menu branches with the
+        // tab; the FAB opens a new flow editor (Flows tab only).
+        findViewById<TextView>(R.id.tabRules).setOnClickListener { switchTab(false) }
+        findViewById<TextView>(R.id.tabFlows).setOnClickListener { switchTab(true) }
+        findViewById<View>(R.id.fabAddFlow).setOnClickListener {
+            startActivity(Intent(this, FlowEditorActivity::class.java))
+        }
         findViewById<android.widget.ImageButton>(R.id.btnAutoBack).setOnClickListener { finish() }
         findViewById<android.widget.ImageButton>(R.id.btnAutoMenu).setOnClickListener {
-            showAutoMenu(it)
+            if (flowTab) showFlowMenu(it) else showAutoMenu(it)
         }
         // v2.20.1: the compact line expands to the full 3-row detail.
         findViewById<LinearLayout>(R.id.statusLineRow).setOnClickListener {
@@ -400,7 +417,7 @@ class AutomationActivity : LocalizedActivity() {
         super.onResume()
         renderHealth()
         renderFocusLock()
-        render()
+        if (flowTab) renderFlows() else render()
     }
 
     /** v2.20: FocusLock card status — install state from the
@@ -553,6 +570,257 @@ class AutomationActivity : LocalizedActivity() {
                     startActivity(Intent.createChooser(send, getString(R.string.auto_export)))
                 }
                 MENU_IMPORT -> showImport()
+            }
+            true
+        }
+        popup.show()
+    }
+
+    /** v2.24.0 (Lab merge): tab switch. Rules tab restores
+     *  everything exactly as before (status card, FocusLock card,
+     *  Add Rule button); Flows tab hides the rule chrome, shows
+     *  the flow FAB, and renders flow cards into the same
+     *  container. Token setup stays where it was — the FocusLock
+     *  card on the Rules tab and relay settings — never in Flow. */
+    private fun switchTab(flows: Boolean) {
+        flowTab = flows
+        val mint = androidx.core.content.ContextCompat.getColor(this, R.color.pl_mint)
+        val dim = androidx.core.content.ContextCompat.getColor(this, R.color.md_onSurfaceVariant)
+        val tabRules = findViewById<TextView>(R.id.tabRules)
+        val tabFlows = findViewById<TextView>(R.id.tabFlows)
+        tabRules.setTextColor(if (flows) dim else mint)
+        tabRules.setTypeface(tabRules.typeface,
+            if (flows) android.graphics.Typeface.NORMAL else android.graphics.Typeface.BOLD)
+        tabFlows.setTextColor(if (flows) mint else dim)
+        tabFlows.setTypeface(tabFlows.typeface,
+            if (flows) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        findViewById<View>(R.id.statusCard).visibility =
+            if (flows) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.flCard).visibility =
+            if (flows) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.btnAddRule).visibility =
+            if (flows) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.fabAddFlow).visibility =
+            if (flows) View.VISIBLE else View.GONE
+        if (flows) renderFlows() else render()
+    }
+
+    /** v2.24.0 (Lab merge): Flows tab — service switch with a
+     *  liveness line, then one card per flow (toggle + Run now /
+     *  Edit / Dup / Log / Delete). Button rows scroll horizontally
+     *  so Dup and Log stay reachable on narrow screens. */
+    private fun renderFlows() {
+        container.removeAllViews()
+        fun pillButton(labelRes: Int, mint: Boolean) = Button(this).apply {
+            text = getString(labelRes)
+            textSize = 12.5f
+            isAllCaps = false
+            minHeight = 0
+            minimumHeight = 0
+            setBackgroundResource(
+                if (mint) R.drawable.bg_action_pill
+                else R.drawable.bg_action_ghost)
+            setPadding(40, 30, 40, 30)
+            setTextColor(androidx.core.content.ContextCompat.getColor(
+                this@AutomationActivity,
+                if (mint) R.color.pl_mint else R.color.md_onSurface))
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { setMargins(8, 0, 0, 0) }
+        }
+        val svcOn = FlowStore.flowServiceOn(this)
+        val svcRow = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 14, 20, 14)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { setMargins(0, 0, 0, 12) }
+            setBackgroundResource(R.drawable.card_bg)
+        }
+        val svcHead = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        svcHead.addView(TextView(this).apply {
+            text = getString(R.string.flow_service_switch)
+            textSize = 16f
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        svcHead.addView(Switch(this).apply {
+            isChecked = svcOn
+            setOnCheckedChangeListener { _, on ->
+                FlowStore.setFlowServiceOn(this@AutomationActivity, on)
+                if (on) {
+                    androidx.core.content.ContextCompat.startForegroundService(
+                        this@AutomationActivity,
+                        Intent(this@AutomationActivity, FlowService::class.java))
+                } else {
+                    stopService(Intent(this@AutomationActivity, FlowService::class.java))
+                }
+                renderFlows()
+            }
+        })
+        svcRow.addView(svcHead)
+        val tick = FlowStore.serviceLastTick(this)
+        val ago = (System.currentTimeMillis() - tick) / 1000
+        svcRow.addView(TextView(this).apply {
+            text = when {
+                !svcOn -> getString(R.string.flow_service_off)
+                tick == 0L || ago > 120 -> getString(R.string.flow_service_stale)
+                else -> getString(R.string.flow_service_live, ago.toString())
+            }
+            textSize = 13f
+            setPadding(0, 6, 0, 0)
+        })
+        container.addView(svcRow)
+        val flows = FlowStore.flows(this)
+        if (flows.isEmpty()) {
+            container.addView(TextView(this).apply {
+                text = getString(R.string.flow_empty)
+                setPadding(8, 24, 8, 24)
+            })
+            return
+        }
+        for (flow in flows) {
+            val flowId = flow.optString("id")
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(20, 14, 20, 14)
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, 0, 0, 12) }
+                setBackgroundResource(R.drawable.card_bg)
+            }
+            val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            head.addView(TextView(this).apply {
+                text = flow.optString("name").ifEmpty { getString(R.string.flow_tab_flows) }
+                textSize = 16f
+                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            head.addView(Switch(this).apply {
+                isChecked = flow.optBoolean("enabled", true)
+                setOnCheckedChangeListener { _, on ->
+                    FlowStore.setFlowEnabled(this@AutomationActivity, flowId, on)
+                }
+            })
+            row.addView(head)
+            val nodes = flow.optJSONArray("nodes")
+            var summary = ""
+            if (nodes != null) {
+                for (k in 0 until nodes.length()) {
+                    val n = nodes.optJSONObject(k) ?: continue
+                    if (n.optString("kind") == "t") {
+                        val label = FlowCatalog.label(this, "t", n.optString("type"))
+                        val param = n.optString("param")
+                        summary = if (param.isEmpty()) label else label + " · " + param
+                        break
+                    }
+                }
+            }
+            if (summary.isNotEmpty()) {
+                row.addView(TextView(this).apply {
+                    text = summary
+                    textSize = 13f
+                    setPadding(0, 6, 0, 4)
+                })
+            }
+            val scroll = android.widget.HorizontalScrollView(this).apply {
+                isHorizontalScrollBarEnabled = false
+            }
+            val buttons = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            buttons.addView(pillButton(R.string.flow_card_run, true).apply {
+                setOnClickListener {
+                    val f = FlowStore.loadFlow(this@AutomationActivity, flowId)
+                    if (f != null) FlowEngine.runFlow(this@AutomationActivity, f)
+                }
+            })
+            buttons.addView(pillButton(R.string.flow_card_edit, false).apply {
+                setOnClickListener {
+                    startActivity(Intent(this@AutomationActivity, FlowEditorActivity::class.java)
+                        .putExtra("flow_id", flowId))
+                }
+            })
+            buttons.addView(pillButton(R.string.flow_card_dup, false).apply {
+                setOnClickListener {
+                    val copy = JSONObject(flow.toString())
+                    copy.put("id", "f" + System.currentTimeMillis().toString())
+                    copy.put("name", flow.optString("name") + getString(R.string.flow_dup_suffix))
+                    FlowStore.saveFlow(this@AutomationActivity, copy)
+                    renderFlows()
+                }
+            })
+            buttons.addView(pillButton(R.string.flow_card_log, false).apply {
+                setOnClickListener {
+                    val lines = FlowStore.flowLog(this@AutomationActivity, flowId)
+                    AlertDialog.Builder(this@AutomationActivity)
+                        .setTitle(flow.optString("name"))
+                        .setMessage(if (lines.isEmpty()) getString(R.string.flow_log_empty)
+                            else lines.joinToString("\n"))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
+            })
+            buttons.addView(pillButton(R.string.flow_card_delete, false).apply {
+                setOnClickListener {
+                    AlertDialog.Builder(this@AutomationActivity)
+                        .setTitle(flow.optString("name"))
+                        .setMessage(getString(R.string.flow_delete_confirm, flow.optString("name")))
+                        .setPositiveButton(R.string.btn_delete) { _, _ ->
+                            FlowStore.deleteFlow(this@AutomationActivity, flowId)
+                            renderFlows()
+                        }
+                        .setNegativeButton(R.string.btn_cancel, null)
+                        .show()
+                }
+            })
+            scroll.addView(buttons)
+            row.addView(scroll)
+            container.addView(row)
+        }
+    }
+
+    /** v2.24.0 (Lab merge): Flows tab ⋮ menu — import, .flo
+     *  import, export, backup, restore, flow log. Token setup is
+     *  deliberately NOT here: it stays in relay settings. */
+    private fun showFlowMenu(anchor: View) {
+        val popup = androidx.appcompat.widget.PopupMenu(this, anchor)
+        popup.menu.add(0, MENU_FLOW_IMPORT, 0, getString(R.string.flow_menu_import))
+        popup.menu.add(0, MENU_FLOW_FLO, 1, getString(R.string.flow_menu_flo_import))
+        popup.menu.add(0, MENU_FLOW_EXPORT, 2, getString(R.string.flow_menu_export))
+        popup.menu.add(0, MENU_FLOW_BACKUP, 3, getString(R.string.flow_menu_backup))
+        popup.menu.add(0, MENU_FLOW_RESTORE, 4, getString(R.string.flow_menu_restore))
+        popup.menu.add(0, MENU_FLOW_LOG, 5, getString(R.string.flow_menu_log))
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                MENU_FLOW_IMPORT -> startActivity(
+                    Intent(this, FlowFlowImportActivity::class.java))
+                MENU_FLOW_FLO -> startActivity(
+                    Intent(this, FlowFloImportActivity::class.java))
+                MENU_FLOW_EXPORT -> {
+                    val arr = org.json.JSONArray()
+                    for (flow in FlowStore.flows(this)) {
+                        arr.put(flow)
+                    }
+                    val send = Intent(Intent.ACTION_SEND).setType("application/json")
+                        .putExtra(Intent.EXTRA_TEXT, arr.toString())
+                    startActivity(Intent.createChooser(send, getString(R.string.flow_menu_export)))
+                }
+                MENU_FLOW_BACKUP -> {
+                    if (!FlowIO.exportBackup(this)) {
+                        android.widget.Toast.makeText(this,
+                            getString(R.string.flow_export_failed),
+                            android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+                MENU_FLOW_RESTORE -> startActivity(
+                    Intent(this, FlowRestoreActivity::class.java))
+                MENU_FLOW_LOG -> {
+                    val lines = FlowStore.recentLog(this)
+                    AlertDialog.Builder(this)
+                        .setTitle(getString(R.string.flow_menu_log))
+                        .setMessage(if (lines.isEmpty()) getString(R.string.flow_log_empty)
+                            else lines.joinToString("\n"))
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show()
+                }
             }
             true
         }

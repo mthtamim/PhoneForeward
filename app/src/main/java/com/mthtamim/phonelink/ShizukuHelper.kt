@@ -2,6 +2,7 @@ package com.mthtamim.phonelink
 
 import android.content.Context
 import android.content.pm.PackageManager
+import java.util.concurrent.TimeUnit
 import rikka.shizuku.Shizuku
 
 /**
@@ -54,6 +55,55 @@ object ShizukuHelper {
 
     /** A harmless real command, proving the whole shell path works. */
     fun selfTest(): Boolean = run("echo phonelink-ok") == "phonelink-ok"
+
+    /** v2.24.0 (Lab merge): exit code of a shell command, for
+     *  callers that care about success, not output (answer/end
+     *  call keyevents). -1 when ungranted, timed out, or failed;
+     *  lastError explains why. Logic copied from Lab's LabShizuku. */
+    fun runCode(command: String): Int {
+        lastError = null
+        if (!granted()) {
+            lastError = "not granted"
+            return -1
+        }
+        return try {
+            val proc = newProcess(arrayOf("sh", "-c", command))
+            val finished = proc.waitFor(10, TimeUnit.SECONDS)
+            if (!finished) {
+                proc.destroyForcibly()
+                lastError = "timeout"
+                -1
+            } else {
+                proc.exitValue()
+            }
+        } catch (t: Throwable) {
+            val cause = (t as? java.lang.reflect.InvocationTargetException)
+                ?.targetException ?: t
+            lastError = cause.javaClass.simpleName + ": " +
+                (cause.message ?: "").take(120)
+            -1
+        }
+    }
+
+    /** v2.24.0 (Lab merge): streaming shell process for the Flow
+     *  logcat watcher (run() buffers all output, which never ends
+     *  for logcat). Null when Shizuku is not granted. Logic copied
+     *  from Lab's LabShizuku. */
+    fun stream(command: String): Process? {
+        if (!granted()) {
+            lastError = "not granted"
+            return null
+        }
+        return try {
+            newProcess(arrayOf("sh", "-c", command))
+        } catch (t: Throwable) {
+            val cause = (t as? java.lang.reflect.InvocationTargetException)
+                ?.targetException ?: t
+            lastError = cause.javaClass.simpleName + ": " +
+                (cause.message ?: "").take(120)
+            null
+        }
+    }
 
     /** v2.16: dumpsys battery, trimmed to the useful lines — a
      *  supplement to BatteryInfo (which needs no root at all). */

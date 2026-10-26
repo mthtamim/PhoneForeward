@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v1.1.6: compact professional toolbar (40dp, 20dp icons) +
+     v1.1.5: top bar (Back + editable flow name) + icon-only
+     toolbar (Run, Undo, Redo, Save, Reset view — icons, no text).
+     v1.4.2: the bottom zoom panel is GONE — zoom +/- now lives
+     in a compact top|end cluster over the canvas, Fit moved into
+     the toolbar row, and a Fullscreen button hides top bar +
+     toolbar + zoom cluster, leaving only canvas and the + FAB.
+     No Connect button: edges are made by dragging from a node's
+     output port to an IN port. Canvas fills the rest of the
+     screen; the palette lives in a bottom sheet behind the
+     floating + button. There is NO bottom panel anymore: a
+     node's properties open in a dialog on double-tap. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?android:attr/colorBackground"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:id="@+id/layoutTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBackFlow"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/btn_back" />
+
+        <EditText
+            android:id="@+id/etFlowName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:hint="@string/flow_name_hint"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="?attr/colorOnBackground"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/etFlowFolder"
+            android:layout_width="110dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="10dp"
+            android:hint="@string/flow_folder_hint"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="?attr/colorOnBackground"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- v1.4.1: the toolbar scrolls horizontally — on narrow
+         screens the last buttons (Paste, Snap, Export) were cut
+         off and unreachable. All button ids, sizes and order are
+         unchanged; only this wrapper is new. -->
+    <HorizontalScrollView
+        android:id="@+id/toolbarScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRunFlow"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            app:icon="@drawable/ic_run"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUndoFlow"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_undo"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRedoFlow"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_redo"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSaveFlow"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_save"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnResetView"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_reset_view"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCopyNode"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_copy"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnPasteNode"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_paste"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSnapGrid"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_snap"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExportFlow"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_export"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+
+        <!-- v1.4.2: Fit moved up from the old bottom zoom panel
+             (same id, same fitToScreen behavior, text button like
+             before); Fullscreen is new — it hides top bar +
+             toolbar + zoom cluster, leaving canvas + FAB. -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnZoomFit"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            android:text="@string/zoom_fit" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFullscreen"
+            style="@style/PL.BtnOutlined"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:minWidth="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:layout_marginStart="4dp"
+            app:icon="@drawable/ic_fullscreen"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1">
+
+        <com.mthtamim.phonelink.FlowCanvasView
+            android:id="@+id/flowCanvas"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/colorSurface" />
+
+        <!-- v1.4.2: the old bottom zoom panel is gone. Zoom +/-
+             now lives here, pinned to the top|end of the canvas,
+             below the toolbar. Same ids, same 0.25 step, same %
+             label behavior — only the position changed. -->
+        <LinearLayout
+            android:id="@+id/zoomCluster"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="8dp"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomOut"
+                style="@style/PL.BtnOutlined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="−" />
+
+            <TextView
+                android:id="@+id/tvZoomPct"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="6dp"
+                android:layout_marginEnd="6dp"
+                android:text="100%"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="13sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnZoomIn"
+                style="@style/PL.BtnOutlined"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddNode"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="12dp"
+            app:cornerRadius="24dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="+"
+            android:textSize="24sp" />
+    </FrameLayout>
+
+</LinearLayout>
