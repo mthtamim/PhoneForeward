@@ -30,6 +30,11 @@
 
     <!-- v2.17 design tokens -->
     <color name="pl_mint">#10B981</color>
+    <!-- v2.24.1: filled tab colors — fixed in both modes so the
+         segmented control reads the same in light and dark. -->
+    <color name="btn_fill_night">#27313A</color>
+    <color name="tab_text_dark">#101415</color>
+    <color name="tab_text_light">#EAF4EE</color>
     <color name="nav_active">#10B981</color>
     <color name="nav_inactive">#5C7267</color>
     <color name="nav_indicator">#D9F6E9</color>

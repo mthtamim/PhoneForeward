@@ -348,17 +348,20 @@ class AutomationActivity : LocalizedActivity() {
             finish()
             true
         }
-        findViewById<Button>(R.id.btnAddRule).setOnClickListener {
+        // v2.24.1: no header row — the Rules FAB (same style and
+        // position as the Flows FAB) opens the rule editor, the
+        // exact action the removed header Add Rule button did.
+        findViewById<View>(R.id.fabAddRule).setOnClickListener {
             startActivity(Intent(this, RuleEditorActivity::class.java))
         }
-        // v2.24.0: Rules | Flows tabs. The ⋮ menu branches with the
-        // tab; the FAB opens a new flow editor (Flows tab only).
+        // v2.24.1: filled Rules | Flows segmented control on top.
+        // The ⋮ menu (right end of the tab row) branches with the
+        // tab; the Flows FAB opens a new flow editor.
         findViewById<TextView>(R.id.tabRules).setOnClickListener { switchTab(false) }
         findViewById<TextView>(R.id.tabFlows).setOnClickListener { switchTab(true) }
         findViewById<View>(R.id.fabAddFlow).setOnClickListener {
             startActivity(Intent(this, FlowEditorActivity::class.java))
         }
-        findViewById<android.widget.ImageButton>(R.id.btnAutoBack).setOnClickListener { finish() }
         findViewById<android.widget.ImageButton>(R.id.btnAutoMenu).setOnClickListener {
             if (flowTab) showFlowMenu(it) else showAutoMenu(it)
         }
@@ -578,27 +581,33 @@ class AutomationActivity : LocalizedActivity() {
 
     /** v2.24.0 (Lab merge): tab switch. Rules tab restores
      *  everything exactly as before (status card, FocusLock card,
-     *  Add Rule button); Flows tab hides the rule chrome, shows
+     *  Add Rule FAB); Flows tab hides the rule chrome, shows
      *  the flow FAB, and renders flow cards into the same
      *  container. Token setup stays where it was — the FocusLock
      *  card on the Rules tab and relay settings — never in Flow. */
     private fun switchTab(flows: Boolean) {
         flowTab = flows
-        val mint = androidx.core.content.ContextCompat.getColor(this, R.color.pl_mint)
-        val dim = androidx.core.content.ContextCompat.getColor(this, R.color.md_onSurfaceVariant)
+        // v2.24.1: filled segmented tabs — selected mint fill with
+        // dark text, unselected dark fill with light text.
+        val fillSelected = androidx.core.content.ContextCompat.getColorStateList(this, R.color.pl_mint)
+        val fillUnselected = androidx.core.content.ContextCompat.getColorStateList(this, R.color.btn_fill_night)
+        val textDark = androidx.core.content.ContextCompat.getColor(this, R.color.tab_text_dark)
+        val textLight = androidx.core.content.ContextCompat.getColor(this, R.color.tab_text_light)
         val tabRules = findViewById<TextView>(R.id.tabRules)
         val tabFlows = findViewById<TextView>(R.id.tabFlows)
-        tabRules.setTextColor(if (flows) dim else mint)
+        tabRules.backgroundTintList = if (flows) fillUnselected else fillSelected
+        tabRules.setTextColor(if (flows) textLight else textDark)
         tabRules.setTypeface(tabRules.typeface,
             if (flows) android.graphics.Typeface.NORMAL else android.graphics.Typeface.BOLD)
-        tabFlows.setTextColor(if (flows) mint else dim)
+        tabFlows.backgroundTintList = if (flows) fillSelected else fillUnselected
+        tabFlows.setTextColor(if (flows) textDark else textLight)
         tabFlows.setTypeface(tabFlows.typeface,
             if (flows) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         findViewById<View>(R.id.statusCard).visibility =
             if (flows) View.GONE else View.VISIBLE
         findViewById<View>(R.id.flCard).visibility =
             if (flows) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.btnAddRule).visibility =
+        findViewById<View>(R.id.fabAddRule).visibility =
             if (flows) View.GONE else View.VISIBLE
         findViewById<View>(R.id.fabAddFlow).visibility =
             if (flows) View.VISIBLE else View.GONE

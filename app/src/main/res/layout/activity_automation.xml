@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Automation Studio (v2.17.4): title + solid Add Rule, status
-     pill, ONE full-width status card (health / rest / sync rows),
-     quick-tool chips (backup first), then the rule cards
-     (built by AutomationActivity). -->
+<!-- Automation Studio (v2.24.1): NO header row — filled Rules |
+     Flows segmented control + ⋮ menu on top, status pill, ONE
+     full-width status card (health / rest / sync rows), then the
+     rule cards (built by AutomationActivity). -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -16,37 +16,51 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- v2.24.1: no header row — back arrow, "অটোমেশন
+             স্টুডিও" title and header Add Rule button removed per
+             Tamim's red marks. The filled Rules | Flows segmented
+             control + ⋮ menu IS the top row. -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <ImageButton
-                android:id="@+id/btnAutoBack"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:background="@drawable/bg_back_chip"
-                android:contentDescription="@string/btn_back"
-                android:padding="10dp"
-                android:src="@drawable/ic_arrow_back"
-                android:tint="?attr/colorOnSurface" />
-
-            <TextView
-                style="@style/PL.H1"
+            <LinearLayout
+                android:id="@+id/tabRow"
                 android:layout_width="0dp"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:text="@string/auto_studio"
-                android:textSize="22sp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAddRule"
-                style="@style/PL.BtnPill"
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/auto_add"
-                app:icon="@drawable/ic_plus" />
+                android:layout_weight="1"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tabRules"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_fill"
+                    android:backgroundTint="@color/pl_mint"
+                    android:gravity="center"
+                    android:padding="10dp"
+                    android:text="@string/flow_tab_rules"
+                    android:textColor="@color/tab_text_dark"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tabFlows"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_fill"
+                    android:backgroundTint="@color/btn_fill_night"
+                    android:gravity="center"
+                    android:padding="10dp"
+                    android:text="@string/flow_tab_flows"
+                    android:textColor="@color/tab_text_light"
+                    android:textSize="15sp" />
+            </LinearLayout>
 
             <ImageButton
                 android:id="@+id/btnAutoMenu"
@@ -58,39 +72,6 @@
                 android:padding="8dp"
                 android:src="@drawable/ic_more_vert"
                 android:tint="?attr/colorOnSurface" />
-        </LinearLayout>
-
-
-        <!-- v2.24.0 (Lab merge): Rules | Flows tabs. The ⋮ menu in
-             the header above switches with the tab: rule tools on
-             Rules, flow tools on Flows. -->
-        <LinearLayout
-            android:id="@+id/tabRow"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/tabRules"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:padding="10dp"
-                android:text="@string/flow_tab_rules"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tabFlows"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:padding="10dp"
-                android:text="@string/flow_tab_flows"
-                android:textSize="15sp" />
         </LinearLayout>
 
 
@@ -348,6 +329,20 @@
                 android:contentDescription="@string/flow_tab_flows"
                 android:src="@drawable/ic_plus"
                 android:visibility="gone"
+                app:backgroundTint="@color/pl_mint" />
+
+            <!-- v2.24.1: Add Rule FAB, Rules tab only — same style
+                 and position as the Flows FAB; opens the rule
+                 editor, the exact action the removed header
+                 "+ নিয়ম যোগ করো" button performed. -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabAddRule"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="16dp"
+                android:contentDescription="@string/auto_add"
+                android:src="@drawable/ic_plus"
                 app:backgroundTint="@color/pl_mint" />
         </FrameLayout>
     </LinearLayout>

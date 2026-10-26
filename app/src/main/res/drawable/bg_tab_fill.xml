@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.24.1: filled tab background for the Rules | Flows segmented
+     control. Solid white here is only the tint base — the actual
+     fill comes from android:backgroundTint (pl_mint when selected,
+     btn_fill_night when unselected). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/white" />
+    <corners android:radius="10dp" />
+</shape>

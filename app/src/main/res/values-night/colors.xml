@@ -29,6 +29,9 @@
          (#171D1F); buttons get a clearly raised fill and a
          mint-tinted stroke so they read as buttons at a glance. -->
     <color name="btn_fill_night">#27313A</color>
+    <!-- v2.24.1: filled tab text colors (fixed, match the light file). -->
+    <color name="tab_text_dark">#101415</color>
+    <color name="tab_text_light">#EAF4EE</color>
     <color name="btn_stroke_night">#338A68</color>
 
     <color name="status_ok">#2FD68F</color>
