@@ -44,28 +44,6 @@ object FlowStore {
         prefs(ctx).edit().putLong("service_last_tick", at).apply()
     }
 
-    // ---------------- v1.5.0: peer relay, MQTT, lost mode, app lock ----------------
-
-    /** Peer pair code for notify_peer / speak_peer / command_peer.
-     *  Same derivation as PhoneLink (SHA-256 topics on ntfy.sh),
-     *  so a Lab can talk to a PhoneLink peer sharing this code.
-     *  Empty = peer actions log "not configured" and do nothing. */
-
-    /** Default MQTT broker for mqtt_publish (e.g. tcp://host:1883).
-     *  Empty = the action logs "not configured" and does nothing. */
-
-    /** Lost-mode flag for lost_on / lost_off. NOTE: this is only
-     *  the flag + a local notification. PhoneLink's lost-mode
-     *  tracking (periodic location/photo/sound relay to a peer)
-     *  is a whole subsystem and is NOT ported in v1.5.0. */
-
-    /** App-lock PIN, stored as a SHA-256 hash only (never the PIN).
-     *  Empty = no PIN set, so lock enforcement stays inactive. */
-            ?: mutableSetOf()
-
-    /** Grace window after a correct PIN: the app may return
-     *  without re-prompting until this timestamp (ms). */
-
     fun log(ctx: Context, msg: String) {
         val p = prefs(ctx)
         val old = p.getString("log", "") ?: ""
