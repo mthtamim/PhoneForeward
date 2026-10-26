@@ -18,7 +18,10 @@ import androidx.core.content.ContextCompat
  *  permissions + 8 special (system-settings) accesses = 20 — so the
  *  gauge and missingCount finally mean "everything".
  *  v2.18: the App Locker's Overlay grant joins the special list —
- *  12 runtime + 9 special = 21. */
+ *  12 runtime + 9 special = 21.
+ *  v2.21: CALL_PHONE joins the runtime list (the call_number action
+ *  silently fell back to the dialer without it) — 13 runtime +
+ *  9 special = 22. */
 object PermChecks {
 
     fun has(ctx: Context, perm: String): Boolean =
@@ -68,13 +71,14 @@ object PermChecks {
      *  (the App Locker's cover window). */
     fun overlayOk(ctx: Context): Boolean = Settings.canDrawOverlays(ctx)
 
-    /** (label string res, granted) for each runtime permission line — 12. */
+    /** (label string res, granted) for each runtime permission line — 13. */
     fun runtimeList(ctx: Context): List<Pair<Int, Boolean>> = listOf(
         R.string.perm_line_sms to has(ctx, Manifest.permission.RECEIVE_SMS),
         R.string.perm_line_send_sms to has(ctx, Manifest.permission.SEND_SMS),
         R.string.perm_line_read_sms to has(ctx, Manifest.permission.READ_SMS),
         R.string.perm_line_phone to has(ctx, Manifest.permission.READ_PHONE_STATE),
         R.string.perm_line_call_log to has(ctx, Manifest.permission.READ_CALL_LOG),
+        R.string.perm_line_call_phone to has(ctx, Manifest.permission.CALL_PHONE),
         R.string.perm_line_contacts to has(ctx, Manifest.permission.READ_CONTACTS),
         R.string.perm_line_location to has(ctx, Manifest.permission.ACCESS_FINE_LOCATION),
         R.string.perm_line_location_coarse to has(ctx, Manifest.permission.ACCESS_COARSE_LOCATION),
@@ -105,7 +109,7 @@ object PermChecks {
         R.string.perm_overlay_title to overlayOk(ctx)
     )
 
-    /** Runtime permissions that still need requesting (12 incl. READ_SMS). */
+    /** Runtime permissions that still need requesting (13 incl. CALL_PHONE). */
     fun runtimeToRequest(ctx: Context): Array<String> {
         val perms = mutableListOf(
             Manifest.permission.RECEIVE_SMS,
@@ -113,6 +117,7 @@ object PermChecks {
             Manifest.permission.READ_SMS,
             Manifest.permission.READ_PHONE_STATE,
             Manifest.permission.READ_CALL_LOG,
+            Manifest.permission.CALL_PHONE,
             Manifest.permission.READ_CONTACTS,
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -131,7 +136,7 @@ object PermChecks {
         return perms.filter { !has(ctx, it) }.toTypedArray()
     }
 
-    /** The full counted set: 12 runtime + 9 special = 21. */
+    /** The full counted set: 13 runtime + 9 special = 22. */
     fun totalCount(ctx: Context): Int = runtimeList(ctx).size + specialList(ctx).size
 
     fun grantedCount(ctx: Context): Int =

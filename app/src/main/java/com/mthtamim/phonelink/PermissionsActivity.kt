@@ -246,7 +246,7 @@ class PermissionsActivity : LocalizedActivity() {
         val okColor = ContextCompat.getColor(this, R.color.status_ok)
         val badColor = ContextCompat.getColor(this, R.color.status_bad)
 
-        // Gauge: the full 21-item set from PermChecks.
+        // Gauge: the full 22-item set from PermChecks.
         val total = PermChecks.totalCount(this)
         val granted = PermChecks.grantedCount(this)
         pbGauge.progress = if (total > 0) granted * 100 / total else 0

@@ -1802,6 +1802,11 @@ object Automation {
                 // runAutoTap); the broadcast is AutoTap's own
                 // external API, enabled in its Settings.
                 "autotap_control" -> runAutoTap(ctx, param)
+                // v2.22: the picker-built redial step. The param
+                // is "cmd=start|number=..|sim=..|gap=..|max=.."
+                // or "cmd=stop" (see runRedial); the loop itself
+                // lives in Redial and is driven by tick.
+                "redial_control" -> runRedial(ctx, param)
                 // v2.18 (WS4): publish via the shared MQTT
                 // connection; param = topic|payload|qos|retained
                 // (see MqttManager.publishParam). execRange's fill()
@@ -2991,11 +2996,24 @@ object Automation {
                 val times = ruleTriggers(rule)
                     .filter { it.optString("type") == "time_at" }
                     .map { parseHm(it.optString("param")) }
-                if (times.isEmpty()) continue
+                var next: Long? =
+                    if (times.isNotEmpty()) nextTimeMillis(times) else null
+                // v2.23: time_at_days triggers join the same alarm
+                // — the earliest next occurrence across the chosen
+                // weekdays wins, exactly like the time_at times.
+                for (trig in ruleTriggers(rule)
+                    .filter { it.optString("type") == "time_at_days" }) {
+                    val kv = parseFocusLockParam(trig.optString("param"))
+                    val mins = parseHm(kv["time"] ?: "")
+                    val days = (kv["days"] ?: "").split(",")
+                        .map { it.trim() }.toSet()
+                    val n = nextTimeAtDaysMillis(mins, days) ?: continue
+                    if (next == null || n < next) next = n
+                }
+                if (next == null) continue
                 val id = rule.optString("id")
                 if (id.isEmpty()) continue
                 wanted.add(id)
-                val next = nextTimeMillis(times)
                 val pi = timeRulePi(ctx, id)
                 val exactOk = android.os.Build.VERSION.SDK_INT < 31 ||
                     am.canScheduleExactAlarms()
@@ -3052,12 +3070,26 @@ object Automation {
             if (!rule.optBoolean("enabled", true)) return
             // v2.14.1: the once-a-day latch is per rule AND per time —
             // a rule set for 08:00 and 22:00 must be able to fire at both.
+            // v2.23: time_at_days joins the same latch, keyed by its
+            // full param, and only on its chosen weekdays.
             val dueParams = ruleTriggers(rule).filter { trig ->
-                trig.optString("type") == "time_at" &&
-                    minutesNow() >= parseHm(trig.optString("param")) &&
-                    minutesNow() - parseHm(trig.optString("param")) < 65 &&
-                    prefs(ctx).getString(
-                        "day_${id}_${trig.optString("param")}", "") != dayKey()
+                val t = trig.optString("type")
+                val p = trig.optString("param")
+                if (t != "time_at" && t != "time_at_days") false
+                else {
+                    val target = if (t == "time_at_days")
+                        parseHm(parseFocusLockParam(p)["time"] ?: "")
+                    else parseHm(p)
+                    val inWindow = minutesNow() >= target &&
+                        minutesNow() - target < 65
+                    val dayOk = if (t == "time_at_days") {
+                        val days = (parseFocusLockParam(p)["days"] ?: "")
+                            .split(",").map { it.trim() }.toSet()
+                        days.contains(dayCodeToday())
+                    } else true
+                    inWindow && dayOk && prefs(ctx).getString(
+                        "day_${id}_$p", "") != dayKey()
+                }
             }
             if (dueParams.isNotEmpty() && constraintsPass(ctx, rule)) {
                 val ed = prefs(ctx).edit()
@@ -3066,7 +3098,9 @@ object Automation {
                 ed.apply()
                 markFired(ctx, id, System.currentTimeMillis())
                 ruleNameHint = rule.optString("name")
-                log(ctx, "▶ " + rule.optString("name") + " (time_at) — " +
+                log(ctx, "▶ " + rule.optString("name") + " (" +
+                    (dueParams.firstOrNull()?.optString("type")
+                        ?: "time_at") + ") — " +
                     verdictSummary(ctx, rule))
                 runActions(ctx, rule, JSONObject(), 0)
             } else if (dueParams.isNotEmpty()) {
@@ -3086,6 +3120,10 @@ object Automation {
     }
 
     fun tick(ctx: Context) {
+        // v2.22: redial runs on its own thread even when
+        // automation is off — a manual Dashboard session
+        // must keep looping without any rule enabled.
+        Thread { try { Redial.poll(ctx) } catch (_: Exception) { } }.start()
         if (!Config.automationOn(ctx)) return
         Thread {
             try {
@@ -3103,6 +3141,20 @@ object Automation {
                             val last = prefs(ctx).getString("day_${rule.optString("id")}_$param", "")
                             minutesNow() >= parseHm(param) && last != today &&
                                 minutesNow() - parseHm(param) < 65
+                        }
+                        // v2.23: time_at_days — the same once-a-day
+                        // window as time_at, but only on the chosen
+                        // weekdays (param "time=HH:MM|days=...").
+                        "time_at_days" -> {
+                            val kv = parseFocusLockParam(param)
+                            val mins = parseHm(kv["time"] ?: "")
+                            val days = (kv["days"] ?: "").split(",")
+                                .map { it.trim() }.toSet()
+                            val today = dayKey()
+                            val last = prefs(ctx).getString("day_${rule.optString("id")}_$param", "")
+                            days.contains(dayCodeToday()) &&
+                                minutesNow() >= mins && last != today &&
+                                minutesNow() - mins < 65
                         }
                         "time_interval" -> {
                             val mins = param.toLongOrNull() ?: 0
@@ -3127,7 +3179,7 @@ object Automation {
                         else -> false
                     }
                     if (should && constraintsPass(ctx, rule)) {
-                        if (type == "time_at") {
+                        if (type == "time_at" || type == "time_at_days") {
                             prefs(ctx).edit().putString(
                                 "day_${rule.optString("id")}_$param", dayKey()).apply()
                         } else if (type == "sunrise" || type == "sunset" ||
@@ -4051,6 +4103,44 @@ object Automation {
 
     private fun dayKey(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
 
+    /** Weekday code for a calendar day: sat, sun, mon, tue,
+     *  wed, thu, fri (Calendar.SUNDAY = 1 .. SATURDAY = 7). */
+    private fun dayCode(cal: java.util.Calendar): String = when (
+        cal.get(java.util.Calendar.DAY_OF_WEEK)) {
+        java.util.Calendar.SATURDAY -> "sat"
+        java.util.Calendar.SUNDAY -> "sun"
+        java.util.Calendar.MONDAY -> "mon"
+        java.util.Calendar.TUESDAY -> "tue"
+        java.util.Calendar.WEDNESDAY -> "wed"
+        java.util.Calendar.THURSDAY -> "thu"
+        else -> "fri"
+    }
+
+    private fun dayCodeToday(): String =
+        dayCode(java.util.Calendar.getInstance())
+
+    /** Next occurrence of a time_at_days trigger (minutes +
+     *  weekday set), or null when the set is empty. Checks
+     *  today first, then the next 7 days. */
+    private fun nextTimeAtDaysMillis(
+        timeMin: Int, days: Set<String>): Long? {
+        if (days.isEmpty()) return null
+        val now = java.util.Calendar.getInstance()
+        for (off in 0..7) {
+            val at = java.util.Calendar.getInstance().apply {
+                add(java.util.Calendar.DAY_OF_YEAR, off)
+                set(java.util.Calendar.HOUR_OF_DAY, timeMin / 60)
+                set(java.util.Calendar.MINUTE, timeMin % 60)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            if (days.contains(dayCode(at)) &&
+                at.timeInMillis > now.timeInMillis)
+                return at.timeInMillis
+        }
+        return null
+    }
+
     fun batteryPct(ctx: Context): Int {
         val bm = ctx.getSystemService(Context.BATTERY_SERVICE) as BatteryManager
         return bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).coerceIn(0, 100)
@@ -4159,6 +4249,85 @@ object Automation {
         }
     }
 
+    /** Plain-language summary of one redial_control step —
+     *  used by the rule list so the raw picker param is never
+     *  what the user reads. */
+    fun redialSummary(ctx: Context, param: String): String {
+        val kv = parseFocusLockParam(param)
+        return if (kv["cmd"] == "stop")
+            ctx.getString(R.string.redial_sum_stop)
+        else ctx.getString(R.string.redial_sum_start,
+            kv["number"] ?: "")
+    }
+
+    /** Execute one redial_control step — a START hands the
+     *  number, SIM, gap, cap, ring limit, post-answer action
+     *  and speaker flag to Redial (which places the first
+     *  call at once and loops from tick); a STOP ends the
+     *  running session, whatever started it. The alert param
+     *  (scheduled starts only) plays a short beep first and
+     *  places the call a beat later, off this thread so a
+     *  rule tested from the editor never janks the UI.
+     *  Every failure logs its reason, exactly like runAutoTap. */
+    fun runRedial(ctx: Context, param: String) {
+        val kv = parseFocusLockParam(param)
+        val cmd = kv["cmd"] ?: "start"
+        try {
+            if (cmd == "stop") {
+                Redial.stop(ctx, "user")
+                return
+            }
+            val number = (kv["number"] ?: "").trim()
+            val sim = kv["sim"] ?: "default"
+            val gap = kv["gap"]?.toIntOrNull() ?: 30
+            val max = kv["max"]?.toIntOrNull() ?: 20
+            val ring = kv["ring"]?.toIntOrNull() ?: 0
+            val onanswer = kv["onanswer"] ?: "stop"
+            val speaker = kv["speaker"] == "1"
+            val alert = kv["alert"] == "1"
+            val hint = ruleNameHint
+            val startNow = {
+                when (Redial.start(ctx, number, sim, gap, max,
+                    ring, onanswer, speaker)) {
+                    Redial.ERR_NUMBER -> log(ctx, "⚠ " + hint +
+                        " (redial: " +
+                        ctx.getString(R.string.redial_log_no_number) + ")")
+                    Redial.ERR_CALL_PHONE -> log(ctx, "⚠ " + hint +
+                        " (redial: " +
+                        ctx.getString(R.string.redial_log_no_call_phone) + ")")
+                    Redial.ERR_CALL_LOG -> log(ctx, "⚠ " + hint +
+                        " (redial: " +
+                        ctx.getString(R.string.redial_log_no_call_log) + ")")
+                }
+            }
+            if (alert) {
+                playAlertTone(ctx)
+                Thread {
+                    try { Thread.sleep(900) } catch (_: Exception) { }
+                    try { startNow() } catch (_: Exception) { }
+                }.start()
+            } else startNow()
+        } catch (e: Exception) {
+            log(ctx, "⚠ " + ruleNameHint + " (redial: " +
+                (e.message ?: e.javaClass.simpleName) + ")")
+        }
+    }
+
+    /** One short beep on the alarm stream, used by the
+     *  redial alert param (scheduled starts only). The
+     *  generator is released on a thread after the beep. */
+    private fun playAlertTone(ctx: Context) {
+        try {
+            val tg = android.media.ToneGenerator(
+                android.media.AudioManager.STREAM_ALARM, 80)
+            tg.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 900)
+            Thread {
+                try { Thread.sleep(1200) } catch (_: Exception) { }
+                try { tg.release() } catch (_: Exception) { }
+            }.start()
+        } catch (_: Exception) { }
+    }
+
     /** The ONE parser for the focuslock_control picker param
      *  (cmd=..|app=..|mins=..|preset=..). The rule editor writes
      *  this form and the runtime reads it through here, so the
@@ -4202,7 +4371,8 @@ object Automation {
      *  contains-match is the fallback. Needs READ_PHONE_STATE
      *  (already in the runtime permission set) for the
      *  subscription list; anything missing just yields null. */
-    private fun simAccountForSlot(ctx: Context, slot: Int):
+    // v2.22: shared with Redial (SIM choice for redial calls).
+    fun simAccountForSlot(ctx: Context, slot: Int):
         android.telecom.PhoneAccountHandle? {
         return try {
         val tm = ctx.getSystemService(Context.TELECOM_SERVICE)
@@ -4649,6 +4819,25 @@ object Automation {
         val warnSuffix = if (warn > 0) " • " +
             ctx.getString(R.string.sg_warn_suffix, warn) else ""
         return ctx.getString(R.string.sr_sum, mins) + warnSuffix
+    }
+
+    /** Plain-language summary of a time_at_days trigger
+     *  ("09:00 · শনি, রবি") — used by the rule list so the
+     *  raw picker param is never what the user reads. */
+    fun timeAtDaysSummary(ctx: Context, param: String): String {
+        val kv = parseFocusLockParam(param)
+        val time = kv["time"] ?: ""
+        val dayRes = mapOf(
+            "sat" to R.string.day_sat, "sun" to R.string.day_sun,
+            "mon" to R.string.day_mon, "tue" to R.string.day_tue,
+            "wed" to R.string.day_wed, "thu" to R.string.day_thu,
+            "fri" to R.string.day_fri)
+        val labels = (kv["days"] ?: "").split(",")
+            .map { it.trim() }
+            .filter { dayRes.containsKey(it) }
+            .map { ctx.getString(dayRes.getValue(it)) }
+        return if (labels.isEmpty()) time
+        else time + " · " + labels.joinToString(", ")
     }
 
     /** v2.21: screen-rest evaluation, hooked into tick() next to

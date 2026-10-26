@@ -115,12 +115,15 @@ class RuleEditorActivity : LocalizedActivity() {
             // and so do the Study Guard triggers (their card
             // builds the param from pickers, never free text).
             // v2.21: autotap_control gets the same treatment.
+            // v2.22: redial_control gets the same treatment.
             if (kind == "a" && (type == "if_else" ||
                 type == "focuslock_control" ||
-                type == "autotap_control")) continue
+                type == "autotap_control" ||
+                type == "redial_control")) continue
             if (kind == "t" && (type == "study_guard_continuous" ||
                 type == "study_guard_daily" ||
-                type == "screen_on_continuous")) continue
+                type == "screen_on_continuous" ||
+                type == "time_at_days")) continue
             anchors[type]?.let { groupRes = it }
             val label = AutoCatalog.label(this, kind, type)
             if (q.isNotEmpty() && !label.lowercase().contains(q) &&
@@ -1322,6 +1325,435 @@ class RuleEditorActivity : LocalizedActivity() {
         }
     }
 
+    // ---------------- v2.22: redial action card ----------------
+
+    /** The picker-built redial step: {type:"redial_control",
+     *  param:"cmd=start|number=..|sim=..|gap=..|max=.."} or
+     *  {type:"redial_control", param:"cmd=stop"} — the same
+     *  key=value form the engine parses (parseFocusLockParam),
+     *  so the round-trip cannot drift. The number field is
+     *  typed (a number is not a picker); the SIM is chips
+     *  (ডিফল্ট / SIM 1 / SIM 2 — picker, never typed, like
+     *  call_number). Gap is seconds between calls (default
+     *  30); max is the attempt cap (default 20). Like the
+     *  plain Row, the step can carry a per-action condition. */
+    private inner class RedialRow {
+        val root = LinearLayout(this@RuleEditorActivity)
+        private var cmd: String = "start"
+        private var simSel: String = "default"
+        private var condType: String = ""
+        private var chipCond: TextView? = null
+        private var etCondParam: EditText? = null
+        private val cmdChips = HashMap<Int, String>()
+        private val simChips = HashMap<Int, String>()
+        private lateinit var cgCmd: ChipGroup
+        private lateinit var cgSim: ChipGroup
+        private lateinit var etNumber: EditText
+        private lateinit var etGap: EditText
+        private lateinit var etMax: EditText
+        private lateinit var etRing: EditText
+        private lateinit var cbSpeaker: android.widget.CheckBox
+        private lateinit var cbAlert: android.widget.CheckBox
+        private lateinit var cgOnanswer: ChipGroup
+        private val onanswerChips = HashMap<Int, String>()
+        private var onanswer: String = "stop"
+        private lateinit var startSection: LinearLayout
+        private var syncing = false
+
+        init {
+            root.orientation = LinearLayout.VERTICAL
+            root.setBackgroundResource(R.drawable.bg_row_card)
+            root.setPadding(dp(12), dp(10), dp(12), dp(12))
+            root.layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { setMargins(0, dp(8), 0, 0) }
+
+            val head = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = AutoCatalog.label(this@RuleEditorActivity,
+                    "a", "redial_control")
+                textSize = 13.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = "×"
+                textSize = 17f
+                setPadding(dp(12), dp(6), dp(4), dp(6))
+                setOnClickListener {
+                    (root.parent as? ViewGroup)?.removeView(root)
+                }
+            })
+            root.addView(head)
+
+            // ---- command chips ----
+            cgCmd = ChipGroup(this@RuleEditorActivity).apply {
+                isSingleSelection = true
+                isSelectionRequired = true
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(8), 0, 0) }
+            }
+            for ((cmdId, labelRes) in listOf(
+                "start" to R.string.redial_cmd_start,
+                "stop" to R.string.redial_cmd_stop)) {
+                val chip = Chip(this@RuleEditorActivity).apply {
+                    id = View.generateViewId()
+                    text = getString(labelRes)
+                    isCheckable = true
+                }
+                cmdChips[chip.id] = cmdId
+                cgCmd.addView(chip)
+                if (cmdId == cmd) cgCmd.check(chip.id)
+            }
+            root.addView(cgCmd)
+
+            // ---- start-only section: number, SIM, gap, max ----
+            startSection = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
+            val numBox = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(10), 0, 0) }
+            }
+            numBox.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(R.string.redial_number_label)
+                textSize = 12.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            etNumber = EditText(this@RuleEditorActivity).apply {
+                textSize = 13.5f
+                setSingleLine()
+                inputType =
+                    android.text.InputType.TYPE_CLASS_PHONE
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(6), 0, 0) }
+            }
+            numBox.addView(etNumber)
+            startSection.addView(numBox)
+
+            cgSim = ChipGroup(this@RuleEditorActivity).apply {
+                isSingleSelection = true
+                isSelectionRequired = true
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(8), 0, 0) }
+            }
+            for ((simId, labelRes) in listOf(
+                "default" to R.string.call_sim_default,
+                "sim1" to R.string.call_sim_1,
+                "sim2" to R.string.call_sim_2)) {
+                val chip = Chip(this@RuleEditorActivity).apply {
+                    id = View.generateViewId()
+                    text = getString(labelRes)
+                    isCheckable = true
+                }
+                simChips[chip.id] = simId
+                cgSim.addView(chip)
+                if (simId == simSel) cgSim.check(chip.id)
+            }
+            startSection.addView(cgSim)
+
+            val gmRow = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(10), 0, 0) }
+            }
+            val gapBox = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            gapBox.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(R.string.redial_gap_label)
+                textSize = 12.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            etGap = EditText(this@RuleEditorActivity).apply {
+                textSize = 13.5f
+                setSingleLine()
+                inputType =
+                    android.text.InputType.TYPE_CLASS_NUMBER
+                setText("30")
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(6), 0, 0) }
+            }
+            gapBox.addView(etGap)
+            gmRow.addView(gapBox)
+            val maxBox = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { setMargins(dp(8), 0, 0, 0) }
+            }
+            maxBox.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(R.string.redial_max_label)
+                textSize = 12.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            etMax = EditText(this@RuleEditorActivity).apply {
+                textSize = 13.5f
+                setSingleLine()
+                inputType =
+                    android.text.InputType.TYPE_CLASS_NUMBER
+                setText("20")
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(6), 0, 0) }
+            }
+            maxBox.addView(etMax)
+            gmRow.addView(maxBox)
+            startSection.addView(gmRow)
+
+            // ---- ring limit + speaker + alert ----
+            val ringRow = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(10), 0, 0) }
+            }
+            val ringBox = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            ringBox.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(R.string.redial_ring_label)
+                textSize = 12.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            etRing = EditText(this@RuleEditorActivity).apply {
+                textSize = 13.5f
+                setSingleLine()
+                inputType =
+                    android.text.InputType.TYPE_CLASS_NUMBER
+                setText("0")
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(6), 0, 0) }
+            }
+            ringBox.addView(etRing)
+            ringRow.addView(ringBox)
+            cbSpeaker = android.widget.CheckBox(this@RuleEditorActivity).apply {
+                text = getString(R.string.redial_speaker_label)
+                textSize = 13.5f
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(dp(12), dp(18), 0, 0) }
+            }
+            ringRow.addView(cbSpeaker)
+            startSection.addView(ringRow)
+
+            cbAlert = android.widget.CheckBox(this@RuleEditorActivity).apply {
+                text = getString(R.string.redial_alert_label)
+                textSize = 13.5f
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(10), 0, 0) }
+            }
+            startSection.addView(cbAlert)
+
+            // ---- post-answer action chips ----
+            val oaSection = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(10), 0, 0) }
+            }
+            oaSection.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(R.string.redial_onanswer_label)
+                textSize = 12.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+            })
+            cgOnanswer = ChipGroup(this@RuleEditorActivity).apply {
+                isSingleSelection = true
+                isSelectionRequired = true
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(8), 0, 0) }
+            }
+            for ((oaId, labelRes) in listOf(
+                "stop" to R.string.redial_onanswer_stop,
+                "resume" to R.string.redial_onanswer_resume)) {
+                val chip = Chip(this@RuleEditorActivity).apply {
+                    id = View.generateViewId()
+                    text = getString(labelRes)
+                    isCheckable = true
+                }
+                onanswerChips[chip.id] = oaId
+                cgOnanswer.addView(chip)
+                if (oaId == onanswer) cgOnanswer.check(chip.id)
+            }
+            oaSection.addView(cgOnanswer)
+            startSection.addView(oaSection)
+            root.addView(startSection)
+
+            // ---- per-action condition (same pattern as Row) ----
+            val line2 = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(10), 0, 0) }
+            }
+            val cc = TextView(this@RuleEditorActivity).apply {
+                setBackgroundResource(R.drawable.bg_action_ghost)
+                setPadding(dp(12), dp(6), dp(12), dp(6))
+                textSize = 12.5f
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.1f)
+                setOnClickListener {
+                    showPicker("c", true) { picked ->
+                        condType = picked
+                        refreshCondChip()
+                    }
+                }
+            }
+            chipCond = cc
+            line2.addView(cc)
+            val et = EditText(this@RuleEditorActivity).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { setMargins(dp(8), 0, 0, 0) }
+                textSize = 13f
+                hint = getString(R.string.auto_param_hint)
+                setSingleLine()
+            }
+            etCondParam = et
+            line2.addView(et)
+            root.addView(line2)
+
+            // ---- listeners (attached last, after the initial
+            // chip state above, so setup never self-triggers) ----
+            cgCmd.setOnCheckedStateChangeListener { _, ids ->
+                if (!syncing) {
+                    val picked = ids.firstOrNull()
+                        ?.let { cmdChips[it] }
+                    if (picked != null && picked != cmd) {
+                        cmd = picked
+                        refreshSections()
+                    }
+                }
+            }
+            cgSim.setOnCheckedStateChangeListener { _, ids ->
+                val picked = ids.firstOrNull()
+                    ?.let { simChips[it] }
+                if (picked != null) simSel = picked
+            }
+            cgOnanswer.setOnCheckedStateChangeListener { _, ids ->
+                val picked = ids.firstOrNull()
+                    ?.let { onanswerChips[it] }
+                if (picked != null) onanswer = picked
+            }
+
+            refreshSections()
+            refreshCondChip()
+        }
+
+        private fun refreshSections() {
+            startSection.visibility =
+                if (cmd == "start") View.VISIBLE else View.GONE
+        }
+
+        private fun refreshCondChip() {
+            chipCond?.text = if (condType.isEmpty())
+                getString(R.string.auto_cond_none)
+            else AutoCatalog.label(this@RuleEditorActivity, "c", condType)
+        }
+
+        fun toJson(): JSONObject {
+            val parts = mutableListOf("cmd=$cmd")
+            if (cmd == "start") {
+                val n = etNumber.text.toString().trim()
+                    .replace("|", " ").replace("=", " ")
+                if (n.isNotEmpty()) parts.add("number=$n")
+                parts.add("sim=$simSel")
+                val g = etGap.text.toString().trim()
+                    .toIntOrNull() ?: 30
+                val m = etMax.text.toString().trim()
+                    .toIntOrNull() ?: 20
+                parts.add("gap=$g")
+                parts.add("max=$m")
+                val r = etRing.text.toString().trim()
+                    .toIntOrNull() ?: 0
+                parts.add("ring=$r")
+                parts.add("onanswer=$onanswer")
+                parts.add("speaker=" + if (cbSpeaker.isChecked) "1" else "0")
+                parts.add("alert=" + if (cbAlert.isChecked) "1" else "0")
+            }
+            val o = JSONObject().put("type", "redial_control")
+                .put("param", parts.joinToString("|"))
+            if (condType.isNotEmpty()) {
+                o.put("cond", JSONObject()
+                    .put("type", condType)
+                    .put("param",
+                        etCondParam?.text?.toString()?.trim() ?: ""))
+            }
+            return o
+        }
+
+        fun load(o: JSONObject) {
+            val kv = Automation.parseFocusLockParam(
+                o.optString("param"))
+            val c = kv["cmd"] ?: "start"
+            cmd = if (c == "stop") "stop" else "start"
+            syncing = true
+            cgCmd.clearCheck()
+            for ((id, cmdId) in cmdChips)
+                if (cmdId == cmd) cgCmd.check(id)
+            val s = kv["sim"] ?: "default"
+            simSel = if (s == "sim1" || s == "sim2") s else "default"
+            cgSim.clearCheck()
+            for ((id, simId) in simChips)
+                if (simId == simSel) cgSim.check(id)
+            syncing = false
+            etNumber.setText(kv["number"] ?: "")
+            etGap.setText(kv["gap"] ?: "30")
+            etMax.setText(kv["max"] ?: "20")
+            etRing.setText(kv["ring"] ?: "0")
+            val oa = kv["onanswer"] ?: "stop"
+            onanswer = if (oa == "resume") "resume" else "stop"
+            cgOnanswer.clearCheck()
+            for ((id, oaId) in onanswerChips)
+                if (oaId == onanswer) cgOnanswer.check(id)
+            cbSpeaker.isChecked = kv["speaker"] == "1"
+            cbAlert.isChecked = kv["alert"] == "1"
+            refreshSections()
+            val cond = o.optJSONObject("cond") ?: return
+            condType = cond.optString("type")
+            etCondParam?.setText(cond.optString("param"))
+            refreshCondChip()
+        }
+    }
+
     // ---------------- v2.20: Study Guard trigger card ----------------
 
     /** The picker-built Study Guard trigger: mode chips
@@ -1968,9 +2400,147 @@ class RuleEditorActivity : LocalizedActivity() {
         }
     }
 
+    // ---------------- v2.23: day-time trigger card ----------------
+
+    /** The picker-built day-time trigger: {type:"time_at_days",
+     *  param:"time=HH:MM|days=sat,sun,..."} — the same key=value
+     *  form the engine parses (parseFocusLockParam), so the
+     *  round-trip cannot drift. Days are chips in Bangladeshi
+     *  week order (Sat first); all checked means every day,
+     *  which is exactly time_at. No day checked means the
+     *  trigger never fires (shown by the empty chip row).
+     *  The engine fires once per matching day inside the same
+     *  65-minute window as time_at, and the exact-alarm path
+     *  arms it too. */
+    private inner class TimeAtDaysRow {
+        val root = LinearLayout(this@RuleEditorActivity)
+        private lateinit var etTime: EditText
+        private lateinit var cgDays: ChipGroup
+        private val dayChips = HashMap<Int, String>()
+        private val dayOrder = listOf(
+            "sat", "sun", "mon", "tue", "wed", "thu", "fri")
+        private val dayRes = mapOf(
+            "sat" to R.string.day_sat, "sun" to R.string.day_sun,
+            "mon" to R.string.day_mon, "tue" to R.string.day_tue,
+            "wed" to R.string.day_wed, "thu" to R.string.day_thu,
+            "fri" to R.string.day_fri)
+
+        init {
+            root.orientation = LinearLayout.VERTICAL
+            root.setBackgroundResource(R.drawable.bg_row_card)
+            root.setPadding(dp(12), dp(10), dp(12), dp(12))
+            root.layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT)
+                .apply { setMargins(0, dp(8), 0, 0) }
+
+            val head = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = AutoCatalog.label(this@RuleEditorActivity,
+                    "t", "time_at_days")
+                textSize = 13.5f
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+            })
+            head.addView(TextView(this@RuleEditorActivity).apply {
+                text = "×"
+                textSize = 17f
+                setPadding(dp(12), dp(6), dp(4), dp(6))
+                setOnClickListener {
+                    (root.parent as? ViewGroup)?.removeView(root)
+                }
+            })
+            root.addView(head)
+
+            // ---- time section ----
+            val timeSection = section(R.string.redial_time_label)
+            etTime = EditText(this@RuleEditorActivity).apply {
+                textSize = 13.5f
+                setSingleLine()
+                inputType =
+                    android.text.InputType.TYPE_CLASS_TEXT
+                setText("09:00")
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(6), 0, 0) }
+            }
+            timeSection.addView(etTime)
+
+            // ---- days section (multi-select) ----
+            val daysSection = section(R.string.redial_days_label)
+            cgDays = ChipGroup(this@RuleEditorActivity).apply {
+                isSingleSelection = false
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(8), 0, 0) }
+            }
+            for (d in dayOrder) {
+                val chip = Chip(this@RuleEditorActivity).apply {
+                    id = View.generateViewId()
+                    text = getString(dayRes.getValue(d))
+                    isCheckable = true
+                }
+                dayChips[chip.id] = d
+                cgDays.addView(chip)
+                cgDays.check(chip.id)
+            }
+            daysSection.addView(cgDays)
+        }
+
+        private fun section(labelRes: Int): LinearLayout {
+            val box = LinearLayout(this@RuleEditorActivity).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(0, dp(10), 0, 0) }
+            }
+            box.addView(TextView(this@RuleEditorActivity).apply {
+                text = getString(labelRes)
+                textSize = 12.5f
+                setTypeface(typeface,
+                    android.graphics.Typeface.BOLD)
+            })
+            root.addView(box)
+            return box
+        }
+
+        fun toJson(): JSONObject {
+            val t = etTime.text.toString().trim()
+            val time = if (t.matches(
+                    Regex("^([01]?[0-9]|2[0-3]):[0-5][0-9]$"))) t
+                else "09:00"
+            val checked = cgDays.checkedChipIds
+                .mapNotNull { dayChips[it] }
+            val days = dayOrder.filter { checked.contains(it) }
+            val parts = mutableListOf("time=$time")
+            parts.add("days=" + days.joinToString(","))
+            return JSONObject().put("type", "time_at_days")
+                .put("param", parts.joinToString("|"))
+        }
+
+        fun load(o: JSONObject) {
+            val kv = Automation.parseFocusLockParam(
+                o.optString("param"))
+            etTime.setText(kv["time"] ?: "09:00")
+            val wanted = (kv["days"] ?: "").split(",")
+                .map { it.trim() }.toSet()
+            cgDays.clearCheck()
+            for ((id, d) in dayChips)
+                if (wanted.contains(d)) cgDays.check(id)
+        }
+    }
+
     private val trigRows = mutableListOf<Row>()
     private val trigGuardRows = mutableListOf<StudyGuardRow>()
     private val trigRestRows = mutableListOf<ScreenRestRow>()
+    private val trigDayRows = mutableListOf<TimeAtDaysRow>()
     private val consRows = mutableListOf<Row>()
     private val actRows = mutableListOf<Row>()
     // v2.18: groups live beside the flat constraint rows; action
@@ -1999,6 +2569,9 @@ class RuleEditorActivity : LocalizedActivity() {
         findViewById<Button>(R.id.btnAddScreenRest).setOnClickListener {
             addScreenRestRow(null)
         }
+        findViewById<Button>(R.id.btnAddTimeAtDays).setOnClickListener {
+            addTimeAtDaysRow(null)
+        }
         findViewById<Button>(R.id.btnAddConstraint).setOnClickListener {
             addRow("c", "", "")
         }
@@ -2016,6 +2589,9 @@ class RuleEditorActivity : LocalizedActivity() {
         }
         findViewById<Button>(R.id.btnAddAutoTap).setOnClickListener {
             addAutoTapRow(null)
+        }
+        findViewById<Button>(R.id.btnAddRedial).setOnClickListener {
+            addRedialRow(null)
         }
         findViewById<Button>(R.id.btnTraceRule).setOnClickListener {
             showTrace()
@@ -2045,6 +2621,8 @@ class RuleEditorActivity : LocalizedActivity() {
                     addStudyGuardRow(trig)
                 else if (tt == "screen_on_continuous")
                     addScreenRestRow(trig)
+                else if (tt == "time_at_days")
+                    addTimeAtDaysRow(trig)
                 else addRow("t", tt, trig.optString("param"))
             }
             if (existing.optString("constraints_mode") == "any")
@@ -2063,6 +2641,8 @@ class RuleEditorActivity : LocalizedActivity() {
                     addFocusLockRow(a)
                 else if (a.optString("type") == "autotap_control")
                     addAutoTapRow(a)
+                else if (a.optString("type") == "redial_control")
+                    addRedialRow(a)
                 else addRow("a", a.optString("type"), a.optString("param"), a)
             }
             val btnDelete = findViewById<Button>(R.id.btnDeleteRule)
@@ -2076,7 +2656,7 @@ class RuleEditorActivity : LocalizedActivity() {
             btnHistory.setOnClickListener { showHistory() }
         }
         if (trigRows.isEmpty() && trigGuardRows.isEmpty() &&
-            trigRestRows.isEmpty())
+            trigRestRows.isEmpty() && trigDayRows.isEmpty())
             addRow("t", "time_at", "")
         if (actItems.isEmpty()) addRow("a", "notify_peer", "")
         buildCategoryChips(existing?.optString("cat") ?: "")
@@ -2160,6 +2740,13 @@ class RuleEditorActivity : LocalizedActivity() {
         if (existing != null) r.load(existing)
     }
 
+    private fun addRedialRow(existing: JSONObject?) {
+        val r = RedialRow()
+        actItems.add(r)
+        actContainer.addView(r.root)
+        if (existing != null) r.load(existing)
+    }
+
     private fun addStudyGuardRow(existing: JSONObject?) {
         val r = StudyGuardRow()
         trigGuardRows.add(r)
@@ -2170,6 +2757,13 @@ class RuleEditorActivity : LocalizedActivity() {
     private fun addScreenRestRow(existing: JSONObject?) {
         val r = ScreenRestRow()
         trigRestRows.add(r)
+        trigContainer.addView(r.root)
+        if (existing != null) r.load(existing)
+    }
+
+    private fun addTimeAtDaysRow(existing: JSONObject?) {
+        val r = TimeAtDaysRow()
+        trigDayRows.add(r)
         trigContainer.addView(r.root)
         if (existing != null) r.load(existing)
     }
@@ -2234,6 +2828,7 @@ class RuleEditorActivity : LocalizedActivity() {
         // v2.20: plain rows and Study Guard cards serialize into
         // ONE trigger list (plain rows first, then guard cards);
         // v2.21: screen-rest cards join the same list.
+        // v2.23: day-time cards join the same list.
         // triggers are OR'd by the engine, so the grouping costs
         // nothing and old rules keep their exact JSON shape.
         val liveTrig = mutableListOf<JSONObject>()
@@ -2243,6 +2838,8 @@ class RuleEditorActivity : LocalizedActivity() {
             liveTrig.add(g.toJson())
         for (s in trigRestRows) if (s.root.parent != null)
             liveTrig.add(s.toJson())
+        for (d in trigDayRows) if (d.root.parent != null)
+            liveTrig.add(d.toJson())
         val name = etName.text.toString().trim().ifEmpty {
             if (liveTrig.isNotEmpty())
                 AutoCatalog.label(this, "t",
@@ -2283,6 +2880,8 @@ class RuleEditorActivity : LocalizedActivity() {
                 is FocusLockRow -> if (item.root.parent != null)
                     acts.put(item.toJson())
                 is AutoTapRow -> if (item.root.parent != null)
+                    acts.put(item.toJson())
+                is RedialRow -> if (item.root.parent != null)
                     acts.put(item.toJson())
             }
         }

@@ -93,6 +93,24 @@ class MainActivity : LocalizedActivity() {
     private lateinit var btnDashAutoTapStart: Button
     private lateinit var btnDashAutoTapStop: Button
     private lateinit var btnDashAutoTapOpen: Button
+    // v2.22 Redial dashboard card views
+    private lateinit var tvDashRedialStatus: TextView
+    private lateinit var etDashRedialNumber: EditText
+    private lateinit var etDashRedialGap: EditText
+    private lateinit var etDashRedialMax: EditText
+    private lateinit var btnDashRedialSimDef: Button
+    private lateinit var btnDashRedialSim1: Button
+    private lateinit var btnDashRedialSim2: Button
+    private lateinit var btnDashRedialStart: Button
+    private lateinit var btnDashRedialStop: Button
+    private var dashRedialSim: String = "default"
+    // v2.23 Redial dashboard card views
+    private lateinit var etDashRedialRing: EditText
+    private lateinit var btnDashRedialSpeaker: Button
+    private lateinit var btnDashRedialOnanswerStop: Button
+    private lateinit var btnDashRedialOnanswerResume: Button
+    private var dashRedialOnanswer: String = "stop"
+    private var dashRedialSpeaker: Boolean = false
     private lateinit var tvHubShizuku: TextView
     private lateinit var tvHubPeerState: TextView
     private lateinit var etHubSearch: EditText
@@ -508,6 +526,21 @@ class MainActivity : LocalizedActivity() {
         btnDashAutoTapStart = findViewById(R.id.btnDashAutoTapStart)
         btnDashAutoTapStop = findViewById(R.id.btnDashAutoTapStop)
         btnDashAutoTapOpen = findViewById(R.id.btnDashAutoTapOpen)
+        tvDashRedialStatus = findViewById(R.id.tvDashRedialStatus)
+        etDashRedialNumber = findViewById(R.id.etDashRedialNumber)
+        etDashRedialGap = findViewById(R.id.etDashRedialGap)
+        etDashRedialMax = findViewById(R.id.etDashRedialMax)
+        btnDashRedialSimDef = findViewById(R.id.btnDashRedialSimDef)
+        btnDashRedialSim1 = findViewById(R.id.btnDashRedialSim1)
+        btnDashRedialSim2 = findViewById(R.id.btnDashRedialSim2)
+        btnDashRedialStart = findViewById(R.id.btnDashRedialStart)
+        btnDashRedialStop = findViewById(R.id.btnDashRedialStop)
+        etDashRedialRing = findViewById(R.id.etDashRedialRing)
+        btnDashRedialSpeaker = findViewById(R.id.btnDashRedialSpeaker)
+        btnDashRedialOnanswerStop =
+            findViewById(R.id.btnDashRedialOnanswerStop)
+        btnDashRedialOnanswerResume =
+            findViewById(R.id.btnDashRedialOnanswerResume)
         tvHubShizuku = findViewById(R.id.tvHubShizuku)
         tvHubPeerState = findViewById(R.id.tvHubPeerState)
         etHubSearch = findViewById(R.id.etHubSearch)
@@ -1335,6 +1368,59 @@ class MainActivity : LocalizedActivity() {
         btnDashAutoTapOpen.setOnClickListener {
             startActivity(Intent(this,
                 com.autotap.app.MainActivity::class.java))
+        }
+        btnDashRedialSimDef.setOnClickListener {
+            dashRedialSim = "default"
+            refreshRedialSimButtons()
+        }
+        btnDashRedialSim1.setOnClickListener {
+            dashRedialSim = "sim1"
+            refreshRedialSimButtons()
+        }
+        btnDashRedialSim2.setOnClickListener {
+            dashRedialSim = "sim2"
+            refreshRedialSimButtons()
+        }
+        btnDashRedialSpeaker.setOnClickListener {
+            dashRedialSpeaker = !dashRedialSpeaker
+            refreshRedialSpeakerButton()
+        }
+        btnDashRedialOnanswerStop.setOnClickListener {
+            dashRedialOnanswer = "stop"
+            refreshRedialOnanswerButtons()
+        }
+        btnDashRedialOnanswerResume.setOnClickListener {
+            dashRedialOnanswer = "resume"
+            refreshRedialOnanswerButtons()
+        }
+        btnDashRedialStart.setOnClickListener {
+            val number = etDashRedialNumber.text.toString().trim()
+            if (number.isEmpty()) {
+                toast(getString(R.string.dash_redial_no_number))
+                return@setOnClickListener
+            }
+            val gap = etDashRedialGap.text.toString().trim()
+                .toIntOrNull() ?: 30
+            val max = etDashRedialMax.text.toString().trim()
+                .toIntOrNull() ?: 20
+            val ring = etDashRedialRing.text.toString().trim()
+                .toIntOrNull() ?: 0
+            when (Redial.start(this, number, dashRedialSim, gap, max,
+                ring, dashRedialOnanswer, dashRedialSpeaker)) {
+                Redial.OK -> {
+                    toast(getString(R.string.dash_redial_started, number))
+                    refreshRedialCard()
+                }
+                Redial.ERR_NUMBER ->
+                    toast(getString(R.string.dash_redial_no_number))
+                else ->
+                    toast(getString(R.string.dash_redial_no_perm))
+            }
+        }
+        btnDashRedialStop.setOnClickListener {
+            Redial.stop(this, "user")
+            toast(getString(R.string.dash_redial_stopped))
+            refreshRedialCard()
         }
         findViewById<Button>(R.id.btnCmdRemote).setOnClickListener { showRemotePanel() }
         findViewById<Button>(R.id.btnMode).setOnClickListener { showModeDialog() }
@@ -3221,6 +3307,7 @@ class MainActivity : LocalizedActivity() {
             }
         }
         refreshAutoTapCard()
+        refreshRedialCard()
     }
 
     /** v2.21: run the merged AutoTap engine by hand (no rule
@@ -3264,6 +3351,52 @@ class MainActivity : LocalizedActivity() {
             else R.string.dash_autotap_a11y_off)
         if (etDashAutoTapScript.text.toString().isEmpty())
             etDashAutoTapScript.setText(Config.autoTapScript(this))
+    }
+
+    /** v2.22: Redial card state. The status line shows the
+     *  live session (attempt x/y) or the last result; the
+     *  fields prefill from the remembered session only while
+     *  empty, so a refresh never clobbers typed text. While
+     *  a session runs, the SIM chips follow the session. */
+    private fun refreshRedialCard() {
+        tvDashRedialStatus.text = Redial.statusText(this)
+        if (Redial.isActive(this)) {
+            dashRedialSim = Redial.sessionSim(this)
+            dashRedialOnanswer = Redial.sessionOnanswer(this)
+            dashRedialSpeaker = Redial.sessionSpeaker(this)
+        }
+        if (etDashRedialNumber.text.toString().isEmpty())
+            etDashRedialNumber.setText(Redial.sessionNumber(this))
+        if (etDashRedialGap.text.toString().isEmpty())
+            etDashRedialGap.setText(Redial.sessionGap(this).toString())
+        if (etDashRedialMax.text.toString().isEmpty())
+            etDashRedialMax.setText(Redial.sessionMax(this).toString())
+        if (etDashRedialRing.text.toString().isEmpty())
+            etDashRedialRing.setText(Redial.sessionRing(this).toString())
+        refreshRedialSimButtons()
+        refreshRedialOnanswerButtons()
+        refreshRedialSpeakerButton()
+    }
+
+    private fun refreshRedialOnanswerButtons() {
+        btnDashRedialOnanswerStop.alpha =
+            if (dashRedialOnanswer == "stop") 1.0f else 0.45f
+        btnDashRedialOnanswerResume.alpha =
+            if (dashRedialOnanswer == "resume") 1.0f else 0.45f
+    }
+
+    private fun refreshRedialSpeakerButton() {
+        btnDashRedialSpeaker.alpha =
+            if (dashRedialSpeaker) 1.0f else 0.45f
+    }
+
+    private fun refreshRedialSimButtons() {
+        btnDashRedialSimDef.alpha =
+            if (dashRedialSim == "default") 1.0f else 0.45f
+        btnDashRedialSim1.alpha =
+            if (dashRedialSim == "sim1") 1.0f else 0.45f
+        btnDashRedialSim2.alpha =
+            if (dashRedialSim == "sim2") 1.0f else 0.45f
     }
 
     private fun refreshRemoteStates() {

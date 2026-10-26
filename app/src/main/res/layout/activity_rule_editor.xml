@@ -150,6 +150,15 @@
                     android:layout_marginTop="8dp"
                     android:text="@string/btn_add_screen_rest"
                     app:icon="@drawable/ic_plus" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddTimeAtDays"
+                    style="@style/PL.BtnGhost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_add_time_at_days"
+                    app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -284,6 +293,15 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
                     android:text="@string/btn_add_autotap"
+                    app:icon="@drawable/ic_plus" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddRedial"
+                    style="@style/PL.BtnGhost"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/btn_add_redial"
                     app:icon="@drawable/ic_plus" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

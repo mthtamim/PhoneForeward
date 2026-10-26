@@ -63,7 +63,10 @@ object AutoCatalog {
         "study_guard_continuous", "study_guard_daily",
         // v2.21 Screen rest (picker card in the rule editor,
         // like Study Guard — not the raw trigger picker)
-        "screen_on_continuous")
+        "screen_on_continuous",
+        // v2.23 Day-time (picker card in the rule editor,
+        // like screen_on_continuous — not the raw trigger picker)
+        "time_at_days")
     val constraints = listOf(
         "time_range", "day_of_week", "battery_above", "battery_below", "charging",
         "wifi_ssid", "location_in", "screen", "peer_online", "foreground_app", "variable",
@@ -127,7 +130,10 @@ object AutoCatalog {
         "focuslock_control",
         // v2.21 AutoTap (picker step; added via its editor button,
         // like focuslock_control, not the raw action picker)
-        "autotap_control")
+        "autotap_control",
+        // v2.22 Redial (picker step; added via its editor button,
+        // like autotap_control, not the raw action picker)
+        "redial_control")
 
     fun label(ctx: Context, kind: String, type: String): String {
         val resName = when (kind) {
@@ -635,6 +641,9 @@ class AutomationActivity : LocalizedActivity() {
             else if (trigType == "screen_on_continuous")
                 Automation.screenRestSummary(
                     this@AutomationActivity, trigParam)
+            else if (trigType == "time_at_days")
+                Automation.timeAtDaysSummary(
+                    this@AutomationActivity, trigParam)
             else ""
             flow.addView(flowBox(R.string.auto_if_label,
                 AutoCatalog.label(this@AutomationActivity, "t",
@@ -654,11 +663,16 @@ class AutomationActivity : LocalizedActivity() {
             // summary ("YouTube ব্লক 60 মিনিট"), never the raw param.
             // v2.21: an AutoTap first step reads as its plain
             // summary, never the raw param.
+            // v2.22: a Redial first step reads as its plain
+            // summary, never the raw param.
             val firstSummary = if (firstAct == "focuslock_control")
                 Automation.focusLockSummary(this@AutomationActivity,
                     acts?.optJSONObject(0)?.optString("param") ?: "")
             else if (firstAct == "autotap_control")
                 Automation.autoTapSummary(this@AutomationActivity,
+                    acts?.optJSONObject(0)?.optString("param") ?: "")
+            else if (firstAct == "redial_control")
+                Automation.redialSummary(this@AutomationActivity,
                     acts?.optJSONObject(0)?.optString("param") ?: "")
             else ""
             flow.addView(flowBox(R.string.auto_then_label,
