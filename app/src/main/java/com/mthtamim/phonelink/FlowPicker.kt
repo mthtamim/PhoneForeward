@@ -367,7 +367,7 @@ object FlowPicker {
                 val tv = convertView as? TextView ?: TextView(activity).apply {
                     textSize = 12.5f
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
-                    setTextColor(android.graphics.Color.parseColor("#10B981"))
+                    setTextColor(ThemeColors.primary(activity))
                     setPadding(
                         (20f * d).toInt(),
                         (14f * d).toInt(),

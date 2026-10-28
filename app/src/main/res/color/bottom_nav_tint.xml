@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- v2.25.2: nav colours are theme attributes now (plNavActive /
+     plNavInactive resolve per theme: Emerald keeps the old nav_active /
+     nav_inactive values via the base theme, glass themes use their
+     accent / onSurfaceVariant). Programmatic themeNavTint() in
+     MainActivity/AutomationActivity applies the same colours and
+     wins at runtime; this selector covers any other nav usage. -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:color="@color/nav_active" android:state_checked="true" />
-    <item android:color="@color/nav_inactive" />
+    <item android:color="?attr/plNavActive" android:state_checked="true" />
+    <item android:color="?attr/plNavInactive" />
 </selector>

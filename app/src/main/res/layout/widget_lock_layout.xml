@@ -26,7 +26,7 @@
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:contentDescription="@string/widget_lock_title"
-            android:src="@drawable/ic_lock" />
+            android:src="@drawable/ic_lock_mint" />
 
         <TextView
             android:id="@+id/wLockSub"

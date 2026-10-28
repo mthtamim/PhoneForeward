@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.25.2: theme-varying fills/strokes/nav colours. A fixed colour
+     resource (e.g. @color/md_surface) only follows light/dark, never
+     the glass themes, so button/tile fills, their strokes and the
+     bottom-nav colours must be theme attributes: each theme style
+     (base + all 7 glass styles, in both values and values-night
+     themes files) assigns them, and styles/drawables/selectors point
+     at ?attr/pl*. Under Emerald Dark every value equals the old
+     fixed colour (see themes files), so Emerald looks unchanged. -->
+<resources>
+    <attr name="plTileFill" format="color" />
+    <attr name="plBtnFill" format="color" />
+    <attr name="plBtnStroke" format="color" />
+    <attr name="plNavActive" format="color" />
+    <attr name="plNavInactive" format="color" />
+    <attr name="plNavIndicator" format="color" />
+</resources>

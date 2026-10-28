@@ -91,4 +91,21 @@ open class LocalizedActivity : AppCompatActivity() {
      *  values are checked #2FD68F / unchecked #7E938A. */
     protected fun themeNavTint(): android.content.res.ColorStateList =
         ThemeColors.navTint(this)
+
+    /** v2.25.2: apply the glass nav tint to a bottom nav, if (and
+     *  only if) a glass theme is active. Callers run this in onCreate
+     *  AND onResume: the v2.25.1 screenshots still showed a green
+     *  selected item, and re-applying on resume covers any later
+     *  reset of the tint (tab switches, activity returns) as well as
+     *  the case where the screenshots simply predated v2.25.1. The
+     *  XML selector (bottom_nav_tint, now ?attr/plNav*) is the second
+     *  layer; this programmatic tint wins at runtime. */
+    protected fun applyGlassNavTint(
+        nav: com.google.android.material.bottomnavigation.BottomNavigationView
+    ) {
+        if (Config.appTheme(this) != "emerald_dark") {
+            nav.itemIconTintList = themeNavTint()
+            nav.itemTextColor = themeNavTint()
+        }
+    }
 }

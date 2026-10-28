@@ -41,7 +41,7 @@
 
     <style name="PL.BtnTonal" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">15dp</item>
-        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:minHeight">48dp</item>
         <item name="android:insetTop">0dp</item>
@@ -99,7 +99,7 @@
     <!-- Icon-only compact button (hub media keys) -->
     <style name="PL.BtnIcon" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:minHeight">48dp</item>
         <item name="android:minWidth">0dp</item>
@@ -162,7 +162,7 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
         <item name="android:layout_marginTop">8dp</item>
-        <item name="boxBackgroundColor">@color/md_surfaceContainer</item>
+        <item name="boxBackgroundColor">?attr/colorSurfaceContainer</item>
         <item name="boxCornerRadiusTopStart">14dp</item>
         <item name="boxCornerRadiusTopEnd">14dp</item>
         <item name="boxCornerRadiusBottomStart">14dp</item>
@@ -196,7 +196,7 @@
 
     <!-- Bottom-nav active pill indicator -->
     <style name="PL.NavIndicator" parent="">
-        <item name="android:color">@color/nav_indicator</item>
+        <item name="android:color">?attr/plNavIndicator</item>
         <item name="shapeAppearance">@style/PL.NavIndicatorShape</item>
     </style>
     <style name="PL.NavIndicatorShape" parent="">
@@ -263,7 +263,7 @@
     <!-- Compact ghost button (dark fill, outline stroke) -->
     <style name="PL.BtnGhost" parent="Widget.Material3.Button.OutlinedButton">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
         <item name="strokeColor">?attr/colorOutline</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:minHeight">48dp</item>
@@ -307,7 +307,7 @@
          system (hub command rows, inbox actions, quick tools) -->
     <style name="PL.BtnChip" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">15dp</item>
-        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:minHeight">48dp</item>
         <item name="android:insetTop">0dp</item>
@@ -329,7 +329,7 @@
          on top, label below, equal grid cells -->
     <style name="PL.BtnTile" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/md_surface</item>
+        <item name="backgroundTint">?attr/plTileFill</item>
         <item name="strokeColor">?attr/colorSurfaceVariant</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
@@ -356,7 +356,7 @@
     <!-- Icon tile button, Quick Send grid size -->
     <style name="PL.BtnTileQs" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/md_btnFill</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
         <item name="strokeColor">?attr/colorSurfaceVariant</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>

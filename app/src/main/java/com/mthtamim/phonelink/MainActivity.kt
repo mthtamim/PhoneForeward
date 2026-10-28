@@ -510,13 +510,7 @@ class MainActivity : LocalizedActivity() {
         pageConfig = findViewById(R.id.pageConfig)
         pageRemote = findViewById(R.id.pageRemote)
         bottomNav = findViewById(R.id.bottomNav)
-        // v2.25.1: glass themes tint the bottom nav from the theme
-        // (checked = accent, unchecked = onSurfaceVariant); Emerald
-        // keeps the old @color/bottom_nav_tint selector untouched.
-        if (Config.appTheme(this) != "emerald_dark") {
-            bottomNav.itemIconTintList = themeNavTint()
-            bottomNav.itemTextColor = themeNavTint()
-        }
+        applyGlassNavTint(bottomNav)
 
         tvConnPill = findViewById(R.id.tvConnPill)
         tvRelayState = findViewById(R.id.tvRelayState)
@@ -1603,6 +1597,8 @@ class MainActivity : LocalizedActivity() {
 
     override fun onResume() {
         super.onResume()
+        // v2.25.2: re-apply the glass nav tint (see applyGlassNavTint).
+        applyGlassNavTint(bottomNav)
         refreshStatus()
         refreshInbox()
         Automation.checkClipboard(this)

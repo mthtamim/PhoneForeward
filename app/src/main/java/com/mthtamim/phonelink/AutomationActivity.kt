@@ -331,13 +331,7 @@ class AutomationActivity : LocalizedActivity() {
         val nav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
             R.id.autoBottomNav)
         nav.selectedItemId = R.id.navAutomation
-        // v2.25.1: glass themes tint the bottom nav from the theme
-        // (checked = accent, unchecked = onSurfaceVariant); Emerald
-        // keeps the old @color/bottom_nav_tint selector untouched.
-        if (Config.appTheme(this) != "emerald_dark") {
-            nav.itemIconTintList = themeNavTint()
-            nav.itemTextColor = themeNavTint()
-        }
+        applyGlassNavTint(nav)
         nav.setOnItemSelectedListener { item ->
             if (item.itemId == R.id.navAutomation) {
                 return@setOnItemSelectedListener true
@@ -425,6 +419,8 @@ class AutomationActivity : LocalizedActivity() {
 
     override fun onResume() {
         super.onResume()
+        // v2.25.2: re-apply the glass nav tint (see applyGlassNavTint).
+        applyGlassNavTint(findViewById(R.id.autoBottomNav))
         renderHealth()
         renderFocusLock()
         if (flowTab) renderFlows() else render()

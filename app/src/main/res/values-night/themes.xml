@@ -31,6 +31,12 @@
         <item name="android:navigationBarColor">@color/md_background</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
+        <item name="plTileFill">@color/btn_fill_night</item>
+        <item name="plBtnFill">@color/btn_fill_night</item>
+        <item name="plBtnStroke">@color/btn_stroke_night</item>
+        <item name="plNavActive">@color/nav_active</item>
+        <item name="plNavInactive">@color/nav_inactive</item>
+        <item name="plNavIndicator">@color/nav_indicator</item>
     </style>
 
     <!-- v2.25.0 optional app themes. Every style here is repeated in
@@ -68,6 +74,12 @@
         <item name="colorError">#F87171</item>
         <item name="colorOnError">#450A0A</item>
         <item name="colorErrorContainer">#33151A</item>
+        <item name="plTileFill">#33FFFFFF</item>
+        <item name="plBtnFill">#24FFFFFF</item>
+        <item name="plBtnStroke">#33FFFFFF</item>
+        <item name="plNavActive">#E879C6</item>
+        <item name="plNavInactive">#D8B4D4</item>
+        <item name="plNavIndicator">#3B1470</item>
     </style>
     <style name="Theme.PhoneLinkOceanDeep" parent="Theme.PhoneLink">
         <item name="colorPrimary">#38BDF8</item>
@@ -95,6 +107,12 @@
         <item name="colorError">#F87171</item>
         <item name="colorOnError">#450A0A</item>
         <item name="colorErrorContainer">#33151A</item>
+        <item name="plTileFill">#33FFFFFF</item>
+        <item name="plBtnFill">#24FFFFFF</item>
+        <item name="plBtnStroke">#33FFFFFF</item>
+        <item name="plNavActive">#38BDF8</item>
+        <item name="plNavInactive">#9CC8D8</item>
+        <item name="plNavIndicator">#0E4A5E</item>
     </style>
     <style name="Theme.PhoneLinkMidnightSapphire" parent="Theme.PhoneLink">
         <item name="colorPrimary">#8EA2FF</item>
@@ -122,6 +140,12 @@
         <item name="colorError">#F87171</item>
         <item name="colorOnError">#450A0A</item>
         <item name="colorErrorContainer">#33151A</item>
+        <item name="plTileFill">#33FFFFFF</item>
+        <item name="plBtnFill">#24FFFFFF</item>
+        <item name="plBtnStroke">#33FFFFFF</item>
+        <item name="plNavActive">#8EA2FF</item>
+        <item name="plNavInactive">#A8B4D8</item>
+        <item name="plNavIndicator">#1E3A8A</item>
     </style>
     <style name="Theme.PhoneLinkSunsetEmber" parent="Theme.PhoneLink">
         <item name="colorPrimary">#FB923C</item>
@@ -149,6 +173,12 @@
         <item name="colorError">#F87171</item>
         <item name="colorOnError">#450A0A</item>
         <item name="colorErrorContainer">#33151A</item>
+        <item name="plTileFill">#33FFFFFF</item>
+        <item name="plBtnFill">#24FFFFFF</item>
+        <item name="plBtnStroke">#33FFFFFF</item>
+        <item name="plNavActive">#FB923C</item>
+        <item name="plNavInactive">#E8C4A8</item>
+        <item name="plNavIndicator">#7C2D12</item>
     </style>
     <style name="Theme.PhoneLinkRoseQuartz" parent="Theme.PhoneLink">
         <item name="colorPrimary">#F9A8D4</item>
@@ -176,6 +206,12 @@
         <item name="colorError">#F87171</item>
         <item name="colorOnError">#450A0A</item>
         <item name="colorErrorContainer">#33151A</item>
+        <item name="plTileFill">#33FFFFFF</item>
+        <item name="plBtnFill">#24FFFFFF</item>
+        <item name="plBtnStroke">#33FFFFFF</item>
+        <item name="plNavActive">#F9A8D4</item>
+        <item name="plNavInactive">#E3B8C8</item>
+        <item name="plNavIndicator">#500724</item>
     </style>
     <style name="Theme.PhoneLinkForestMist" parent="Theme.PhoneLink">
         <item name="colorPrimary">#6EE7B7</item>
@@ -203,6 +239,12 @@
         <item name="colorError">#F87171</item>
         <item name="colorOnError">#450A0A</item>
         <item name="colorErrorContainer">#33151A</item>
+        <item name="plTileFill">#33FFFFFF</item>
+        <item name="plBtnFill">#24FFFFFF</item>
+        <item name="plBtnStroke">#33FFFFFF</item>
+        <item name="plNavActive">#6EE7B7</item>
+        <item name="plNavInactive">#A8C8B4</item>
+        <item name="plNavIndicator">#14532D</item>
     </style>
     <style name="Theme.PhoneLinkGraphiteMono" parent="Theme.PhoneLink">
         <item name="colorPrimary">#E5E7EB</item>
@@ -230,5 +272,11 @@
         <item name="colorError">#F87171</item>
         <item name="colorOnError">#450A0A</item>
         <item name="colorErrorContainer">#33151A</item>
+        <item name="plTileFill">#33FFFFFF</item>
+        <item name="plBtnFill">#24FFFFFF</item>
+        <item name="plBtnStroke">#33FFFFFF</item>
+        <item name="plNavActive">#E5E7EB</item>
+        <item name="plNavInactive">#A1A1AA</item>
+        <item name="plNavIndicator">#3F3F46</item>
     </style>
 </resources>

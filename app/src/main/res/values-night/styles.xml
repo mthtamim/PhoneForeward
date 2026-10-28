@@ -14,8 +14,8 @@
 
     <style name="PL.BtnChip" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">15dp</item>
-        <item name="backgroundTint">@color/btn_fill_night</item>
-        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
+        <item name="strokeColor">?attr/plBtnStroke</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="iconTint">?attr/colorOnSurface</item>
@@ -37,8 +37,8 @@
 
     <style name="PL.BtnTonal" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">15dp</item>
-        <item name="backgroundTint">@color/btn_fill_night</item>
-        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
+        <item name="strokeColor">?attr/plBtnStroke</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="iconTint">?attr/colorOnSurface</item>
@@ -56,8 +56,8 @@
 
     <style name="PL.BtnOutlined" parent="Widget.Material3.Button.OutlinedButton">
         <item name="cornerRadius">15dp</item>
-        <item name="backgroundTint">@color/btn_fill_night</item>
-        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
+        <item name="strokeColor">?attr/plBtnStroke</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="iconTint">?attr/colorOnSurface</item>
@@ -71,8 +71,8 @@
 
     <style name="PL.BtnGhost" parent="Widget.Material3.Button.OutlinedButton">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/btn_fill_night</item>
-        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="backgroundTint">?attr/plBtnFill</item>
+        <item name="strokeColor">?attr/plBtnStroke</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="iconTint">?attr/colorOnSurface</item>
@@ -94,9 +94,9 @@
 
     <style name="PL.BtnPill" parent="Widget.Material3.Button">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/md_primary</item>
-        <item name="android:textColor">@color/md_onPrimary</item>
-        <item name="iconTint">@color/md_onPrimary</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
+        <item name="android:textColor">?attr/colorOnPrimary</item>
+        <item name="iconTint">?attr/colorOnPrimary</item>
         <item name="android:minHeight">48dp</item>
         <item name="android:insetTop">0dp</item>
         <item name="android:insetBottom">0dp</item>
@@ -120,8 +120,8 @@
          (layouts override with app:iconTint="@null"). -->
     <style name="PL.BtnTile" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/btn_fill_night</item>
-        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="backgroundTint">?attr/plTileFill</item>
+        <item name="strokeColor">?attr/plBtnStroke</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:minHeight">98dp</item>
@@ -146,8 +146,8 @@
 
     <style name="PL.BtnTileQs" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">16dp</item>
-        <item name="backgroundTint">@color/btn_fill_night</item>
-        <item name="strokeColor">@color/btn_stroke_night</item>
+        <item name="backgroundTint">?attr/plTileFill</item>
+        <item name="strokeColor">?attr/plBtnStroke</item>
         <item name="strokeWidth">1dp</item>
         <item name="android:textColor">?attr/colorOnSurface</item>
         <item name="android:minHeight">88dp</item>
