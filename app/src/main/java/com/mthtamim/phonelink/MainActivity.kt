@@ -515,7 +515,7 @@ class MainActivity : LocalizedActivity() {
         // keeps the old @color/bottom_nav_tint selector untouched.
         if (Config.appTheme(this) != "emerald_dark") {
             bottomNav.itemIconTintList = themeNavTint()
-            bottomNav.itemTextColorList = themeNavTint()
+            bottomNav.itemTextColor = themeNavTint()
         }
 
         tvConnPill = findViewById(R.id.tvConnPill)

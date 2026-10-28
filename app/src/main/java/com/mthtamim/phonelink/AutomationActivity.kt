@@ -336,7 +336,7 @@ class AutomationActivity : LocalizedActivity() {
         // keeps the old @color/bottom_nav_tint selector untouched.
         if (Config.appTheme(this) != "emerald_dark") {
             nav.itemIconTintList = themeNavTint()
-            nav.itemTextColorList = themeNavTint()
+            nav.itemTextColor = themeNavTint()
         }
         nav.setOnItemSelectedListener { item ->
             if (item.itemId == R.id.navAutomation) {
