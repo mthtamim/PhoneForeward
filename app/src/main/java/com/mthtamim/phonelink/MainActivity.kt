@@ -1180,6 +1180,29 @@ class MainActivity : LocalizedActivity() {
                 }
                 .show()
         }
+        // v2.25.0: optional app theme picker. A non-default theme carries
+        // its own accent (see LocalizedActivity); the accent picker above
+        // still applies when Emerald Dark is selected.
+        findViewById<Button>(R.id.btnAppTheme).setOnClickListener {
+            val keys = arrayOf("emerald_dark", "aurora", "ocean_deep",
+                "midnight_sapphire", "sunset_ember", "rose_quartz",
+                "forest_mist", "graphite_mono")
+            val labels = arrayOf(
+                getString(R.string.theme_name_emerald_dark),
+                getString(R.string.theme_name_aurora),
+                getString(R.string.theme_name_ocean_deep),
+                getString(R.string.theme_name_midnight_sapphire),
+                getString(R.string.theme_name_sunset_ember),
+                getString(R.string.theme_name_rose_quartz),
+                getString(R.string.theme_name_forest_mist),
+                getString(R.string.theme_name_graphite_mono))
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.btn_app_theme))
+                .setSingleChoiceItems(labels, keys.indexOf(Config.appTheme(this))) { dialog, w ->
+                    Config.setAppTheme(this, keys[w]); dialog.dismiss(); recreate()
+                }
+                .show()
+        }
         findViewById<Button>(R.id.btnCheckUpdate).setOnClickListener {
             toast(getString(R.string.update_checking))
             Update.check(this, true) { newer, url ->

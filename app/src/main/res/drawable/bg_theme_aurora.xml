@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.25.0: Liquid Glass Aurora window background. Static layered
+     gradient only (no live blur): solid fallback, a 3-stop diagonal
+     gradient (shape gradients support start/center/end only, so the
+     5-stop spec is approximated here), plus the two spec glows.
+     Pink glow rgba(232,121,198,110) top-right, blue glow
+     rgba(56,189,248,90) bottom-left. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#160B36" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:startColor="#160A33"
+                android:centerColor="#7C2D92"
+                android:endColor="#241259"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.85"
+                android:centerY="0.10"
+                android:endColor="#00E879C6"
+                android:gradientRadius="650dp"
+                android:startColor="#6EE879C6"
+                android:type="radial" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.15"
+                android:centerY="0.90"
+                android:endColor="#0038BDF8"
+                android:gradientRadius="650dp"
+                android:startColor="#5A38BDF8"
+                android:type="radial" />
+        </shape>
+    </item>
+</layer-list>

@@ -623,6 +623,10 @@ object Config {
     fun setAutoBackupLast(ctx: Context, v: Long) { prefs(ctx).edit().putLong("auto_backup_last", v).apply() }
     fun accent(ctx: Context): String = prefs(ctx).getString("accent", "emerald") ?: "emerald"
     fun setAccent(ctx: Context, v: String) { prefs(ctx).edit().putString("accent", v).apply() }
+    // v2.25.0: optional app theme (phonelink_cfg key "app_theme").
+    // Unset/missing = "emerald_dark" = exact pre-2.25 behaviour.
+    fun appTheme(ctx: Context): String = prefs(ctx).getString("app_theme", "emerald_dark") ?: "emerald_dark"
+    fun setAppTheme(ctx: Context, v: String) { prefs(ctx).edit().putString("app_theme", v).apply() }
     fun webInboxOn(ctx: Context): Boolean = prefs(ctx).getBoolean("web_inbox_on", false)
     fun webPin(ctx: Context): String = prefs(ctx).getString("web_pin", "") ?: ""
     fun setWebPin(ctx: Context, v: String) { prefs(ctx).edit().putString("web_pin", v).apply() }

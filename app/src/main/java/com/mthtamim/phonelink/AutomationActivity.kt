@@ -579,6 +579,22 @@ class AutomationActivity : LocalizedActivity() {
         popup.show()
     }
 
+    /** v2.25.0: the active theme accent (colorPrimary), falling back to
+     *  the old mint when the theme does not resolve it. Used so the
+     *  Automation tabs and pills follow a glass theme instead of
+     *  staying emerald; under Emerald Dark colorPrimary IS mint, so
+     *  the look is unchanged. */
+    private fun themeAccentColor(): Int {
+        return try {
+            val out = android.util.TypedValue()
+            if (theme.resolveAttribute(
+                    com.google.android.material.R.attr.colorPrimary, out, true)
+            ) out.data else androidx.core.content.ContextCompat.getColor(this, R.color.pl_mint)
+        } catch (_: Exception) {
+            androidx.core.content.ContextCompat.getColor(this, R.color.pl_mint)
+        }
+    }
+
     /** v2.24.0 (Lab merge): tab switch. Rules tab restores
      *  everything exactly as before (status card, FocusLock card,
      *  Add Rule FAB); Flows tab hides the rule chrome, shows
@@ -589,7 +605,7 @@ class AutomationActivity : LocalizedActivity() {
         flowTab = flows
         // v2.24.1: filled segmented tabs — selected mint fill with
         // dark text, unselected dark fill with light text.
-        val fillSelected = androidx.core.content.ContextCompat.getColorStateList(this, R.color.pl_mint)
+        val fillSelected = android.content.res.ColorStateList.valueOf(themeAccentColor())
         val fillUnselected = androidx.core.content.ContextCompat.getColorStateList(this, R.color.btn_fill_night)
         val textDark = androidx.core.content.ContextCompat.getColor(this, R.color.tab_text_dark)
         val textLight = androidx.core.content.ContextCompat.getColor(this, R.color.tab_text_light)
@@ -630,9 +646,9 @@ class AutomationActivity : LocalizedActivity() {
                 if (mint) R.drawable.bg_action_pill
                 else R.drawable.bg_action_ghost)
             setPadding(40, 30, 40, 30)
-            setTextColor(androidx.core.content.ContextCompat.getColor(
-                this@AutomationActivity,
-                if (mint) R.color.pl_mint else R.color.md_onSurface))
+            setTextColor(
+                if (mint) themeAccentColor() else androidx.core.content.ContextCompat.getColor(
+                    this@AutomationActivity, R.color.md_onSurface))
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -932,8 +948,7 @@ class AutomationActivity : LocalizedActivity() {
             flow.addView(TextView(this).apply {
                 text = "›"
                 textSize = 20f
-                setTextColor(androidx.core.content.ContextCompat.getColor(
-                    this@AutomationActivity, R.color.pl_mint))
+                setTextColor(themeAccentColor())
                 setPadding(12, 0, 12, 0)
             })
             // v2.20: a FocusLock first step reads as its plain
@@ -987,9 +1002,9 @@ class AutomationActivity : LocalizedActivity() {
                     if (mint) R.drawable.bg_action_pill
                     else R.drawable.bg_action_ghost)
                 setPadding(40, 30, 40, 30)
-                setTextColor(androidx.core.content.ContextCompat.getColor(
-                    this@AutomationActivity,
-                    if (mint) R.color.pl_mint else R.color.md_onSurface))
+                setTextColor(
+                    if (mint) themeAccentColor() else androidx.core.content.ContextCompat.getColor(
+                        this@AutomationActivity, R.color.md_onSurface))
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT)

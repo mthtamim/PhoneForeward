@@ -1943,4 +1943,13 @@ Settings → Apps → PhoneLink also always works.</string>
     <string name="toast_need_name">Enter a name first.</string>
     <string name="toast_need_node">Add at least one node.</string>
     <string name="zoom_fit">Fit</string>
+    <string name="btn_app_theme">App theme</string>
+    <string name="theme_name_emerald_dark">Emerald Dark</string>
+    <string name="theme_name_aurora">Liquid Glass Aurora</string>
+    <string name="theme_name_ocean_deep">Liquid Glass Ocean Deep</string>
+    <string name="theme_name_midnight_sapphire">Liquid Glass Midnight Sapphire</string>
+    <string name="theme_name_sunset_ember">Liquid Glass Sunset Ember</string>
+    <string name="theme_name_rose_quartz">Liquid Glass Rose Quartz</string>
+    <string name="theme_name_forest_mist">Liquid Glass Forest Mist</string>
+    <string name="theme_name_graphite_mono">Graphite Glass Mono</string>
 </resources>

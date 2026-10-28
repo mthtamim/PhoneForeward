@@ -32,4 +32,203 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
     </style>
+
+    <!-- v2.25.0 optional app themes. Every style here is repeated in
+         values-night/themes.xml with the same overrides, so a theme
+         looks the same in light, dark and system mode; only Emerald
+         Dark follows the light/dark palettes. Glass themes use a
+         static gradient window background plus translucent surfaces
+         (no live blur). -->
+    <style name="Theme.PhoneLinkEmeraldDark" parent="Theme.PhoneLink">
+        <!-- No overrides: exactly the pre-2.25 look. -->
+    </style>
+    <style name="Theme.PhoneLinkAurora" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#E879C6</item>
+        <item name="colorOnPrimary">#2A0A22</item>
+        <item name="colorPrimaryContainer">#3B1470</item>
+        <item name="colorOnPrimaryContainer">#F9D1EC</item>
+        <item name="colorSecondary">#E879C6</item>
+        <item name="colorOnSecondary">#2A0A22</item>
+        <item name="colorSecondaryContainer">#3B1470</item>
+        <item name="colorOnSecondaryContainer">#F9D1EC</item>
+        <item name="android:colorBackground">#160B36</item>
+        <item name="colorOnBackground">#FDF2FA</item>
+        <item name="colorSurface">#2EFFFFFF</item>
+        <item name="colorOnSurface">#FDF2FA</item>
+        <item name="colorSurfaceVariant">#24FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#D8B4D4</item>
+        <item name="colorSurfaceContainer">#26FFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#33FFFFFF</item>
+        <item name="colorOutline">#33FFFFFF</item>
+        <item name="android:windowBackground">@drawable/bg_theme_aurora</item>
+        <item name="android:statusBarColor">#160B36</item>
+        <item name="android:navigationBarColor">#160B36</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#33151A</item>
+    </style>
+    <style name="Theme.PhoneLinkOceanDeep" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#38BDF8</item>
+        <item name="colorOnPrimary">#03202E</item>
+        <item name="colorPrimaryContainer">#0E4A5E</item>
+        <item name="colorOnPrimaryContainer">#D0F0FF</item>
+        <item name="colorSecondary">#38BDF8</item>
+        <item name="colorOnSecondary">#03202E</item>
+        <item name="colorSecondaryContainer">#0E4A5E</item>
+        <item name="colorOnSecondaryContainer">#D0F0FF</item>
+        <item name="android:colorBackground">#04222F</item>
+        <item name="colorOnBackground">#EFF9FF</item>
+        <item name="colorSurface">#2EFFFFFF</item>
+        <item name="colorOnSurface">#EFF9FF</item>
+        <item name="colorSurfaceVariant">#24FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#9CC8D8</item>
+        <item name="colorSurfaceContainer">#26FFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#33FFFFFF</item>
+        <item name="colorOutline">#33FFFFFF</item>
+        <item name="android:windowBackground">@drawable/bg_theme_ocean_deep</item>
+        <item name="android:statusBarColor">#04222F</item>
+        <item name="android:navigationBarColor">#04222F</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#33151A</item>
+    </style>
+    <style name="Theme.PhoneLinkMidnightSapphire" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#8EA2FF</item>
+        <item name="colorOnPrimary">#0A1230</item>
+        <item name="colorPrimaryContainer">#1E3A8A</item>
+        <item name="colorOnPrimaryContainer">#D6E0FF</item>
+        <item name="colorSecondary">#8EA2FF</item>
+        <item name="colorOnSecondary">#0A1230</item>
+        <item name="colorSecondaryContainer">#1E3A8A</item>
+        <item name="colorOnSecondaryContainer">#D6E0FF</item>
+        <item name="android:colorBackground">#0A1130</item>
+        <item name="colorOnBackground">#EEF2FF</item>
+        <item name="colorSurface">#2EFFFFFF</item>
+        <item name="colorOnSurface">#EEF2FF</item>
+        <item name="colorSurfaceVariant">#24FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#A8B4D8</item>
+        <item name="colorSurfaceContainer">#26FFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#33FFFFFF</item>
+        <item name="colorOutline">#33FFFFFF</item>
+        <item name="android:windowBackground">@drawable/bg_theme_midnight_sapphire</item>
+        <item name="android:statusBarColor">#0A1130</item>
+        <item name="android:navigationBarColor">#0A1130</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#33151A</item>
+    </style>
+    <style name="Theme.PhoneLinkSunsetEmber" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#FB923C</item>
+        <item name="colorOnPrimary">#2A1200</item>
+        <item name="colorPrimaryContainer">#7C2D12</item>
+        <item name="colorOnPrimaryContainer">#FFE7C7</item>
+        <item name="colorSecondary">#FB923C</item>
+        <item name="colorOnSecondary">#2A1200</item>
+        <item name="colorSecondaryContainer">#7C2D12</item>
+        <item name="colorOnSecondaryContainer">#FFE7C7</item>
+        <item name="android:colorBackground">#2A1008</item>
+        <item name="colorOnBackground">#FFF7ED</item>
+        <item name="colorSurface">#2EFFFFFF</item>
+        <item name="colorOnSurface">#FFF7ED</item>
+        <item name="colorSurfaceVariant">#24FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#E8C4A8</item>
+        <item name="colorSurfaceContainer">#26FFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#33FFFFFF</item>
+        <item name="colorOutline">#33FFFFFF</item>
+        <item name="android:windowBackground">@drawable/bg_theme_sunset_ember</item>
+        <item name="android:statusBarColor">#2A1008</item>
+        <item name="android:navigationBarColor">#2A1008</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#33151A</item>
+    </style>
+    <style name="Theme.PhoneLinkRoseQuartz" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#F9A8D4</item>
+        <item name="colorOnPrimary">#2B0A1E</item>
+        <item name="colorPrimaryContainer">#500724</item>
+        <item name="colorOnPrimaryContainer">#FDD6E3</item>
+        <item name="colorSecondary">#F9A8D4</item>
+        <item name="colorOnSecondary">#2B0A1E</item>
+        <item name="colorSecondaryContainer">#500724</item>
+        <item name="colorOnSecondaryContainer">#FDD6E3</item>
+        <item name="android:colorBackground">#2B0A1E</item>
+        <item name="colorOnBackground">#FFF1F2</item>
+        <item name="colorSurface">#2EFFFFFF</item>
+        <item name="colorOnSurface">#FFF1F2</item>
+        <item name="colorSurfaceVariant">#24FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#E3B8C8</item>
+        <item name="colorSurfaceContainer">#26FFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#33FFFFFF</item>
+        <item name="colorOutline">#33FFFFFF</item>
+        <item name="android:windowBackground">@drawable/bg_theme_rose_quartz</item>
+        <item name="android:statusBarColor">#2B0A1E</item>
+        <item name="android:navigationBarColor">#2B0A1E</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#33151A</item>
+    </style>
+    <style name="Theme.PhoneLinkForestMist" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#6EE7B7</item>
+        <item name="colorOnPrimary">#06281A</item>
+        <item name="colorPrimaryContainer">#14532D</item>
+        <item name="colorOnPrimaryContainer">#D1FAE5</item>
+        <item name="colorSecondary">#6EE7B7</item>
+        <item name="colorOnSecondary">#06281A</item>
+        <item name="colorSecondaryContainer">#14532D</item>
+        <item name="colorOnSecondaryContainer">#D1FAE5</item>
+        <item name="android:colorBackground">#071A12</item>
+        <item name="colorOnBackground">#F0FDF4</item>
+        <item name="colorSurface">#2EFFFFFF</item>
+        <item name="colorOnSurface">#F0FDF4</item>
+        <item name="colorSurfaceVariant">#24FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#A8C8B4</item>
+        <item name="colorSurfaceContainer">#26FFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#33FFFFFF</item>
+        <item name="colorOutline">#33FFFFFF</item>
+        <item name="android:windowBackground">@drawable/bg_theme_forest_mist</item>
+        <item name="android:statusBarColor">#071A12</item>
+        <item name="android:navigationBarColor">#071A12</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#33151A</item>
+    </style>
+    <style name="Theme.PhoneLinkGraphiteMono" parent="Theme.PhoneLink">
+        <item name="colorPrimary">#E5E7EB</item>
+        <item name="colorOnPrimary">#111827</item>
+        <item name="colorPrimaryContainer">#3F3F46</item>
+        <item name="colorOnPrimaryContainer">#F4F4F5</item>
+        <item name="colorSecondary">#E5E7EB</item>
+        <item name="colorOnSecondary">#111827</item>
+        <item name="colorSecondaryContainer">#3F3F46</item>
+        <item name="colorOnSecondaryContainer">#F4F4F5</item>
+        <item name="android:colorBackground">#17171A</item>
+        <item name="colorOnBackground">#FAFAFA</item>
+        <item name="colorSurface">#2EFFFFFF</item>
+        <item name="colorOnSurface">#FAFAFA</item>
+        <item name="colorSurfaceVariant">#24FFFFFF</item>
+        <item name="colorOnSurfaceVariant">#A1A1AA</item>
+        <item name="colorSurfaceContainer">#26FFFFFF</item>
+        <item name="colorSurfaceContainerHigh">#33FFFFFF</item>
+        <item name="colorOutline">#33FFFFFF</item>
+        <item name="android:windowBackground">@drawable/bg_theme_graphite_mono</item>
+        <item name="android:statusBarColor">#17171A</item>
+        <item name="android:navigationBarColor">#17171A</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="colorError">#F87171</item>
+        <item name="colorOnError">#450A0A</item>
+        <item name="colorErrorContainer">#33151A</item>
+    </style>
 </resources>

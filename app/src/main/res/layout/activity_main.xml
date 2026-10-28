@@ -230,6 +230,16 @@
                     android:text="@string/btn_accent"
                     app:icon="@drawable/ic_sliders" />
 
+                <!-- v2.25.0: optional app theme picker (8 themes). -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAppTheme"
+                    style="@style/PL.BtnTonal"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/btn_app_theme"
+                    app:icon="@drawable/ic_sliders" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCheckUpdate"
                     style="@style/PL.BtnTonal"

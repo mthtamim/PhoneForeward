@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- v2.25.0: Graphite Glass Mono window background (static
+     gradient + glows, no live blur). Monochrome greys. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#17171A" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="315"
+                android:startColor="#1A1A1E"
+                android:centerColor="#3F3F46"
+                android:endColor="#111114"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.85"
+                android:centerY="0.10"
+                android:endColor="#00E5E7EB"
+                android:gradientRadius="650dp"
+                android:startColor="#46E5E7EB"
+                android:type="radial" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:centerX="0.15"
+                android:centerY="0.90"
+                android:endColor="#00A1A1AA"
+                android:gradientRadius="650dp"
+                android:startColor="#46A1A1AA"
+                android:type="radial" />
+        </shape>
+    </item>
+</layer-list>

@@ -1933,4 +1933,13 @@ Settings → Apps → PhoneLink পথটাও সবসময় কাজ ক
     <string name="toast_need_name">আগে একটি নাম দিন।</string>
     <string name="toast_need_node">কমপক্ষে একটি নোড যোগ করুন।</string>
     <string name="zoom_fit">ফিট</string>
+    <string name="btn_app_theme">অ্যাপ থিম</string>
+    <string name="theme_name_emerald_dark">এমারল্ড ডার্ক</string>
+    <string name="theme_name_aurora">লিকুইড গ্লাস অরোরা</string>
+    <string name="theme_name_ocean_deep">লিকুইড গ্লাস ওশান ডিপ</string>
+    <string name="theme_name_midnight_sapphire">লিকুইড গ্লাস মিডনাইট স্যাফায়ার</string>
+    <string name="theme_name_sunset_ember">লিকুইড গ্লাস সানসেট এম্বার</string>
+    <string name="theme_name_rose_quartz">লিকুইড গ্লাস রোজ কোয়ার্টজ</string>
+    <string name="theme_name_forest_mist">লিকুইড গ্লাস ফরেস্ট মিস্ট</string>
+    <string name="theme_name_graphite_mono">গ্রাফাইট গ্লাস মনো</string>
 </resources>
