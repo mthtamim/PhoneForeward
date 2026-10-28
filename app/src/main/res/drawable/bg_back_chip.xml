@@ -2,5 +2,8 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <corners android:radius="12dp" />
-    <solid android:color="@color/md_surfaceVariant" />
+    <!-- v2.25.1: theme attribute, not the fixed colour — ?attr in a
+         drawable already resolves in this app (card_bg, bg_action_*
+         use it). Emerald night value is identical (#21352C). -->
+    <solid android:color="?attr/colorSurfaceVariant" />
 </shape>

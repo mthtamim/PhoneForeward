@@ -11,8 +11,8 @@ android {
         applicationId "com.mthtamim.phonelink"
         minSdk 26
         targetSdk 34
-        versionCode 49
-        versionName "2.25.0"
+        versionCode 50
+        versionName "2.25.1"
         // v2.19.1: ship ONLY arm64-v8a native libraries. The APK had been
         // bundling .so files for 4 ABIs (~99 MB of the ~114 MB APK):
         // x86/x86_64 exist only for emulators and armeabi-v7a only for old

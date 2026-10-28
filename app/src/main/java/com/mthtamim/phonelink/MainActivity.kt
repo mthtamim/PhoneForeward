@@ -510,6 +510,13 @@ class MainActivity : LocalizedActivity() {
         pageConfig = findViewById(R.id.pageConfig)
         pageRemote = findViewById(R.id.pageRemote)
         bottomNav = findViewById(R.id.bottomNav)
+        // v2.25.1: glass themes tint the bottom nav from the theme
+        // (checked = accent, unchecked = onSurfaceVariant); Emerald
+        // keeps the old @color/bottom_nav_tint selector untouched.
+        if (Config.appTheme(this) != "emerald_dark") {
+            bottomNav.itemIconTintList = themeNavTint()
+            bottomNav.itemTextColorList = themeNavTint()
+        }
 
         tvConnPill = findViewById(R.id.tvConnPill)
         tvRelayState = findViewById(R.id.tvRelayState)

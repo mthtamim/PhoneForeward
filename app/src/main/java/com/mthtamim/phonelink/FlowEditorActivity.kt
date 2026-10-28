@@ -419,7 +419,7 @@ class FlowEditorActivity : LocalizedActivity() {
             label.text = getString(labelRes)
             label.textSize = 13f
             label.setTypeface(label.typeface, android.graphics.Typeface.BOLD)
-            label.setTextColor(getColor(R.color.md_onSurfaceVariant))
+            label.setTextColor(themeOnSurfaceVariant())
             label.setPadding(0, (10f * density).toInt(), 0, (2f * density).toInt())
             root.addView(label)
         }
@@ -428,26 +428,26 @@ class FlowEditorActivity : LocalizedActivity() {
         val cbImmediate = CheckBox(this)
         cbImmediate.text = getString(R.string.panel_proceed)
         cbImmediate.textSize = 14f
-        cbImmediate.setTextColor(getColor(R.color.md_onBackground))
+        cbImmediate.setTextColor(themeOnBackground())
         cbImmediate.isChecked = node.optBoolean("immediate", true)
         root.addView(cbImmediate)
         val cbEnabled = CheckBox(this)
         cbEnabled.text = getString(R.string.panel_enabled)
         cbEnabled.textSize = 14f
-        cbEnabled.setTextColor(getColor(R.color.md_onBackground))
+        cbEnabled.setTextColor(themeOnBackground())
         cbEnabled.isChecked = node.optBoolean("enabled", true)
         root.addView(cbEnabled)
         val cbContinueOnError = CheckBox(this)
         cbContinueOnError.text = getString(R.string.panel_continue_on_error)
         cbContinueOnError.textSize = 14f
-        cbContinueOnError.setTextColor(getColor(R.color.md_onBackground))
+        cbContinueOnError.setTextColor(themeOnBackground())
         cbContinueOnError.isChecked = node.optString("onerror", "stop") == "continue"
         root.addView(cbContinueOnError)
         val etNote = EditText(this)
         etNote.setText(node.optString("note"))
         etNote.hint = getString(R.string.panel_note_hint)
         etNote.textSize = 14f
-        etNote.setTextColor(getColor(R.color.md_onBackground))
+        etNote.setTextColor(themeOnBackground())
         root.addView(etNote)
 
         // v1.4.1: every node explains itself first — a one-line
@@ -462,14 +462,14 @@ class FlowEditorActivity : LocalizedActivity() {
         val descLine = TextView(this)
         descLine.text = getString(descRes, nodeTitle)
         descLine.textSize = 13f
-        descLine.setTextColor(getColor(R.color.md_onSurfaceVariant))
+        descLine.setTextColor(themeOnSurfaceVariant())
         root.addView(descLine)
         val catalogHint = FlowCatalog.hint(this, node.optString("kind"), type)
         if (catalogHint.isNotEmpty()) {
             val fillLine = TextView(this)
             fillLine.text = getString(R.string.flow_fill_hint, catalogHint)
             fillLine.textSize = 13f
-            fillLine.setTextColor(getColor(R.color.md_onSurfaceVariant))
+            fillLine.setTextColor(themeOnSurfaceVariant())
             root.addView(fillLine)
         }
 
@@ -703,7 +703,7 @@ class FlowEditorActivity : LocalizedActivity() {
                 val note = TextView(this)
                 note.text = getString(R.string.flow_no_input)
                 note.textSize = 14f
-                note.setTextColor(getColor(R.color.md_onBackground))
+                note.setTextColor(themeOnBackground())
                 inputContainer.addView(note)
             }
             else -> {
@@ -715,7 +715,7 @@ class FlowEditorActivity : LocalizedActivity() {
                 val label = TextView(this)
                 label.text = nodeTitle
                 label.textSize = 13f
-                label.setTextColor(getColor(R.color.md_onSurfaceVariant))
+                label.setTextColor(themeOnSurfaceVariant())
                 inputContainer.addView(label)
                 val field = EditText(this)
                 field.setText(param)
@@ -726,7 +726,7 @@ class FlowEditorActivity : LocalizedActivity() {
                     else -> getString(R.string.panel_value_hint)
                 }
                 field.textSize = 14f
-                field.setTextColor(getColor(R.color.md_onBackground))
+                field.setTextColor(themeOnBackground())
                 inputContainer.addView(field)
                 dialogFallbackField = field
             }
@@ -738,7 +738,7 @@ class FlowEditorActivity : LocalizedActivity() {
                 val out = TextView(this)
                 out.text = getString(R.string.panel_level)
                 out.textSize = 14f
-                out.setTextColor(getColor(R.color.md_onBackground))
+                out.setTextColor(themeOnBackground())
                 root.addView(out)
             }
             "set_var" -> {
@@ -748,7 +748,7 @@ class FlowEditorActivity : LocalizedActivity() {
                     val out = TextView(this)
                     out.text = name
                     out.textSize = 14f
-                    out.setTextColor(getColor(R.color.md_onBackground))
+                    out.setTextColor(themeOnBackground())
                     root.addView(out)
                 }
             }
@@ -762,7 +762,7 @@ class FlowEditorActivity : LocalizedActivity() {
                 val cur = TextView(this)
                 cur.text = getString(R.string.panel_level) + ": " + pct + "%"
                 cur.textSize = 14f
-                cur.setTextColor(getColor(R.color.md_onBackground))
+                cur.setTextColor(themeOnBackground())
                 root.addView(cur)
             }
         }
@@ -803,7 +803,7 @@ class FlowEditorActivity : LocalizedActivity() {
         val label = TextView(this)
         label.text = getString(labelRes)
         label.textSize = 13f
-        label.setTextColor(getColor(R.color.md_onSurfaceVariant))
+        label.setTextColor(themeOnSurfaceVariant())
         container.addView(label)
         val field = EditText(this)
         field.setText(initial)
@@ -812,7 +812,7 @@ class FlowEditorActivity : LocalizedActivity() {
             field.hint = hint
         }
         field.textSize = 14f
-        field.setTextColor(getColor(R.color.md_onBackground))
+        field.setTextColor(themeOnBackground())
         container.addView(field)
         dialogFields.add(key to field)
     }

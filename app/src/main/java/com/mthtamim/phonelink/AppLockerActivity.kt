@@ -252,8 +252,7 @@ class AppLockerActivity : LocalizedActivity() {
             texts.addView(TextView(this).apply {
                 text = AppLocker.appLabel(this@AppLockerActivity, row.pkg)
                 textSize = 15f
-                setTextColor(ContextCompat.getColor(
-                    this@AppLockerActivity, R.color.md_onSurface))
+                setTextColor(themeOnSurface())
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })
@@ -261,8 +260,7 @@ class AppLockerActivity : LocalizedActivity() {
                 text = if (row.tag.isEmpty()) row.pkg
                     else row.pkg + " • " + row.tag
                 textSize = 12f
-                setTextColor(ContextCompat.getColor(
-                    this@AppLockerActivity, R.color.md_onSurfaceVariant))
+                setTextColor(themeOnSurfaceVariant())
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })

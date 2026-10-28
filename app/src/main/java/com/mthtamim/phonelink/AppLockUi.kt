@@ -111,7 +111,7 @@ class AppLockUi(
             val d = GradientDrawable()
             d.shape = GradientDrawable.OVAL
             d.setStroke((1.5f * density).toInt(),
-                ContextCompat.getColor(ctx, R.color.md_outline))
+                ThemeColors.outline(ctx))
             val v = View(ctx)
             val lp = LinearLayout.LayoutParams(size, size)
             lp.setMargins(margin, 0, margin, 0)
@@ -195,12 +195,16 @@ class AppLockUi(
 
     private fun setMsg(text: String, error: Boolean) {
         tvMsg.text = text
-        tvMsg.setTextColor(ContextCompat.getColor(ctx,
-            if (error) R.color.status_bad else R.color.md_onSurfaceVariant))
+        // v2.25.1: non-error message follows the theme variant; error
+        // keeps the semantic status red, intentionally not themed.
+        tvMsg.setTextColor(if (error) ContextCompat.getColor(ctx, R.color.status_bad)
+            else ThemeColors.onSurfaceVariant(ctx))
     }
 
     private fun redrawDots(error: Boolean = false) {
-        val filled = ContextCompat.getColor(ctx, R.color.pl_mint)
+        // v2.25.1: filled PIN dots follow the theme accent
+        // (Emerald: #10B981 = pl_mint, unchanged).
+        val filled = ThemeColors.primary(ctx)
         val bad = ContextCompat.getColor(ctx, R.color.status_bad)
         for (i in dots.indices) {
             val d = dotDraws[i]

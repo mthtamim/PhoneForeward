@@ -331,6 +331,13 @@ class AutomationActivity : LocalizedActivity() {
         val nav = findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(
             R.id.autoBottomNav)
         nav.selectedItemId = R.id.navAutomation
+        // v2.25.1: glass themes tint the bottom nav from the theme
+        // (checked = accent, unchecked = onSurfaceVariant); Emerald
+        // keeps the old @color/bottom_nav_tint selector untouched.
+        if (Config.appTheme(this) != "emerald_dark") {
+            nav.itemIconTintList = themeNavTint()
+            nav.itemTextColorList = themeNavTint()
+        }
         nav.setOnItemSelectedListener { item ->
             if (item.itemId == R.id.navAutomation) {
                 return@setOnItemSelectedListener true
@@ -579,21 +586,9 @@ class AutomationActivity : LocalizedActivity() {
         popup.show()
     }
 
-    /** v2.25.0: the active theme accent (colorPrimary), falling back to
-     *  the old mint when the theme does not resolve it. Used so the
-     *  Automation tabs and pills follow a glass theme instead of
-     *  staying emerald; under Emerald Dark colorPrimary IS mint, so
-     *  the look is unchanged. */
-    private fun themeAccentColor(): Int {
-        return try {
-            val out = android.util.TypedValue()
-            if (theme.resolveAttribute(
-                    com.google.android.material.R.attr.colorPrimary, out, true)
-            ) out.data else androidx.core.content.ContextCompat.getColor(this, R.color.pl_mint)
-        } catch (_: Exception) {
-            androidx.core.content.ContextCompat.getColor(this, R.color.pl_mint)
-        }
-    }
+    // v2.25.1: themeAccentColor() now lives on LocalizedActivity and
+    // delegates to the single ThemeColors resolver; the old private
+    // copy here was deleted so there is exactly one resolver.
 
     /** v2.24.0 (Lab merge): tab switch. Rules tab restores
      *  everything exactly as before (status card, FocusLock card,
@@ -606,7 +601,14 @@ class AutomationActivity : LocalizedActivity() {
         // v2.24.1: filled segmented tabs — selected mint fill with
         // dark text, unselected dark fill with light text.
         val fillSelected = android.content.res.ColorStateList.valueOf(themeAccentColor())
-        val fillUnselected = androidx.core.content.ContextCompat.getColorStateList(this, R.color.btn_fill_night)
+        // v2.25.1: unselected tab fill follows the theme — Emerald
+        // keeps btn_fill_night exactly; glass themes use the theme's
+        // surfaceVariant (translucent, so the gradient shows).
+        val fillUnselected = if (Config.appTheme(this) == "emerald_dark") {
+            androidx.core.content.ContextCompat.getColorStateList(this, R.color.btn_fill_night)
+        } else {
+            android.content.res.ColorStateList.valueOf(themeSurfaceVariant())
+        }
         val textDark = androidx.core.content.ContextCompat.getColor(this, R.color.tab_text_dark)
         val textLight = androidx.core.content.ContextCompat.getColor(this, R.color.tab_text_light)
         val tabRules = findViewById<TextView>(R.id.tabRules)
@@ -647,8 +649,7 @@ class AutomationActivity : LocalizedActivity() {
                 else R.drawable.bg_action_ghost)
             setPadding(40, 30, 40, 30)
             setTextColor(
-                if (mint) themeAccentColor() else androidx.core.content.ContextCompat.getColor(
-                    this@AutomationActivity, R.color.md_onSurface))
+                if (mint) themeAccentColor() else themeOnSurface())
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -1003,8 +1004,7 @@ class AutomationActivity : LocalizedActivity() {
                     else R.drawable.bg_action_ghost)
                 setPadding(40, 30, 40, 30)
                 setTextColor(
-                    if (mint) themeAccentColor() else androidx.core.content.ContextCompat.getColor(
-                        this@AutomationActivity, R.color.md_onSurface))
+                    if (mint) themeAccentColor() else themeOnSurface())
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT)

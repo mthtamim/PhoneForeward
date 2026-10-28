@@ -141,12 +141,15 @@ class AppsActivity : LocalizedActivity() {
                 AppRules.OFF -> R.string.rule_off
                 else -> R.string.rule_default
             })
-            tvRule.setTextColor(ContextCompat.getColor(this@AppsActivity, when (rule) {
-                AppRules.INSTANT -> R.color.status_ok
-                AppRules.DIGEST -> R.color.pair_code
-                AppRules.OFF -> R.color.status_bad
-                else -> R.color.md_outline
-            }))
+            // v2.25.1: DEFAULT rule colour follows the theme outline;
+            // INSTANT/DIGEST/OFF keep their semantic colours (status
+            // green, pair amber, status red — intentionally not themed).
+            tvRule.setTextColor(when (rule) {
+                AppRules.INSTANT -> ContextCompat.getColor(this@AppsActivity, R.color.status_ok)
+                AppRules.DIGEST -> ContextCompat.getColor(this@AppsActivity, R.color.pair_code)
+                AppRules.OFF -> ContextCompat.getColor(this@AppsActivity, R.color.status_bad)
+                else -> themeOutline()
+            })
             return view
         }
     }

@@ -544,12 +544,26 @@ object AppLocker {
         cfg.uiMode = (cfg.uiMode and
             Configuration.UI_MODE_NIGHT_MASK.inv()) or night
         val confCtx = app.createConfigurationContext(cfg)
-        val style = when (prefs.getString("accent", "emerald")) {
-            "blue" -> R.style.Theme_PhoneLinkBlue
-            "purple" -> R.style.Theme_PhoneLinkPurple
-            "amber" -> R.style.Theme_PhoneLinkAmber
-            "rose" -> R.style.Theme_PhoneLinkRose
-            else -> R.style.Theme_PhoneLink
+        // v2.25.1: the overlay must follow the chosen app theme too,
+        // not just the accent — otherwise AppLockUi's theme colours
+        // would resolve against the base theme in the overlay host.
+        // Same precedence as LocalizedActivity: a non-default theme
+        // carries its own accent; accent applies only under Emerald.
+        val style = when (prefs.getString("app_theme", "emerald_dark")) {
+            "aurora" -> R.style.Theme_PhoneLinkAurora
+            "ocean_deep" -> R.style.Theme_PhoneLinkOceanDeep
+            "midnight_sapphire" -> R.style.Theme_PhoneLinkMidnightSapphire
+            "sunset_ember" -> R.style.Theme_PhoneLinkSunsetEmber
+            "rose_quartz" -> R.style.Theme_PhoneLinkRoseQuartz
+            "forest_mist" -> R.style.Theme_PhoneLinkForestMist
+            "graphite_mono" -> R.style.Theme_PhoneLinkGraphiteMono
+            else -> when (prefs.getString("accent", "emerald")) {
+                "blue" -> R.style.Theme_PhoneLinkBlue
+                "purple" -> R.style.Theme_PhoneLinkPurple
+                "amber" -> R.style.Theme_PhoneLinkAmber
+                "rose" -> R.style.Theme_PhoneLinkRose
+                else -> R.style.Theme_PhoneLink
+            }
         }
         return ContextThemeWrapper(confCtx, style)
     }

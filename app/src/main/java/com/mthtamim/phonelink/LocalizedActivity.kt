@@ -67,4 +67,28 @@ open class LocalizedActivity : AppCompatActivity() {
         } catch (_: Exception) { }
         super.onCreate(savedInstanceState)
     }
+
+    /** v2.25.1: theme-attribute colours for subclasses, all via the
+     *  single ThemeColors resolver (never a fixed R.color read, so
+     *  glass themes are followed). Under Emerald Dark each resolves
+     *  to its old value: accent #10B981, onSurface #EAF4EE (night),
+     *  onSurfaceVariant #8FA79B (night), outline #2A3336 (night). */
+    protected fun themeAccentColor(): Int = ThemeColors.primary(this)
+
+    protected fun themeOnSurface(): Int = ThemeColors.onSurface(this)
+
+    protected fun themeOnBackground(): Int = ThemeColors.onBackground(this)
+
+    protected fun themeOnSurfaceVariant(): Int = ThemeColors.onSurfaceVariant(this)
+
+    protected fun themeOutline(): Int = ThemeColors.outline(this)
+
+    protected fun themeSurfaceVariant(): Int = ThemeColors.surfaceVariant(this)
+
+    /** v2.25.1: bottom-nav tint for glass themes (checked = accent,
+     *  unchecked = onSurfaceVariant). Emerald Dark callers must NOT
+     *  call this — they keep the old XML selector, whose night
+     *  values are checked #2FD68F / unchecked #7E938A. */
+    protected fun themeNavTint(): android.content.res.ColorStateList =
+        ThemeColors.navTint(this)
 }

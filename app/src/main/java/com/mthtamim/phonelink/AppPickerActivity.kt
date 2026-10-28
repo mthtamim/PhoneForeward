@@ -180,15 +180,13 @@ class AppPickerActivity : LocalizedActivity() {
             }
             texts.addView(TextView(this@AppPickerActivity).apply {
                 textSize = 15f
-                setTextColor(ContextCompat.getColor(
-                    this@AppPickerActivity, R.color.md_onSurface))
+                setTextColor(themeOnSurface())
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })
             texts.addView(TextView(this@AppPickerActivity).apply {
                 textSize = 12f
-                setTextColor(ContextCompat.getColor(
-                    this@AppPickerActivity, R.color.md_onSurfaceVariant))
+                setTextColor(themeOnSurfaceVariant())
                 maxLines = 1
                 ellipsize = android.text.TextUtils.TruncateAt.END
             })

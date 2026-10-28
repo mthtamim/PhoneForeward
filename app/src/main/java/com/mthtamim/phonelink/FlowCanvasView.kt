@@ -122,22 +122,27 @@ class FlowCanvasView @JvmOverloads constructor(
         paintBorder.style = Paint.Style.STROKE
         paintEdge.style = Paint.Style.STROKE
         paintEdge.strokeWidth = 3f * density
-        paintText.color = Color.parseColor("#EAF4EE")
+        // v2.25.1: canvas text/sub/grip/grid/temp colours resolve
+        // from the active theme (view is created after the activity
+        // applies its theme, and recreated on theme change). Emerald
+        // night values are identical to the old literals: text
+        // #EAF4EE, sub #8FA79B, grip #10B981, grid #2A3336.
+        paintText.color = ThemeColors.onSurface(context)
         paintText.textSize = 15f * density
-        paintSub.color = Color.parseColor("#8FA79B")
+        paintSub.color = ThemeColors.onSurfaceVariant(context)
         paintSub.textSize = 12f * density
         paintGrip.style = Paint.Style.FILL
-        paintGrip.color = Color.parseColor("#10B981")
+        paintGrip.color = ThemeColors.primary(context)
         paintGripBorder.style = Paint.Style.STROKE
         paintGripBorder.color = Color.WHITE
         paintGripBorder.strokeWidth = 2f * density
         paintGrid.style = Paint.Style.FILL
-        paintGrid.color = Color.parseColor("#2A3336")
+        paintGrid.color = ThemeColors.outline(context)
         paintPort.style = Paint.Style.FILL
         paintPortText.textSize = 11f * density
         paintTemp.style = Paint.Style.STROKE
         paintTemp.strokeWidth = 2f * density
-        paintTemp.color = Color.parseColor("#EAF4EE")
+        paintTemp.color = ThemeColors.onSurface(context)
     }
 
     fun setZoom(value: Float) {
@@ -496,7 +501,9 @@ class FlowCanvasView @JvmOverloads constructor(
             val node = nodes.optJSONObject(i) ?: continue
             val r = rects[node.optString("id")] ?: continue
             val s = nodeScale(node)
-            paintNode.color = Color.parseColor("#1C2326")
+            // v2.25.1: node fill follows the theme secondaryContainer
+            // (Emerald night #1C2326 = the old literal, identical).
+            paintNode.color = ThemeColors.secondaryContainer(context)
             canvas.drawRoundRect(r, 18f * density * s, 18f * density * s, paintNode)
             val isHighlighted = node.optString("id") == highlightId
             paintBorder.color = if (isHighlighted) {
