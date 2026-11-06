@@ -1,5 +1,8 @@
 name: Build APK
 
+# Version-agnostic release — ভার্সন app/build.gradle-এর versionName থেকে নিজে পড়ে নেয়,
+# তাই প্রতিটা ভার্সনে রিলিজ ঠিক ট্যাগে (v2.25.2 ইত্যাদি) যায়, পুরনো v1.0 ট্যাগে আর নয়।
+
 on:
   push:
     branches: [ main ]
@@ -46,11 +49,17 @@ jobs:
           path: PhoneLink.apk
           retention-days: 90
 
-      - name: Publish APK to Release v1.0
+      - name: Read version from build.gradle
+        id: version
+        run: |
+          VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Publish APK to Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0
-          name: PhoneLink v1.0
+          tag_name: v${{ steps.version.outputs.version }}
+          name: PhoneLink v${{ steps.version.outputs.version }}
           body: |
             PhoneLink — দুই ফোনের মধ্যে রিয়েল-টাইমে SMS, নোটিফিকেশন, কল, ব্যাটারি ফরোয়ার্ডিং + রিমোট কমান্ড (লোকেশন / রিং / ব্যাটারি)।
             APK ডাউনলোড করে দুটি ফোনেই ইনস্টল করো। সেটআপের জন্য README দেখো।
