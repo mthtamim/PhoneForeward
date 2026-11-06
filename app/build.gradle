@@ -24,12 +24,43 @@ android {
         }
     }
 
+    // 2026-11-06: the debug keystore is stored base64-encoded in
+    // debug.keystore.b64 (the snapshot push cannot carry binary
+    // files); decode it at build time so signingConfigs below can
+    // use it. The decoded file is never committed.
+    def debugKeystoreFile = file("debug.keystore")
+    if (!debugKeystoreFile.exists()) {
+        def b64File = file("debug.keystore.b64")
+        if (b64File.exists()) {
+            debugKeystoreFile.bytes =
+                b64File.text.replaceAll("\\s", "").decodeBase64()
+        }
+    }
+
+    signingConfigs {
+        // 2026-11-06: ONE fixed debug key for every build. Before this,
+        // assembleDebug signed with a fresh keystore generated on
+        // each CI runner, so every build had a different signature
+        // and Android refused to install it over the previous one
+        // ("App not installed"). This keystore is a DEBUG-only key
+        // (same DN/passwords as Android's default debug key); it is
+        // not a release key and must never sign a release.
+        debug {
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+            storeType "PKCS12"
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
+            signingConfig signingConfigs.debug
             minifyEnabled false
         }
     }
